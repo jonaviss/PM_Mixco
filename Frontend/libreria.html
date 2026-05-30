@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario Librería - PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <nav class="bg-blue-800 p-4 text-white">
+        <div class="container mx-auto flex justify-between">
+            <span class="font-bold">PM Mixco ERP 📦</span>
+            <button id="btnSalir" class="bg-red-500 px-3 py-1 rounded">Salir</button>
+        </div>
+    </nav>
+
+    <div class="container mx-auto mt-8">
+        <table class="min-w-full bg-white border rounded-lg">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="py-3 px-4 text-left">ID</th>
+                    <th class="py-3 px-4 text-left">Producto</th>
+                    <th class="py-3 px-4 text-left">Precio</th>
+                    <th class="py-3 px-4 text-left">Stock</th>
+                    <th class="py-3 px-4 text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-productos">
+                <tr><td colspan="5" class="text-center py-8">Cargando...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/libreria.js"></script>
+    <script>
+        document.getElementById('btnSalir').onclick = () => Auth.cerrarSesion();
+    </script>
+</body>
+</html>
