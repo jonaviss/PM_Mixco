@@ -3,39 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario Librería - PM Mixco ERP</title>
+    <title>Librería - PM Mixco ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans">
-    <nav class="bg-blue-800 p-4 text-white">
-        <div class="container mx-auto flex justify-between">
-            <span class="font-bold">PM Mixco ERP 📦</span>
-            <button id="btnSalir" class="bg-red-500 px-3 py-1 rounded">Salir</button>
+<body class="bg-slate-50 font-sans text-slate-800">
+    <nav class="bg-blue-900 p-4 text-white shadow-lg relative z-20">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="text-xl font-black tracking-tight">PM MIXCO ERP</span>
+                <span class="text-blue-300 font-medium border-l border-blue-700 pl-3">Módulo de Librería</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden md:block">
+                    <p id="user-info" class="text-sm font-bold leading-none"></p>
+                    <p class="text-xs text-blue-300">Conectado</p>
+                </div>
+                <button id="btnSalir" class="bg-red-500 hover:bg-red-600 px-5 py-2 rounded font-bold shadow transition-colors duration-200">Cerrar Sesión</button>
+            </div>
         </div>
     </nav>
 
-    <div class="container mx-auto mt-8">
-        <table class="min-w-full bg-white border rounded-lg">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="py-3 px-4 text-left">ID</th>
-                    <th class="py-3 px-4 text-left">Producto</th>
-                    <th class="py-3 px-4 text-left">Precio</th>
-                    <th class="py-3 px-4 text-left">Stock</th>
-                    <th class="py-3 px-4 text-center">Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-productos">
-                <tr><td colspan="5" class="text-center py-8">Cargando...</td></tr>
-            </tbody>
-        </table>
+    <div class="container mx-auto mt-8 px-4 max-w-6xl">
+        <div class="flex gap-4 mb-6">
+            <button onclick="cambiarVista('inventario')" id="tab-inventario" class="flex-1 bg-white py-3 px-6 rounded-lg shadow-sm border-b-4 border-blue-600 font-bold text-blue-800 transition">📦 Inventario y Catálogo</button>
+            <button onclick="cambiarVista('pos')" id="tab-pos" class="flex-1 bg-white py-3 px-6 rounded-lg shadow-sm border-b-4 border-transparent text-gray-500 hover:bg-gray-50 transition">🛒 Punto de Venta (POS)</button>
+            <button onclick="cambiarVista('abonos')" id="tab-abonos" class="flex-1 bg-white py-3 px-6 rounded-lg shadow-sm border-b-4 border-transparent text-gray-500 hover:bg-gray-50 transition">💳 Gestión de Cobros</button>
+        </div>
+
+        <div id="vista-inventario" class="fade-in block">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border border-slate-200">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h2 class="text-xl font-bold text-slate-800">Catálogo de Productos</h2>
+                    <button onclick="abrirModalProducto()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-md shadow font-bold transition flex items-center gap-2">
+                        <span>+</span> Nuevo Producto
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-left border-collapse">
+                        <thead class="bg-slate-100 text-slate-600 text-sm border-b-2 border-slate-200">
+                            <tr>
+                                <th class="py-4 px-6 font-bold">ID (UUID)</th>
+                                <th class="py-4 px-6 font-bold">Producto</th>
+                                <th class="py-4 px-6 font-bold">Tipo</th>
+                                <th class="py-4 px-6 font-bold">Precio</th>
+                                <th class="py-4 px-6 font-bold text-center">Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-productos" class="text-sm divide-y divide-slate-100">
+                            <tr><td colspan="5" class="text-center py-10 text-slate-500 font-medium">Sincronizando datos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="vista-pos" class="fade-in hidden">
+            <div class="bg-white p-8 rounded-xl shadow-md border border-slate-200">
+                <div class="mb-6 pb-4 border-b border-slate-100">
+                    <h2 class="text-2xl font-bold text-slate-800">Terminal de Ventas</h2>
+                    <p class="text-slate-500 text-sm">Busque el producto y al comprador para procesar la transacción.</p>
+                </div>
+                
+                <div id="msg-venta" class="hidden px-4 py-3 rounded mb-6 text-sm font-bold shadow-sm"></div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                    
+                    <div class="md:col-span-5 relative">
+                        <label class="block text-slate-700 text-sm font-bold mb-2">1. Seleccionar Producto</label>
+                        <input type="hidden" id="pos-producto-id">
+                        <input type="text" id="pos-producto-search" autocomplete="off" placeholder="🔍 Buscar artículo..." class="border border-slate-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-inner bg-slate-50">
+                        <div id="pos-producto-results" class="absolute z-50 w-full bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-60 overflow-y-auto mt-1 divide-y divide-slate-100"></div>
+                    </div>
+
+                    <div class="md:col-span-5 relative">
+                        <label class="block text-slate-700 text-sm font-bold mb-2">2. Buscar Hermano (CUI o Nombre)</label>
+                        <input type="hidden" id="pos-cui-hidden">
+                        <div id="contenedor-buscador-cliente">
+                            <input type="text" id="pos-cliente-search" autocomplete="off" placeholder="🔍 Escribe CUI, nombre o apellido..." class="border border-slate-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-inner bg-slate-50">
+                            <div id="pos-cliente-results" class="absolute z-50 w-full bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-60 overflow-y-auto mt-1 divide-y divide-slate-100"></div>
+                        </div>
+
+                        <div id="pos-cliente-card" class="hidden mt-2 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-3">
+                            <div class="bg-blue-600 text-white rounded-full h-10 w-10 flex items-center justify-center font-bold">👤</div>
+                            <div class="flex-1">
+                                <p id="card-cliente-nombre" class="text-sm font-black text-slate-800 leading-tight">Nombre del Hermano</p>
+                                <p id="card-cliente-cui" class="text-xs font-mono text-slate-500">CUI: 0000000000000</p>
+                            </div>
+                            <button onclick="limpiarCliente()" class="text-slate-400 hover:text-red-500 transition font-bold text-xl px-2">&times;</button>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-slate-700 text-sm font-bold mb-2">3. Cantidad</label>
+                        <input type="number" id="pos-cantidad" value="1" min="1" class="border border-slate-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-inner bg-slate-50 text-center font-bold">
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-end gap-4 pt-6 border-t border-slate-100">
+                    <button onclick="procesarVenta('credito')" class="bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 rounded-lg font-bold shadow-md transition-all transform hover:-translate-y-0.5">Vender a Crédito</button>
+                    <button onclick="procesarVenta('contado')" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold shadow-md transition-all transform hover:-translate-y-0.5">Cobro en Efectivo</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="vista-abonos" class="fade-in hidden">
+            <div class="bg-white p-8 rounded-xl shadow-md border border-slate-200 text-center py-20">
+                <span class="text-5xl mb-4 block">💳</span>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Módulo de Cobros</h2>
+                <p class="text-slate-500">La interfaz de gestión de abonos se conectará en la próxima actualización.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-producto" class="fixed inset-0 bg-slate-900 bg-opacity-60 hidden flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden fade-in">
+            <div class="bg-blue-800 p-4 text-white flex justify-between items-center">
+                <h3 class="text-lg font-bold">Registrar Nuevo Producto</h3>
+                <button onclick="cerrarModalProducto()" class="text-blue-200 hover:text-white font-bold text-xl leading-none">&times;</button>
+            </div>
+            <div class="p-6">
+                <div id="msg-modal" class="hidden px-4 py-2 rounded mb-4 text-sm font-bold"></div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Categoría</label>
+                        <select id="prod-tipo" class="border border-slate-300 w-full p-2.5 rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white font-bold text-blue-800">
+                            <option value="Biblia">📖 Biblia</option>
+                            <option value="Libro">📚 Libro</option>
+                            <option value="Material">✏️ Material de Estudio</option>
+                            <option value="Accesorio">🔖 Accesorio</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Nombre Comercial</label>
+                        <input type="text" id="prod-nombre" placeholder="Ej. Biblia de Estudio MacArthur" class="border border-slate-300 w-full p-2.5 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Descripción Breve</label>
+                        <input type="text" id="prod-desc" placeholder="Detalles extra..." class="border border-slate-300 w-full p-2.5 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Precio (Q)</label>
+                        <input type="number" id="prod-precio" step="0.01" min="0" placeholder="Ej. 150.00" class="border border-slate-300 w-full p-2.5 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Stock Inicial</label>
+                        <input type="number" id="prod-stock" min="0" placeholder="Ej. 12" class="border border-slate-300 w-full p-2.5 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-3">
+                <button onclick="cerrarModalProducto()" class="px-5 py-2 text-slate-600 font-bold hover:bg-slate-200 rounded transition">Cancelar</button>
+                <button onclick="guardarProducto()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-bold shadow transition">Guardar Producto</button>
+            </div>
+        </div>
     </div>
 
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/libreria.js"></script>
-    <script>
-        document.getElementById('btnSalir').onclick = () => Auth.cerrarSesion();
-    </script>
 </body>
 </html>
