@@ -1,14 +1,30 @@
+"""
+Módulo de gestión de librería.
+Maneja inventario, ventas (contado y crédito) y abonos parciales.
+"""
+
 import os
 import httpx
-from fastapi import APIRouter, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Depends
 from database import supabase
 from schemas import ProductoLibreriaCreate, VentaLibreriaCreate, PagoLibreriaCreate
+from dependencies import obtener_usuario_actual
+from typing import Dict, Any
 
 router = APIRouter()
 
-# --- NOTIFICACIONES ASÍNCRONAS UNIFICADAS ---
+
+# --- NOTIFICACIONES ASÍNCRONAS ---
 
 async def despachar_correo_libreria(datos: dict):
+    """
+    Construye la plantilla HTML y la envía mediante Resend.
+    Funciona para ventas nuevas (contado/crédito) y abonos parciales.
+
+    Args:
+        datos: Diccionario con id_transaccion, tipo_notificacion,
+               detalle_producto, cantidad y monto
+    """
     api_key = os.getenv("RESEND_API_KEY")
     if not api_key:
         print("[ALERTA] RESEND_API_KEY no configurada. Correo abortado.")
@@ -57,7 +73,7 @@ async def despachar_correo_libreria(datos: dict):
 
     correo_destino = "jonathanvisoni@gmail.com"
 
-    payload = {
+    payload_correo = {
         "from": "Libreria PM Mixco <onboarding@resend.dev>",
         "to": [correo_destino],
         "subject": f"{titulo_recibo} - Q{datos['monto']:.2f} - PM Mixco",
@@ -65,31 +81,82 @@ async def despachar_correo_libreria(datos: dict):
     }
 
     async with httpx.AsyncClient() as client:
-        respuesta = await client.post("https://api.resend.com/emails", json=payload, headers=headers)
+        respuesta = await client.post(
+            "https://api.resend.com/emails",
+            json=payload_correo,
+            headers=headers
+        )
         if respuesta.status_code != 200:
-            print(f"[ERROR] Falla al despachar correo vía Resend: {respuesta.text}")
+            print(f"[ERROR] Falla al despachar correo via Resend: {respuesta.text}")
 
 
 # --- GESTIÓN DE INVENTARIO Y CLIENTES ---
 
 @router.get("/productos")
-async def listar_productos():
+async def listar_productos(
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    """
+    Retorna la lista de productos activos en inventario.
+
+    Returns:
+        list: Productos con estado activo
+
+    Raises:
+        HTTPException 500: Si ocurre un error al consultar la base de datos
+    """
     try:
         res = supabase.table("inventario_libreria").select("*").eq("estado", True).execute()
         return res.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/clientes")
-async def listar_clientes():
+async def listar_clientes(
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    """
+    Retorna la lista de hermanos para el buscador predictivo del POS.
+
+    Returns:
+        list: Usuarios con cui, nombre_completo y correo
+
+    Raises:
+        HTTPException 500: Si ocurre un error al consultar la base de datos
+    """
     try:
         res = supabase.table("usuarios").select("cui, nombre_completo, correo").execute()
         return res.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/productos", status_code=status.HTTP_201_CREATED)
-def registrar_producto(payload: ProductoLibreriaCreate):
+def registrar_producto(
+    payload: ProductoLibreriaCreate,
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    """
+    Registra un nuevo producto en el inventario de librería.
+
+    Args:
+        payload: Datos del producto a registrar
+        usuario_actual: Payload del JWT del operador autenticado
+
+    Returns:
+        dict: Producto creado con su ID
+
+    Raises:
+        HTTPException 403: Si el usuario no tiene rango suficiente
+        HTTPException 500: Si ocurre un error al insertar en la base de datos
+    """
+    if usuario_actual.get("rango") not in ["encargado", "administrador"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tiene permisos para registrar productos."
+        )
+
     try:
         data = payload.model_dump(exclude_none=True)
         res = supabase.table("inventario_libreria").insert(data).execute()
@@ -101,7 +168,27 @@ def registrar_producto(payload: ProductoLibreriaCreate):
 # --- GESTIÓN DE VENTAS ---
 
 @router.post("/ventas", status_code=status.HTTP_201_CREATED)
-def registrar_venta(payload: VentaLibreriaCreate, background_tasks: BackgroundTasks):
+def registrar_venta(
+    payload: VentaLibreriaCreate,
+    background_tasks: BackgroundTasks,
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    """
+    Registra una nueva venta en librería (contado o crédito).
+
+    Args:
+        payload: Datos de la venta (producto, comprador, cantidad, tipo de pago)
+        background_tasks: Manejador de tareas asíncronas para el correo
+        usuario_actual: Payload del JWT del operador autenticado
+
+    Returns:
+        dict: ID de la venta creada y mensaje de confirmación
+
+    Raises:
+        HTTPException 404: Si el producto no existe
+        HTTPException 400: Si el stock es insuficiente
+        HTTPException 500: Si ocurre un error en la base de datos
+    """
     try:
         # 1. Verificar producto y stock
         res_producto = supabase.table("inventario_libreria") \
@@ -144,13 +231,13 @@ def registrar_venta(payload: VentaLibreriaCreate, background_tasks: BackgroundTa
             "subtotal": total_venta
         }).execute()
 
-        # 5. Si es contado, registrar pago inmediato
+        # 5. Si es contado, registrar pago con el operador real del JWT
         if es_contado:
             supabase.table("libreria_pagos").insert({
                 "venta_id": venta_id,
                 "monto_abonado": total_venta,
                 "metodo_pago_id": 1,
-                "digitado_por": payload.comprador_cui
+                "digitado_por": usuario_actual["sub"]
             }).execute()
 
         # 6. Descontar stock
@@ -159,7 +246,7 @@ def registrar_venta(payload: VentaLibreriaCreate, background_tasks: BackgroundTa
             .eq("id", payload.producto_id) \
             .execute()
 
-        # 7. Notificación por correo
+        # 7. Notificación por correo en segundo plano
         tipo_notif = "venta_contado" if es_contado else "venta_credito"
         background_tasks.add_task(
             despachar_correo_libreria,
@@ -183,9 +270,29 @@ def registrar_venta(payload: VentaLibreriaCreate, background_tasks: BackgroundTa
 # --- GESTIÓN DE ABONOS PARCIALES ---
 
 @router.post("/pagos")
-async def registrar_abono(payload: PagoLibreriaCreate, background_tasks: BackgroundTasks):
+async def registrar_abono(
+    payload: PagoLibreriaCreate,
+    background_tasks: BackgroundTasks,
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    """
+    Registra un abono parcial o total a una venta a crédito.
+
+    Args:
+        payload: Datos del abono (venta_id, monto, metodo_pago_id)
+        background_tasks: Manejador de tareas asíncronas para el correo
+        usuario_actual: Payload del JWT del operador autenticado
+
+    Returns:
+        dict: Estado actualizado de la venta y mensaje de confirmación
+
+    Raises:
+        HTTPException 404: Si la venta no existe
+        HTTPException 400: Si la venta ya está pagada
+        HTTPException 500: Si ocurre un error en la base de datos
+    """
     try:
-        # 1. Obtener venta con nombre de producto via detalle
+        # 1. Obtener venta
         res_venta = supabase.table("libreria_ventas") \
             .select("id, total_venta, total_pagado, estado_pago") \
             .eq("id", payload.venta_id) \
@@ -199,17 +306,17 @@ async def registrar_abono(payload: PagoLibreriaCreate, background_tasks: Backgro
         if venta["estado_pago"] == "pagado":
             raise HTTPException(status_code=400, detail="La deuda asociada a esta venta ya fue liquidada.")
 
-        # 2. Registrar abono
+        # 2. Registrar abono con el operador real del JWT
         res_pago = supabase.table("libreria_pagos").insert({
             "venta_id": payload.venta_id,
             "monto_abonado": payload.monto_abonado,
             "metodo_pago_id": payload.metodo_pago_id,
-            "digitado_por": payload.digitado_por
+            "digitado_por": usuario_actual["sub"]
         }).execute()
 
         pago_id = res_pago.data[0]["id"]
 
-        # 3. Recalcular total acumulado
+        # 3. Recalcular total acumulado de todos los abonos
         res_pagos = supabase.table("libreria_pagos") \
             .select("monto_abonado") \
             .eq("venta_id", payload.venta_id) \
@@ -231,10 +338,11 @@ async def registrar_abono(payload: PagoLibreriaCreate, background_tasks: Backgro
             .limit(1) \
             .execute()
 
-        nombre_prod = "Abono a Cuenta Crédito"
+        nombre_prod = "Abono a Cuenta Credito"
         if res_detalle.data and res_detalle.data[0].get("inventario_libreria"):
             nombre_prod = res_detalle.data[0]["inventario_libreria"]["nombre"]
 
+        # 6. Notificación por correo en segundo plano
         background_tasks.add_task(
             despachar_correo_libreria,
             {
