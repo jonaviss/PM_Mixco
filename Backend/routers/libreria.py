@@ -8,7 +8,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Depends
 from database import supabase
 from schemas import ProductoLibreriaCreate, VentaLibreriaCreate, PagoLibreriaCreate
-from dependencies import obtener_usuario_actual
+from routers.dependencies import obtener_usuario_actual
 from typing import Dict, Any
 
 router = APIRouter()
