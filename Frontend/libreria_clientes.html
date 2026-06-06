@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clientes Librería | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#755b00", "primary-container": "#C9A227", "on-primary": "#ffffff",
+                        "surface": "#F7F3EC", "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f6f3ef", "surface-container": "#f0edea",
+                        "surface-container-high": "#ebe8e4", "outline-variant": "#d1c5af",
+                        "outline": "#7f7663", "on-surface": "#1c1c1a", "on-surface-variant": "#4d4635",
+                        "secondary": "#635e4f", "error": "#ba1a1a",
+                    },
+                    fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
+                    spacing: { "sidebar": "260px" }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Sora', sans-serif; background-color: #F7F3EC; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
+        .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1.25rem; border-radius: 0.5rem; font-size: 14px; color: #4d4635; transition: all 0.15s ease; cursor: pointer; text-decoration: none; }
+        .nav-item:hover { background-color: #f6f3ef; color: #755b00; }
+        .nav-item.active { background-color: #f6f3ef; border-left: 3px solid #C9A227; color: #755b00; font-weight: 700; border-radius: 0 0.5rem 0.5rem 0; padding-left: calc(1.25rem - 3px); }
+        .nav-item.danger:hover { color: #ba1a1a; background-color: #fff5f5; }
+        .table-row:hover { background-color: #f6f3ef; }
+        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #d1c5af; border-radius: 10px; }
+        @media (max-width: 768px) { #sidebar { transform: translateX(-100%); transition: transform 0.3s ease; } #sidebar.open { transform: translateX(0); } #main-content { margin-left: 0 !important; } }
+    </style>
+</head>
+<body class="text-on-surface">
+
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside id="sidebar" class="fixed left-0 top-0 h-full w-sidebar bg-surface-container-lowest border-r border-outline-variant flex flex-col z-40">
+    <div class="px-5 py-5 border-b border-outline-variant">
+        <h1 class="text-lg font-bold text-primary leading-none">Palabra Miel Mixco</h1>
+        <p class="text-xs text-secondary mt-1 font-mono uppercase tracking-wider">Módulo Librería</p>
+    </div>
+    <nav class="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
+        <a href="libreria_dashboard.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">dashboard</span>Dashboard</a>
+        <a href="libreria_inventario.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">inventory_2</span>Inventario</a>
+        <a href="libreria_ventas.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">point_of_sale</span>Ventas</a>
+        <a href="libreria_cobros.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">payments</span>Cobros</a>
+        <a href="libreria_clientes.html" class="nav-item active"><span class="material-symbols-outlined text-[20px]">group</span>Clientes</a>
+    </nav>
+    <div class="px-2 py-3 border-t border-outline-variant space-y-0.5">
+        <a href="#" class="nav-item"><span class="material-symbols-outlined text-[20px]">settings</span>Configuración</a>
+        <a href="index.html" id="btnCerrarSesion" class="nav-item danger"><span class="material-symbols-outlined text-[20px]">logout</span>Cerrar Sesión</a>
+    </div>
+</aside>
+
+<!-- CONTENIDO PRINCIPAL -->
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary"><span class="material-symbols-outlined">menu</span></button>
+            <div>
+                <h2 class="text-base font-bold text-on-surface leading-none">Consulta de Clientes</h2>
+                <p class="text-xs text-secondary mt-0.5">Librería · Historial y deudas</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block">
+                <p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p>
+                <p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p>
+            </div>
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm">
+                <span id="avatar-inicial">?</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 space-y-6">
+
+        <!-- Buscador principal -->
+        <section class="max-w-2xl mx-auto">
+            <div class="relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+                <input type="text" id="buscador-global" autocomplete="off" placeholder="Buscar por CUI o nombre del hermano..."
+                    class="w-full pl-12 pr-4 py-3.5 text-sm bg-surface-container-lowest border border-outline-variant rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-container shadow-sm transition">
+                <div id="resultados-busqueda" class="hidden absolute z-20 w-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xl max-h-60 overflow-y-auto divide-y divide-outline-variant"></div>
+            </div>
+        </section>
+
+        <!-- Estado inicial -->
+        <div id="estado-inicial" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-12 text-center">
+            <span class="material-symbols-outlined text-[48px] text-outline-variant block mb-3">person_search</span>
+            <p class="text-base font-bold text-secondary">Busca un hermano para ver su historial</p>
+            <p class="text-sm text-secondary mt-1">Ingresa el CUI o nombre en el buscador de arriba</p>
+        </div>
+
+        <!-- Perfil y métricas del cliente -->
+        <div id="perfil-cliente" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+            <!-- Tarjeta de perfil -->
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm">
+                <div class="flex items-center gap-4 mb-5">
+                    <div class="w-14 h-14 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
+                        <span id="perfil-avatar">?</span>
+                    </div>
+                    <div>
+                        <h3 id="perfil-nombre" class="text-base font-bold text-on-surface"></h3>
+                        <p id="perfil-cui" class="text-xs font-mono text-secondary mt-0.5"></p>
+                    </div>
+                </div>
+                <div class="space-y-3 border-t border-outline-variant pt-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-secondary">Correo</span>
+                        <span id="perfil-correo" class="text-xs font-mono text-on-surface truncate max-w-[60%] text-right"></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-secondary">Miembro desde</span>
+                        <span id="perfil-fecha" class="text-xs font-mono text-on-surface"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Métricas -->
+            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm">
+                    <p class="text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-2">Total Compras</p>
+                    <p id="metrica-compras" class="text-2xl font-bold text-on-surface font-mono">—</p>
+                    <p id="metrica-compras-cantidad" class="text-xs text-secondary mt-1">— transacciones</p>
+                </div>
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm">
+                    <p class="text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-2">Total Pagado</p>
+                    <p id="metrica-pagado" class="text-2xl font-bold text-on-surface font-mono">—</p>
+                    <p class="text-xs text-secondary mt-1">Pagos completados</p>
+                </div>
+                <div class="bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm">
+                    <p class="text-xs font-mono font-bold text-red-500 uppercase tracking-wider mb-2">Deuda Pendiente</p>
+                    <p id="metrica-deuda" class="text-2xl font-bold text-error font-mono">—</p>
+                    <p id="metrica-deuda-cantidad" class="text-xs text-error mt-1 font-bold">— ventas pendientes</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Historial de transacciones -->
+        <div id="historial-section" class="hidden bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+            <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/30">
+                <h3 class="text-sm font-bold text-on-surface">Historial de Transacciones</h3>
+                <div class="flex gap-2">
+                    <button onclick="filtrarHistorial('todos')" id="filtro-todos" class="text-xs font-mono px-3 py-1.5 bg-primary-container text-white rounded-lg transition">Todos</button>
+                    <button onclick="filtrarHistorial('pagado')" id="filtro-pagado" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary">Pagados</button>
+                    <button onclick="filtrarHistorial('pendiente')" id="filtro-pendiente" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary">Pendientes</button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-surface-container-low/50">
+                        <tr>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Venta ID</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total Venta</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total Pagado</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-historial" class="divide-y divide-outline-variant text-sm"></tbody>
+                </table>
+            </div>
+
+            <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center">
+                <p id="info-historial" class="text-xs font-mono text-secondary">— transacciones</p>
+                <a href="libreria_cobros.html" class="text-xs font-mono text-primary hover:underline flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">payments</span>
+                    Registrar cobro
+                </a>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="border-t border-outline-variant px-6 py-3 text-center">
+        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Módulo Librería &copy; 2026</p>
+    </footer>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+let cacheClientes = [];
+let historialCompleto = [];
+let filtroActivo = 'todos';
+
+function formatearMoneda(valor) {
+    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatearFecha(fechaISO) {
+    if (!fechaISO) return '—';
+    return new Date(fechaISO).toLocaleString('es-GT', {
+        timeZone: 'America/Guatemala', day: '2-digit', month: '2-digit', year: 'numeric'
+    });
+}
+
+function mostrarUsuario() {
+    const nombre = localStorage.getItem('usuario') || 'Usuario';
+    const rango = localStorage.getItem('rango') || '';
+    document.getElementById('nombre-usuario').textContent = nombre;
+    document.getElementById('rango-usuario').textContent = rango;
+    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
+}
+
+async function cargarClientes() {
+    try {
+        const res = await API.get('/libreria/clientes', true);
+        if (res.ok) cacheClientes = await res.json();
+    } catch (err) { console.error('[Clientes] Error al cargar clientes:', err); }
+}
+
+function configurarBuscador() {
+    const input = document.getElementById('buscador-global');
+    const results = document.getElementById('resultados-busqueda');
+    let debounce;
+
+    input.addEventListener('input', (e) => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => {
+            const query = e.target.value.toLowerCase().trim();
+            results.innerHTML = '';
+            if (!query) { results.classList.add('hidden'); return; }
+
+            const filtrados = cacheClientes.filter(c =>
+                (c.nombre_completo || '').toLowerCase().includes(query) || (c.cui || '').includes(query)
+            );
+
+            if (filtrados.length === 0) {
+                results.innerHTML = '<div class="p-4 text-sm text-secondary text-center">Hermano no encontrado.</div>';
+            } else {
+                filtrados.slice(0, 8).forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = 'p-3 cursor-pointer hover:bg-surface-container-low transition';
+                    div.innerHTML = `<p class="text-sm font-bold text-on-surface">${c.nombre_completo}</p><p class="text-xs font-mono text-secondary">CUI: ${c.cui}</p>`;
+                    div.onclick = () => { cargarPerfilCliente(c); input.value = c.nombre_completo; results.classList.add('hidden'); };
+                    results.appendChild(div);
+                });
+            }
+            results.classList.remove('hidden');
+        }, 300);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !results.contains(e.target)) results.classList.add('hidden');
+    });
+}
+
+async function cargarPerfilCliente(cliente) {
+    try {
+        // Mostrar perfil básico
+        document.getElementById('perfil-avatar').textContent = cliente.nombre_completo.charAt(0).toUpperCase();
+        document.getElementById('perfil-nombre').textContent = cliente.nombre_completo;
+        document.getElementById('perfil-cui').textContent = `CUI: ${cliente.cui}`;
+        document.getElementById('perfil-correo').textContent = cliente.correo || '—';
+        document.getElementById('perfil-fecha').textContent = formatearFecha(cliente.created_at);
+
+        // Cargar historial de ventas
+        const res = await API.get(`/libreria/clientes/${cliente.cui}/historial`, true);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        historialCompleto = data.ventas || [];
+
+        // Calcular métricas
+        const totalCompras = historialCompleto.reduce((acc, v) => acc + v.total_venta, 0);
+        const totalPagado = historialCompleto.reduce((acc, v) => acc + v.total_pagado, 0);
+        const totalDeuda = totalCompras - totalPagado;
+        const ventasPendientes = historialCompleto.filter(v => v.estado_pago !== 'pagado').length;
+
+        document.getElementById('metrica-compras').textContent = formatearMoneda(totalCompras);
+        document.getElementById('metrica-compras-cantidad').textContent = `${historialCompleto.length} transacciones`;
+        document.getElementById('metrica-pagado').textContent = formatearMoneda(totalPagado);
+        document.getElementById('metrica-deuda').textContent = formatearMoneda(totalDeuda);
+        document.getElementById('metrica-deuda-cantidad').textContent = `${ventasPendientes} ventas pendientes`;
+
+        // Mostrar secciones
+        document.getElementById('estado-inicial').classList.add('hidden');
+        document.getElementById('perfil-cliente').classList.remove('hidden');
+        document.getElementById('historial-section').classList.remove('hidden');
+
+        filtrarHistorial('todos');
+
+    } catch (err) {
+        console.error('[Clientes] Error al cargar perfil:', err);
+    }
+}
+
+function filtrarHistorial(filtro) {
+    filtroActivo = filtro;
+
+    // Actualizar botones de filtro
+    ['todos', 'pagado', 'pendiente'].forEach(f => {
+        const btn = document.getElementById(`filtro-${f}`);
+        const esActivo = f === filtro;
+        btn.className = `text-xs font-mono px-3 py-1.5 rounded-lg transition ${esActivo ? 'bg-primary-container text-white' : 'border border-outline-variant hover:bg-surface-container text-secondary'}`;
+    });
+
+    const filtrados = filtro === 'todos'
+        ? historialCompleto
+        : filtro === 'pendiente'
+        ? historialCompleto.filter(v => v.estado_pago !== 'pagado')
+        : historialCompleto.filter(v => v.estado_pago === 'pagado');
+
+    document.getElementById('info-historial').textContent = `${filtrados.length} transacciones`;
+    renderizarHistorial(filtrados);
+}
+
+function renderizarHistorial(ventas) {
+    const tbody = document.getElementById('tabla-historial');
+
+    if (ventas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-secondary text-sm">
+            <span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">receipt_long</span>
+            No hay transacciones con ese filtro.
+        </td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = '';
+    ventas.forEach(v => {
+        const badge = v.estado_pago === 'pagado'
+            ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Pagado</span>'
+            : v.estado_pago === 'parcial'
+            ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>'
+            : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>';
+
+        const tr = document.createElement('tr');
+        tr.className = 'table-row transition-colors';
+        tr.innerHTML = `
+            <td class="px-5 py-3 font-mono text-xs text-secondary">${v.id.substring(0,8)}...</td>
+            <td class="px-5 py-3 text-sm">${formatearFecha(v.created_at)}</td>
+            <td class="px-5 py-3 text-sm font-mono font-bold text-right">${formatearMoneda(v.total_venta)}</td>
+            <td class="px-5 py-3 text-sm font-mono text-right">${formatearMoneda(v.total_pagado)}</td>
+            <td class="px-5 py-3 text-center">${badge}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = 'index.html'; return; }
+    mostrarUsuario();
+    document.getElementById('btnCerrarSesion').addEventListener('click', (e) => { e.preventDefault(); localStorage.clear(); window.location.href = 'index.html'; });
+    configurarBuscador();
+    await cargarClientes();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cobros Librería | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary":                  "#755b00",
+                        "primary-container":        "#C9A227",
+                        "on-primary":               "#ffffff",
+                        "surface":                  "#F7F3EC",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low":    "#f6f3ef",
+                        "surface-container":        "#f0edea",
+                        "surface-container-high":   "#ebe8e4",
+                        "outline-variant":          "#d1c5af",
+                        "outline":                  "#7f7663",
+                        "on-surface":               "#1c1c1a",
+                        "on-surface-variant":       "#4d4635",
+                        "secondary":                "#635e4f",
+                        "error":                    "#ba1a1a",
+                    },
+                    fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
+                    spacing: { "sidebar": "260px" }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Sora', sans-serif; background-color: #F7F3EC; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
+        .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1.25rem; border-radius: 0.5rem; font-size: 14px; color: #4d4635; transition: all 0.15s ease; cursor: pointer; text-decoration: none; }
+        .nav-item:hover { background-color: #f6f3ef; color: #755b00; }
+        .nav-item.active { background-color: #f6f3ef; border-left: 3px solid #C9A227; color: #755b00; font-weight: 700; border-radius: 0 0.5rem 0.5rem 0; padding-left: calc(1.25rem - 3px); }
+        .nav-item.danger:hover { color: #ba1a1a; background-color: #fff5f5; }
+        .table-row:hover { background-color: #f6f3ef; }
+        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #d1c5af; border-radius: 10px; }
+        @media (max-width: 768px) { #sidebar { transform: translateX(-100%); transition: transform 0.3s ease; } #sidebar.open { transform: translateX(0); } #main-content { margin-left: 0 !important; } }
+    </style>
+</head>
+<body class="text-on-surface">
+
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside id="sidebar" class="fixed left-0 top-0 h-full w-sidebar bg-surface-container-lowest border-r border-outline-variant flex flex-col z-40">
+    <div class="px-5 py-5 border-b border-outline-variant">
+        <h1 class="text-lg font-bold text-primary leading-none">Palabra Miel Mixco</h1>
+        <p class="text-xs text-secondary mt-1 font-mono uppercase tracking-wider">Módulo Librería</p>
+    </div>
+    <nav class="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
+        <a href="libreria_dashboard.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">dashboard</span>Dashboard</a>
+        <a href="libreria_inventario.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">inventory_2</span>Inventario</a>
+        <a href="libreria_ventas.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">point_of_sale</span>Ventas</a>
+        <a href="libreria_cobros.html" class="nav-item active"><span class="material-symbols-outlined text-[20px]">payments</span>Cobros</a>
+        <a href="libreria_clientes.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">group</span>Clientes</a>
+    </nav>
+    <div class="px-2 py-3 border-t border-outline-variant space-y-0.5">
+        <a href="#" class="nav-item"><span class="material-symbols-outlined text-[20px]">settings</span>Configuración</a>
+        <a href="index.html" id="btnCerrarSesion" class="nav-item danger"><span class="material-symbols-outlined text-[20px]">logout</span>Cerrar Sesión</a>
+    </div>
+</aside>
+
+<!-- CONTENIDO PRINCIPAL -->
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary"><span class="material-symbols-outlined">menu</span></button>
+            <div>
+                <h2 class="text-base font-bold text-on-surface leading-none">Control de Cobros</h2>
+                <p class="text-xs text-secondary mt-0.5">Librería · Créditos y abonos</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block">
+                <p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p>
+                <p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p>
+            </div>
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm">
+                <span id="avatar-inicial">?</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 space-y-6">
+
+        <!-- Búsqueda de cliente -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div class="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm">
+                <p class="text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-3">Buscar Hermano / Cliente</p>
+                <div class="relative" id="contenedor-busqueda">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+                    <input type="text" id="buscar-cliente" autocomplete="off" placeholder="Buscar por CUI o nombre..."
+                        class="w-full pl-9 pr-4 py-2.5 text-sm bg-surface-container-low border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                    <div id="resultados-cliente" class="hidden absolute z-20 w-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-outline-variant"></div>
+                </div>
+            </div>
+
+            <!-- Tarjeta del cliente -->
+            <div id="tarjeta-cliente" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm flex items-center gap-4 opacity-40">
+                <div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                    <span id="cliente-avatar">?</span>
+                </div>
+                <div>
+                    <p id="cliente-nombre" class="text-base font-bold text-on-surface">Seleccione un cliente</p>
+                    <p id="cliente-cui-display" class="text-xs font-mono text-secondary mt-0.5">CUI: —</p>
+                    <p id="cliente-deuda" class="text-sm font-bold text-error mt-1">Deuda total: —</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Detalle de deuda -->
+        <section class="grid grid-cols-1 lg:grid-cols-4 gap-5" id="seccion-deuda" style="display:none;">
+
+            <!-- Tabla de ventas pendientes -->
+            <div class="lg:col-span-3 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+                <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/30">
+                    <h3 class="text-sm font-bold text-on-surface">Ventas Pendientes de Pago</h3>
+                    <span class="px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full uppercase">Créditos activos</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-surface-container-low/50">
+                            <tr>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Venta ID</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Pagado</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Pendiente</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-deudas" class="divide-y divide-outline-variant text-sm"></tbody>
+                        <tfoot>
+                            <tr class="bg-surface-container-low/30">
+                                <td colspan="4" class="px-5 py-3 text-sm font-bold text-right text-on-surface">Total Pendiente:</td>
+                                <td class="px-5 py-3 text-sm font-bold text-right font-mono text-primary" id="total-pendiente">Q0.00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Panel de pago -->
+            <div class="space-y-4">
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm border-t-4 border-t-primary-container">
+                    <h3 class="text-sm font-bold text-on-surface mb-4">Registrar Abono</h3>
+
+                    <div class="space-y-4">
+                        <div class="bg-surface-container rounded-lg p-3">
+                            <p class="text-xs font-mono font-bold text-secondary uppercase mb-1">Total Pendiente</p>
+                            <p id="monto-pendiente-display" class="text-2xl font-bold text-primary font-mono">Q0.00</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Tipo de Abono</label>
+                            <div class="flex rounded-lg border border-outline-variant overflow-hidden">
+                                <button onclick="seleccionarTipoAbono('total')" id="btn-total"
+                                    class="flex-1 py-2 text-xs font-bold bg-primary-container text-white transition">
+                                    Pago Total
+                                </button>
+                                <button onclick="seleccionarTipoAbono('parcial')" id="btn-parcial"
+                                    class="flex-1 py-2 text-xs font-bold text-secondary transition">
+                                    Pago Parcial
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="campo-monto-parcial" class="hidden">
+                            <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Monto a Abonar (Q)</label>
+                            <input type="number" id="monto-abono" min="0.01" step="0.01" placeholder="0.00"
+                                class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary-container transition font-mono">
+                        </div>
+
+                        <div id="msg-cobro" class="hidden text-xs font-bold px-3 py-2 rounded-lg"></div>
+
+                        <button id="btn-registrar-cobro" onclick="registrarCobro()"
+                            class="w-full py-3 bg-primary-container text-white font-bold rounded-lg hover:opacity-90 transition shadow-sm flex items-center justify-center gap-2 text-sm">
+                            <span class="material-symbols-outlined text-[18px]">point_of_sale</span>
+                            Registrar Cobro
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                    <div class="flex items-start gap-2">
+                        <span class="material-symbols-outlined text-[18px] text-primary mt-0.5">info</span>
+                        <p class="text-xs text-secondary">Los pagos parciales se aplican a las ventas más antiguas primero.</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Estado vacío inicial -->
+        <div id="estado-vacio" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-12 text-center">
+            <span class="material-symbols-outlined text-[48px] text-outline-variant block mb-3">manage_search</span>
+            <p class="text-base font-bold text-secondary">Busca un hermano para ver sus créditos pendientes</p>
+            <p class="text-sm text-secondary mt-1">Ingresa el CUI o nombre en el buscador de arriba</p>
+        </div>
+
+    </main>
+
+    <footer class="border-t border-outline-variant px-6 py-3 text-center">
+        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Módulo Librería &copy; 2026</p>
+    </footer>
+</div>
+
+<!-- MODAL ÉXITO -->
+<div id="modal-exito" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-surface-container-lowest rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
+        <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+            <span class="material-symbols-outlined text-[36px] text-green-600" style="font-variation-settings:'FILL' 1">check_circle</span>
+        </div>
+        <h3 class="text-base font-bold text-on-surface mb-2">Cobro Registrado</h3>
+        <p id="msg-exito-cobro" class="text-sm text-secondary mb-5">Abono aplicado correctamente.</p>
+        <button onclick="cerrarModalExito()" class="w-full py-2.5 bg-primary-container text-white font-bold rounded-lg hover:opacity-90 transition text-sm">
+            Entendido
+        </button>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+let cacheClientes = [];
+let ventasPendientes = [];
+let clienteSeleccionado = null;
+let tipoAbono = 'total';
+
+function formatearMoneda(valor) {
+    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatearFecha(fechaISO) {
+    if (!fechaISO) return '—';
+    return new Date(fechaISO).toLocaleString('es-GT', {
+        timeZone: 'America/Guatemala', day: '2-digit', month: '2-digit', year: 'numeric'
+    });
+}
+
+function mostrarUsuario() {
+    const nombre = localStorage.getItem('usuario') || 'Usuario';
+    const rango = localStorage.getItem('rango') || '';
+    document.getElementById('nombre-usuario').textContent = nombre;
+    document.getElementById('rango-usuario').textContent = rango;
+    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
+}
+
+async function cargarClientes() {
+    try {
+        const res = await API.get('/libreria/clientes', true);
+        if (res.ok) cacheClientes = await res.json();
+    } catch (err) { console.error('[Cobros] Error al cargar clientes:', err); }
+}
+
+function configurarBuscador() {
+    const input = document.getElementById('buscar-cliente');
+    const results = document.getElementById('resultados-cliente');
+
+    input.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        results.innerHTML = '';
+        if (!query) { results.classList.add('hidden'); return; }
+
+        const filtrados = cacheClientes.filter(c =>
+            (c.nombre_completo || '').toLowerCase().includes(query) || (c.cui || '').includes(query)
+        );
+
+        if (filtrados.length === 0) {
+            results.innerHTML = '<div class="p-3 text-sm text-secondary text-center">Hermano no encontrado.</div>';
+        } else {
+            filtrados.slice(0, 8).forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'p-3 cursor-pointer hover:bg-surface-container-low transition text-sm';
+                div.innerHTML = `<p class="font-bold text-on-surface">${c.nombre_completo}</p><p class="text-xs font-mono text-secondary">CUI: ${c.cui}</p>`;
+                div.onclick = () => seleccionarCliente(c);
+                results.appendChild(div);
+            });
+        }
+        results.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !results.contains(e.target)) results.classList.add('hidden');
+    });
+}
+
+async function seleccionarCliente(cliente) {
+    clienteSeleccionado = cliente;
+    document.getElementById('buscar-cliente').value = cliente.nombre_completo;
+    document.getElementById('resultados-cliente').classList.add('hidden');
+
+    document.getElementById('cliente-avatar').textContent = cliente.nombre_completo.charAt(0).toUpperCase();
+    document.getElementById('cliente-nombre').textContent = cliente.nombre_completo;
+    document.getElementById('cliente-cui-display').textContent = `CUI: ${cliente.cui}`;
+    document.getElementById('tarjeta-cliente').classList.remove('opacity-40');
+
+    await cargarDeudas(cliente.cui);
+}
+
+async function cargarDeudas(cui) {
+    try {
+        const res = await API.get(`/libreria/cobros/pendientes?cui=${cui}`, true);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        ventasPendientes = data.ventas || [];
+
+        const totalPendiente = ventasPendientes.reduce((acc, v) => acc + (v.total_venta - v.total_pagado), 0);
+        document.getElementById('cliente-deuda').textContent = `Deuda total: ${formatearMoneda(totalPendiente)}`;
+        document.getElementById('total-pendiente').textContent = formatearMoneda(totalPendiente);
+        document.getElementById('monto-pendiente-display').textContent = formatearMoneda(totalPendiente);
+
+        document.getElementById('estado-vacio').style.display = 'none';
+        document.getElementById('seccion-deuda').style.display = 'grid';
+
+        renderizarDeudas();
+
+    } catch (err) {
+        console.error('[Cobros] Error al cargar deudas:', err);
+    }
+}
+
+function renderizarDeudas() {
+    const tbody = document.getElementById('tabla-deudas');
+
+    if (ventasPendientes.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-secondary text-sm">
+            <span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">check_circle</span>
+            Este hermano no tiene deudas pendientes.
+        </td></tr>`;
+        document.getElementById('btn-registrar-cobro').disabled = true;
+        return;
+    }
+
+    tbody.innerHTML = '';
+    ventasPendientes.forEach(v => {
+        const pendiente = v.total_venta - v.total_pagado;
+        const badgeEstado = v.estado_pago === 'parcial'
+            ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>'
+            : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>';
+
+        const tr = document.createElement('tr');
+        tr.className = 'table-row transition-colors';
+        tr.innerHTML = `
+            <td class="px-5 py-3 font-mono text-xs text-secondary">${v.id.substring(0,8)}...</td>
+            <td class="px-5 py-3 text-sm">${formatearFecha(v.created_at)}</td>
+            <td class="px-5 py-3 text-sm font-mono text-right font-bold">${formatearMoneda(v.total_venta)}</td>
+            <td class="px-5 py-3 text-sm font-mono text-right">${formatearMoneda(v.total_pagado)}</td>
+            <td class="px-5 py-3 text-sm font-mono text-right font-bold text-error">${formatearMoneda(pendiente)}</td>
+            <td class="px-5 py-3 text-center">${badgeEstado}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function seleccionarTipoAbono(tipo) {
+    tipoAbono = tipo;
+    document.getElementById('btn-total').className = `flex-1 py-2 text-xs font-bold transition ${tipo === 'total' ? 'bg-primary-container text-white' : 'text-secondary'}`;
+    document.getElementById('btn-parcial').className = `flex-1 py-2 text-xs font-bold transition ${tipo === 'parcial' ? 'bg-primary-container text-white' : 'text-secondary'}`;
+    document.getElementById('campo-monto-parcial').classList.toggle('hidden', tipo === 'total');
+}
+
+function mostrarMsgCobro(texto, tipo) {
+    const msg = document.getElementById('msg-cobro');
+    msg.textContent = texto;
+    msg.className = `text-xs font-bold px-3 py-2 rounded-lg block ${tipo === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`;
+    msg.classList.remove('hidden');
+}
+
+async function registrarCobro() {
+    if (!clienteSeleccionado || ventasPendientes.length === 0) return;
+
+    const totalPendiente = ventasPendientes.reduce((acc, v) => acc + (v.total_venta - v.total_pagado), 0);
+    let montoAbono = tipoAbono === 'total' ? totalPendiente : parseFloat(document.getElementById('monto-abono').value);
+
+    if (isNaN(montoAbono) || montoAbono <= 0) {
+        mostrarMsgCobro('Ingresa un monto válido mayor a Q0.00.', 'error');
+        return;
+    }
+
+    if (montoAbono > totalPendiente) {
+        mostrarMsgCobro(`El monto no puede superar la deuda total de ${formatearMoneda(totalPendiente)}.`, 'error');
+        return;
+    }
+
+    const btn = document.getElementById('btn-registrar-cobro');
+    btn.disabled = true;
+    btn.textContent = 'Procesando...';
+
+    try {
+        // Usar endpoint de distribución que aplica el abono a múltiples ventas
+        const payload = {
+            comprador_cui: clienteSeleccionado.cui,
+            monto_abonado: montoAbono,
+            metodo_pago_id: 1
+        };
+
+        const res = await API.post('/libreria/pagos/distribuir', payload, true);
+        const data = await res.json();
+
+        if (res.ok) {
+            const ventasActualizadas = data.ventas_actualizadas?.length || 0;
+            document.getElementById('msg-exito-cobro').textContent =
+                `Abono de ${formatearMoneda(montoAbono)} aplicado correctamente en ${ventasActualizadas} venta(s).`;
+            document.getElementById('modal-exito').classList.remove('hidden');
+            document.getElementById('modal-exito').classList.add('flex');
+            await cargarDeudas(clienteSeleccionado.cui);
+        } else {
+            const detalle = API.mensajeError(data);
+            mostrarMsgCobro(detalle, 'error');
+        }
+    } catch (err) {
+        mostrarMsgCobro('Error de conexión con el servidor.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">point_of_sale</span> Registrar Cobro';
+    }
+}
+
+function cerrarModalExito() {
+    document.getElementById('modal-exito').classList.add('hidden');
+    document.getElementById('modal-exito').classList.remove('flex');
+    document.getElementById('msg-cobro').classList.add('hidden');
+    document.getElementById('monto-abono').value = '';
+}
+
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = 'index.html'; return; }
+    mostrarUsuario();
+    document.getElementById('btnCerrarSesion').addEventListener('click', (e) => { e.preventDefault(); localStorage.clear(); window.location.href = 'index.html'; });
+    configurarBuscador();
+    seleccionarTipoAbono('total');
+    await cargarClientes();
+});
+</script>
+</body>
+</html>

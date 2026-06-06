@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventas Librería | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary":                  "#755b00",
+                        "primary-container":        "#C9A227",
+                        "on-primary":               "#ffffff",
+                        "on-primary-container":     "#4b3a00",
+                        "surface":                  "#F7F3EC",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low":    "#f6f3ef",
+                        "surface-container":        "#f0edea",
+                        "surface-container-high":   "#ebe8e4",
+                        "outline-variant":          "#d1c5af",
+                        "outline":                  "#7f7663",
+                        "on-surface":               "#1c1c1a",
+                        "on-surface-variant":       "#4d4635",
+                        "secondary":                "#635e4f",
+                        "error":                    "#ba1a1a",
+                    },
+                    fontFamily: {
+                        "sora": ["Sora", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"],
+                    },
+                    spacing: {
+                        "sidebar": "260px",
+                        "cart":    "360px",
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Sora', sans-serif; background-color: #F7F3EC; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .nav-item {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.6rem 1.25rem; border-radius: 0.5rem;
+            font-size: 14px; color: #4d4635;
+            transition: all 0.15s ease; cursor: pointer; text-decoration: none;
+        }
+        .nav-item:hover { background-color: #f6f3ef; color: #755b00; }
+        .nav-item.active {
+            background-color: #f6f3ef; border-left: 3px solid #C9A227;
+            color: #755b00; font-weight: 700;
+            border-radius: 0 0.5rem 0.5rem 0;
+            padding-left: calc(1.25rem - 3px);
+        }
+        .nav-item.danger:hover { color: #ba1a1a; background-color: #fff5f5; }
+        .table-row:hover { background-color: #f6f3ef; }
+        .cart-item { transition: border-color 0.15s ease; }
+        .cart-item:hover { border-color: #C9A227; }
+        .tipo-pago-btn { transition: all 0.15s ease; }
+        .tipo-pago-btn.active {
+            background-color: #C9A227;
+            color: #ffffff;
+            font-weight: 700;
+        }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-thumb { background: #d1c5af; border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        @media (max-width: 768px) {
+            #sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
+            #sidebar.open { transform: translateX(0); }
+            #main-content { margin-left: 0 !important; }
+            #panel-carrito { display: none; }
+            #panel-carrito.show { display: flex; }
+        }
+    </style>
+</head>
+<body class="text-on-surface">
+
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside id="sidebar" class="fixed left-0 top-0 h-full w-sidebar bg-surface-container-lowest border-r border-outline-variant flex flex-col z-40">
+    <div class="px-5 py-5 border-b border-outline-variant">
+        <h1 class="text-lg font-bold text-primary leading-none">Palabra Miel Mixco</h1>
+        <p class="text-xs text-secondary mt-1 font-mono uppercase tracking-wider">Módulo Librería</p>
+    </div>
+    <nav class="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
+        <a href="libreria_dashboard.html" class="nav-item">
+            <span class="material-symbols-outlined text-[20px]">dashboard</span>Dashboard
+        </a>
+        <a href="libreria_inventario.html" class="nav-item">
+            <span class="material-symbols-outlined text-[20px]">inventory_2</span>Inventario
+        </a>
+        <a href="libreria_ventas.html" class="nav-item active">
+            <span class="material-symbols-outlined text-[20px]">point_of_sale</span>Ventas
+        </a>
+        <a href="libreria_cobros.html" class="nav-item">
+            <span class="material-symbols-outlined text-[20px]">payments</span>Cobros
+        </a>
+        <a href="libreria_clientes.html" class="nav-item">
+            <span class="material-symbols-outlined text-[20px]">group</span>Clientes
+        </a>
+    </nav>
+    <div class="px-2 py-3 border-t border-outline-variant space-y-0.5">
+        <a href="#" class="nav-item">
+            <span class="material-symbols-outlined text-[20px]">settings</span>Configuración
+        </a>
+        <a href="index.html" id="btnCerrarSesion" class="nav-item danger">
+            <span class="material-symbols-outlined text-[20px]">logout</span>Cerrar Sesión
+        </a>
+    </div>
+</aside>
+
+<!-- CONTENIDO PRINCIPAL -->
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+
+    <!-- TOPBAR -->
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            <div>
+                <h2 class="text-base font-bold text-on-surface leading-none">Punto de Venta</h2>
+                <p class="text-xs text-secondary mt-0.5">Librería · Nueva transacción</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <!-- Botón carrito móvil -->
+            <button onclick="toggleCarrito()" class="md:hidden relative p-2 rounded-lg hover:bg-surface-container text-secondary">
+                <span class="material-symbols-outlined">shopping_cart</span>
+                <span id="badge-carrito" class="hidden absolute top-1 right-1 w-4 h-4 bg-primary-container text-white text-xs font-bold rounded-full flex items-center justify-center">0</span>
+            </button>
+            <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+                <div class="text-right hidden sm:block">
+                    <p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p>
+                    <p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p>
+                </div>
+                <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm">
+                    <span id="avatar-inicial">?</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- LAYOUT POS -->
+    <div class="flex flex-1 overflow-hidden" style="height: calc(100vh - 64px);">
+
+        <!-- COLUMNA IZQUIERDA: búsqueda y productos -->
+        <main class="flex-1 overflow-y-auto p-5 space-y-5">
+
+            <!-- Selección de cliente -->
+            <section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm">
+                <h3 class="text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-3">Hermano / Cliente</h3>
+                <div class="flex flex-col md:flex-row gap-4">
+
+                    <!-- Buscador de cliente -->
+                    <div class="flex-1 relative" id="contenedor-buscador-cliente">
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+                            <input type="text" id="pos-cliente-search" autocomplete="off"
+                                placeholder="Buscar por CUI o nombre..."
+                                class="w-full pl-9 pr-4 py-2.5 text-sm bg-surface-container-low border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                        </div>
+                        <div id="pos-cliente-results" class="hidden absolute z-20 w-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-outline-variant"></div>
+                    </div>
+
+                    <!-- Tarjeta del cliente seleccionado -->
+                    <div id="pos-cliente-card" class="hidden flex-1 bg-surface-container-low border border-outline-variant rounded-lg px-4 py-3 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                            <span id="cliente-avatar">?</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p id="card-cliente-nombre" class="text-sm font-bold text-on-surface truncate"></p>
+                            <p id="card-cliente-cui" class="text-xs font-mono text-secondary"></p>
+                        </div>
+                        <button onclick="limpiarCliente()" class="text-secondary hover:text-error transition-colors flex-shrink-0">
+                            <span class="material-symbols-outlined text-[20px]">close</span>
+                        </button>
+                    </div>
+                    <input type="hidden" id="pos-cui-hidden">
+                </div>
+            </section>
+
+            <!-- Búsqueda de productos -->
+            <section>
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Catálogo de Productos</h3>
+                    <span id="contador-resultados" class="text-xs font-mono text-secondary"></span>
+                </div>
+                <div class="relative mb-3">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+                    <input type="text" id="pos-producto-search" autocomplete="off"
+                        placeholder="Buscar producto por nombre..."
+                        class="w-full pl-9 pr-4 py-2.5 text-sm bg-surface-container-lowest border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                </div>
+
+                <!-- Tabla de productos -->
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-surface-container-low/50">
+                                <tr>
+                                    <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Producto</th>
+                                    <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Tipo</th>
+                                    <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Stock</th>
+                                    <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Precio</th>
+                                    <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Agregar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-productos-pos" class="divide-y divide-outline-variant text-sm">
+                                <tr>
+                                    <td colspan="5" class="text-center py-8 text-secondary">
+                                        <span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">hourglass_empty</span>
+                                        Cargando productos...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- PANEL CARRITO (derecha) -->
+        <aside id="panel-carrito" class="w-cart hidden md:flex flex-col bg-surface-container-lowest border-l border-outline-variant shadow-sm">
+
+            <div class="px-5 py-4 border-b border-outline-variant">
+                <h3 class="text-sm font-bold text-on-surface flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[20px] text-primary">shopping_cart</span>
+                    Resumen de Venta
+                </h3>
+            </div>
+
+            <!-- Items del carrito -->
+            <div id="carrito-items" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <div id="carrito-vacio" class="h-full flex flex-col items-center justify-center text-center py-10">
+                    <span class="material-symbols-outlined text-[48px] text-outline-variant mb-3">shopping_cart</span>
+                    <p class="text-sm font-bold text-secondary">Carrito vacío</p>
+                    <p class="text-xs text-secondary mt-1">Agrega productos desde el catálogo</p>
+                </div>
+            </div>
+
+            <!-- Footer del carrito -->
+            <div class="p-5 border-t border-outline-variant bg-surface-container-low/30 space-y-4">
+
+                <!-- Tipo de pago -->
+                <div>
+                    <p class="text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-2">Tipo de Pago</p>
+                    <div class="flex rounded-lg border border-outline-variant overflow-hidden">
+                        <button onclick="seleccionarTipoPago('contado')" id="btn-contado"
+                            class="tipo-pago-btn active flex-1 py-2 text-xs font-bold transition">
+                            Efectivo
+                        </button>
+                        <button onclick="seleccionarTipoPago('credito')" id="btn-credito"
+                            class="tipo-pago-btn flex-1 py-2 text-xs font-bold text-secondary transition">
+                            Crédito
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Totales -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between text-sm text-secondary">
+                        <span>Subtotal</span>
+                        <span id="subtotal-display" class="font-mono">Q0.00</span>
+                    </div>
+                    <div class="flex justify-between text-base font-bold text-on-surface border-t border-outline-variant pt-2 mt-2">
+                        <span>Total</span>
+                        <span id="total-display" class="font-mono text-primary">Q0.00</span>
+                    </div>
+                </div>
+
+                <!-- Mensaje de feedback -->
+                <div id="msg-venta" class="hidden text-xs font-bold px-3 py-2 rounded-lg"></div>
+
+                <!-- Botón procesar -->
+                <button id="btn-procesar" onclick="procesarVenta()"
+                    class="w-full py-3 bg-primary-container text-white font-bold rounded-lg hover:opacity-90 transition shadow-sm flex items-center justify-center gap-2 text-sm">
+                    <span class="material-symbols-outlined text-[18px]">point_of_sale</span>
+                    Procesar Venta
+                </button>
+
+            </div>
+        </aside>
+
+    </div>
+</div>
+
+<!-- MODAL ÉXITO -->
+<div id="modal-exito" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-surface-container-lowest rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
+        <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+            <span class="material-symbols-outlined text-[36px] text-green-600" style="font-variation-settings:'FILL' 1">check_circle</span>
+        </div>
+        <h3 class="text-base font-bold text-on-surface mb-2">Venta Registrada</h3>
+        <p id="msg-exito-detalle" class="text-sm text-secondary mb-5">Transacción completada exitosamente.</p>
+        <button onclick="cerrarModalExito()" class="w-full py-2.5 bg-primary-container text-white font-bold rounded-lg hover:opacity-90 transition text-sm">
+            Nueva Venta
+        </button>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+/**
+ * @file libreria_ventas.js (inline)
+ * @description Lógica del POS del módulo de librería.
+ */
+
+let cacheProductos = [];
+let cacheClientes = [];
+let carrito = [];
+let tipoPagoActual = 'contado';
+
+/**
+ * Formatea un valor numérico como moneda en Quetzales.
+ * @param {number} valor
+ * @returns {string}
+ */
+function formatearMoneda(valor) {
+    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
+}
+
+/**
+ * Muestra los datos del usuario en el topbar.
+ */
+function mostrarUsuario() {
+    const nombre = localStorage.getItem('usuario') || 'Usuario';
+    const rango = localStorage.getItem('rango') || '';
+    document.getElementById('nombre-usuario').textContent = nombre;
+    document.getElementById('rango-usuario').textContent = rango;
+    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
+}
+
+/**
+ * Carga el inventario disponible desde la API.
+ */
+async function cargarProductos() {
+    try {
+        const res = await API.get('/libreria/productos', true);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        cacheProductos = await res.json();
+        renderizarProductos(cacheProductos);
+    } catch (err) {
+        console.error('[POS] Error al cargar productos:', err);
+        document.getElementById('tabla-productos-pos').innerHTML = `
+            <tr><td colspan="5" class="text-center py-8 text-error font-bold text-sm">
+                Error al cargar el catálogo.
+            </td></tr>`;
+    }
+}
+
+/**
+ * Carga la lista de clientes desde la API.
+ */
+async function cargarClientes() {
+    try {
+        const res = await API.get('/libreria/clientes', true);
+        if (res.ok) cacheClientes = await res.json();
+    } catch (err) {
+        console.error('[POS] Error al cargar clientes:', err);
+    }
+}
+
+/**
+ * Renderiza la tabla de productos del POS.
+ * @param {Array} productos
+ */
+function renderizarProductos(productos) {
+    const tbody = document.getElementById('tabla-productos-pos');
+    document.getElementById('contador-resultados').textContent = `${productos.length} productos`;
+
+    if (productos.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-secondary text-sm">
+            <span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">search_off</span>
+            No se encontraron productos.
+        </td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = '';
+    productos.forEach(p => {
+        const sinStock = p.stock <= 0;
+        const tr = document.createElement('tr');
+        tr.className = `table-row transition-colors ${sinStock ? 'opacity-50' : ''}`;
+        tr.innerHTML = `
+            <td class="px-4 py-3 font-bold text-on-surface">${p.nombre}</td>
+            <td class="px-4 py-3">
+                <span class="px-2 py-0.5 bg-surface-container text-secondary rounded text-xs font-mono">${p.tipo_producto}</span>
+            </td>
+            <td class="px-4 py-3 text-center font-mono font-bold ${p.stock < 5 ? 'text-error' : 'text-on-surface'}">${p.stock}</td>
+            <td class="px-4 py-3 text-right font-mono font-bold">${formatearMoneda(p.precio)}</td>
+            <td class="px-4 py-3 text-center">
+                <button onclick="agregarAlCarrito('${p.id}')"
+                    ${sinStock ? 'disabled' : ''}
+                    class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white hover:border-primary-container transition disabled:opacity-40 disabled:cursor-not-allowed">
+                    <span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+/**
+ * Configura el buscador de clientes con resultados predictivos.
+ */
+function configurarBuscadorClientes() {
+    const input = document.getElementById('pos-cliente-search');
+    const results = document.getElementById('pos-cliente-results');
+
+    input.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        results.innerHTML = '';
+
+        if (!query) { results.classList.add('hidden'); return; }
+
+        const filtrados = cacheClientes.filter(c =>
+            (c.nombre_completo || '').toLowerCase().includes(query) ||
+            (c.cui || '').includes(query)
+        );
+
+        if (filtrados.length === 0) {
+            results.innerHTML = '<div class="p-3 text-sm text-secondary text-center">Hermano no encontrado.</div>';
+        } else {
+            filtrados.slice(0, 8).forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'p-3 cursor-pointer hover:bg-surface-container-low transition text-sm';
+                div.innerHTML = `
+                    <p class="font-bold text-on-surface">${c.nombre_completo}</p>
+                    <p class="text-xs font-mono text-secondary">CUI: ${c.cui}</p>
+                `;
+                div.onclick = () => seleccionarCliente(c.cui, c.nombre_completo);
+                results.appendChild(div);
+            });
+        }
+        results.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !results.contains(e.target)) {
+            results.classList.add('hidden');
+        }
+    });
+}
+
+/**
+ * Selecciona un cliente y muestra su tarjeta de confirmación.
+ * @param {string} cui
+ * @param {string} nombre
+ */
+function seleccionarCliente(cui, nombre) {
+    document.getElementById('contenedor-buscador-cliente').classList.add('hidden');
+    document.getElementById('pos-cui-hidden').value = cui;
+    document.getElementById('card-cliente-nombre').textContent = nombre;
+    document.getElementById('card-cliente-cui').textContent = `CUI: ${cui}`;
+    document.getElementById('cliente-avatar').textContent = nombre.charAt(0).toUpperCase();
+    document.getElementById('pos-cliente-card').classList.remove('hidden');
+    document.getElementById('pos-cliente-results').classList.add('hidden');
+}
+
+/**
+ * Limpia el cliente seleccionado y vuelve al buscador.
+ */
+function limpiarCliente() {
+    document.getElementById('pos-cui-hidden').value = '';
+    document.getElementById('pos-cliente-card').classList.add('hidden');
+    document.getElementById('contenedor-buscador-cliente').classList.remove('hidden');
+    document.getElementById('pos-cliente-search').value = '';
+    document.getElementById('pos-cliente-search').focus();
+}
+
+/**
+ * Configura el buscador de productos en la tabla del POS.
+ */
+function configurarBuscadorProductos() {
+    let debounce;
+    document.getElementById('pos-producto-search').addEventListener('input', (e) => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => {
+            const query = e.target.value.toLowerCase().trim();
+            const filtrados = query
+                ? cacheProductos.filter(p => p.nombre.toLowerCase().includes(query))
+                : cacheProductos;
+            renderizarProductos(filtrados);
+        }, 200);
+    });
+}
+
+/**
+ * Agrega un producto al carrito o incrementa su cantidad si ya existe.
+ * @param {string} productoId
+ */
+function agregarAlCarrito(productoId) {
+    const producto = cacheProductos.find(p => p.id === productoId);
+    if (!producto) return;
+
+    const existente = carrito.find(item => item.id === productoId);
+    if (existente) {
+        if (existente.cantidad >= producto.stock) {
+            mostrarMsgVenta('Stock insuficiente para agregar más unidades.', 'error');
+            return;
+        }
+        existente.cantidad++;
+    } else {
+        carrito.push({ id: productoId, nombre: producto.nombre, precio: producto.precio, cantidad: 1, stock: producto.stock });
+    }
+
+    renderizarCarrito();
+    ocultarMsgVenta();
+}
+
+/**
+ * Renderiza los items del carrito y actualiza los totales.
+ */
+function renderizarCarrito() {
+    const container = document.getElementById('carrito-items');
+    const vacio = document.getElementById('carrito-vacio');
+    const badge = document.getElementById('badge-carrito');
+
+    const totalItems = carrito.reduce((acc, i) => acc + i.cantidad, 0);
+    badge.textContent = totalItems;
+    badge.classList.toggle('hidden', totalItems === 0);
+
+    if (carrito.length === 0) {
+        container.innerHTML = '';
+        container.appendChild(vacio);
+        vacio.classList.remove('hidden');
+        document.getElementById('subtotal-display').textContent = 'Q0.00';
+        document.getElementById('total-display').textContent = 'Q0.00';
+        return;
+    }
+
+    vacio.classList.add('hidden');
+
+    // Limpiar items anteriores (excepto el div vacío)
+    Array.from(container.children).forEach(child => {
+        if (child.id !== 'carrito-vacio') child.remove();
+    });
+
+    let total = 0;
+    carrito.forEach((item, idx) => {
+        const subtotal = item.precio * item.cantidad;
+        total += subtotal;
+
+        const div = document.createElement('div');
+        div.className = 'cart-item bg-surface border border-outline-variant rounded-lg p-3 group';
+        div.innerHTML = `
+            <div class="flex justify-between items-start mb-2">
+                <p class="text-sm font-bold text-on-surface leading-tight flex-1 pr-2">${item.nombre}</p>
+                <button onclick="eliminarDelCarrito(${idx})" class="text-secondary hover:text-error transition flex-shrink-0 opacity-0 group-hover:opacity-100">
+                    <span class="material-symbols-outlined text-[16px]">delete</span>
+                </button>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center border border-outline-variant rounded-lg overflow-hidden">
+                    <button onclick="cambiarCantidad(${idx}, -1)" class="px-2 py-1 text-secondary hover:bg-surface-container hover:text-primary transition text-sm font-bold">−</button>
+                    <span class="px-3 py-1 text-sm font-mono font-bold border-x border-outline-variant">${item.cantidad}</span>
+                    <button onclick="cambiarCantidad(${idx}, 1)" class="px-2 py-1 text-secondary hover:bg-surface-container hover:text-primary transition text-sm font-bold">+</button>
+                </div>
+                <span class="text-sm font-bold font-mono text-primary">${formatearMoneda(subtotal)}</span>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+
+    document.getElementById('subtotal-display').textContent = formatearMoneda(total);
+    document.getElementById('total-display').textContent = formatearMoneda(total);
+}
+
+/**
+ * Cambia la cantidad de un item del carrito.
+ * @param {number} idx - Índice del item
+ * @param {number} delta - +1 o -1
+ */
+function cambiarCantidad(idx, delta) {
+    carrito[idx].cantidad += delta;
+    if (carrito[idx].cantidad <= 0) {
+        carrito.splice(idx, 1);
+    } else if (carrito[idx].cantidad > carrito[idx].stock) {
+        carrito[idx].cantidad = carrito[idx].stock;
+        mostrarMsgVenta('Stock máximo alcanzado.', 'error');
+    }
+    renderizarCarrito();
+}
+
+/**
+ * Elimina un item del carrito.
+ * @param {number} idx
+ */
+function eliminarDelCarrito(idx) {
+    carrito.splice(idx, 1);
+    renderizarCarrito();
+}
+
+/**
+ * Selecciona el tipo de pago y actualiza los botones.
+ * @param {string} tipo - 'contado' o 'credito'
+ */
+function seleccionarTipoPago(tipo) {
+    tipoPagoActual = tipo;
+    document.getElementById('btn-contado').classList.toggle('active', tipo === 'contado');
+    document.getElementById('btn-credito').classList.toggle('active', tipo === 'credito');
+    document.getElementById('btn-contado').classList.toggle('text-secondary', tipo !== 'contado');
+    document.getElementById('btn-credito').classList.toggle('text-secondary', tipo !== 'credito');
+}
+
+/**
+ * Muestra un mensaje de feedback en el panel del carrito.
+ * @param {string} texto
+ * @param {string} tipo - 'error' o 'exito'
+ */
+function mostrarMsgVenta(texto, tipo) {
+    const msg = document.getElementById('msg-venta');
+    msg.textContent = texto;
+    msg.className = `text-xs font-bold px-3 py-2 rounded-lg block ${
+        tipo === 'error'
+            ? 'bg-red-50 text-red-700 border border-red-200'
+            : 'bg-green-50 text-green-700 border border-green-200'
+    }`;
+    msg.classList.remove('hidden');
+    if (tipo === 'exito') setTimeout(ocultarMsgVenta, 3000);
+}
+
+/**
+ * Oculta el mensaje de feedback.
+ */
+function ocultarMsgVenta() {
+    document.getElementById('msg-venta').classList.add('hidden');
+}
+
+/**
+ * Procesa la venta enviando cada item del carrito al backend.
+ */
+async function procesarVenta() {
+    const compradorCui = document.getElementById('pos-cui-hidden').value;
+
+    if (!compradorCui) {
+        mostrarMsgVenta('Debes seleccionar un hermano antes de procesar la venta.', 'error');
+        return;
+    }
+    if (carrito.length === 0) {
+        mostrarMsgVenta('El carrito está vacío.', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('btn-procesar');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">hourglass_empty</span> Procesando...';
+
+    try {
+        // Procesar cada item del carrito como una venta individual
+        for (const item of carrito) {
+            const payload = {
+                producto_id: item.id,
+                comprador_cui: compradorCui,
+                cantidad: item.cantidad,
+                tipo_pago: tipoPagoActual
+            };
+            const res = await API.post('/libreria/ventas', payload, true);
+            if (!res.ok) {
+                const data = await res.json();
+                const detalle = Array.isArray(data.detail)
+                    ? data.detail.map(e => e.msg).join(', ')
+                    : (data.detail || 'Error al procesar la venta.');
+                throw new Error(detalle);
+            }
+        }
+
+        // Mostrar modal de éxito
+        const totalVenta = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+        document.getElementById('msg-exito-detalle').textContent =
+            `${tipoPagoActual === 'contado' ? 'Cobro en efectivo' : 'Venta a crédito'} por ${formatearMoneda(totalVenta)} registrada correctamente.`;
+        document.getElementById('modal-exito').classList.remove('hidden');
+        document.getElementById('modal-exito').classList.add('flex');
+
+        // Limpiar carrito y recargar productos
+        carrito = [];
+        limpiarCliente();
+        await cargarProductos();
+        renderizarCarrito();
+
+    } catch (err) {
+        console.error('[POS] Error al procesar venta:', err);
+        mostrarMsgVenta(err.message || 'Error al procesar la venta.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">point_of_sale</span> Procesar Venta';
+    }
+}
+
+/**
+ * Cierra el modal de éxito y limpia el formulario.
+ */
+function cerrarModalExito() {
+    document.getElementById('modal-exito').classList.add('hidden');
+    document.getElementById('modal-exito').classList.remove('flex');
+    ocultarMsgVenta();
+}
+
+/**
+ * Alterna la visibilidad del sidebar en móvil.
+ */
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('hidden');
+}
+
+/**
+ * Alterna la visibilidad del carrito en móvil.
+ */
+function toggleCarrito() {
+    document.getElementById('panel-carrito').classList.toggle('show');
+}
+
+/**
+ * Inicializa el módulo al cargar la página.
+ */
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = 'index.html'; return; }
+
+    mostrarUsuario();
+
+    document.getElementById('btnCerrarSesion').addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.clear();
+        window.location.href = 'index.html';
+    });
+
+    configurarBuscadorClientes();
+    configurarBuscadorProductos();
+    seleccionarTipoPago('contado');
+
+    await Promise.all([cargarProductos(), cargarClientes()]);
+});
+</script>
+
+</body>
+</html>

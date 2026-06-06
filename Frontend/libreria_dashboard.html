@@ -12,129 +12,62 @@
             theme: {
                 extend: {
                     colors: {
-                        "primary":                "#755b00",
-                        "primary-container":      "#C9A227",
-                        "on-primary":             "#ffffff",
-                        "on-primary-container":   "#4b3a00",
-                        "surface":                "#fcf9f5",
+                        "primary":                  "#755b00",
+                        "primary-container":        "#C9A227",
+                        "on-primary":               "#ffffff",
+                        "surface":                  "#F7F3EC",
                         "surface-container-lowest": "#ffffff",
-                        "surface-container-low":  "#f6f3ef",
-                        "surface-container":      "#f0edea",
-                        "surface-container-high": "#ebe8e4",
-                        "outline-variant":        "#d1c5af",
-                        "outline":                "#7f7663",
-                        "on-surface":             "#1c1c1a",
-                        "on-surface-variant":     "#4d4635",
-                        "secondary":              "#635e4f",
-                        "error":                  "#ba1a1a",
-                        "error-container":        "#ffdad6",
+                        "surface-container-low":    "#f6f3ef",
+                        "surface-container":        "#f0edea",
+                        "surface-container-high":   "#ebe8e4",
+                        "outline-variant":          "#d1c5af",
+                        "outline":                  "#7f7663",
+                        "on-surface":               "#1c1c1a",
+                        "on-surface-variant":       "#4d4635",
+                        "secondary":                "#635e4f",
+                        "error":                    "#ba1a1a",
                     },
-                    fontFamily: {
-                        "sora": ["Sora", "sans-serif"],
-                        "mono": ["JetBrains Mono", "monospace"],
-                    },
-                    spacing: {
-                        "sidebar": "260px",
-                    }
+                    fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
+                    spacing: { "sidebar": "260px" }
                 }
             }
         }
     </script>
     <style>
-        body { font-family: 'Sora', sans-serif; background-color: #fafaf8; }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-            vertical-align: middle;
-        }
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.6rem 1.25rem;
-            border-radius: 0.5rem;
-            font-size: 14px;
-            color: #4d4635;
-            transition: all 0.15s ease;
-            cursor: pointer;
-            text-decoration: none;
-        }
+        body { font-family: 'Sora', sans-serif; background-color: #F7F3EC; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
+        .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1.25rem; border-radius: 0.5rem; font-size: 14px; color: #4d4635; transition: all 0.15s ease; cursor: pointer; text-decoration: none; }
         .nav-item:hover { background-color: #f6f3ef; color: #755b00; }
-        .nav-item.active {
-            background-color: #f6f3ef;
-            border-left: 3px solid #C9A227;
-            color: #755b00;
-            font-weight: 700;
-            border-radius: 0 0.5rem 0.5rem 0;
-            padding-left: calc(1.25rem - 3px);
-        }
+        .nav-item.active { background-color: #f6f3ef; border-left: 3px solid #C9A227; color: #755b00; font-weight: 700; border-radius: 0 0.5rem 0.5rem 0; padding-left: calc(1.25rem - 3px); }
         .nav-item.danger:hover { color: #ba1a1a; background-color: #fff5f5; }
         .kpi-card { transition: box-shadow 0.2s ease; }
         .kpi-card:hover { box-shadow: 0 4px 16px rgba(117,91,0,0.08); }
         .table-row:hover { background-color: #f6f3ef; }
-
-        /* Scrollbar personalizado */
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-thumb { background: #d1c5af; border-radius: 10px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-
-        /* Responsive: ocultar sidebar en móvil */
-        @media (max-width: 768px) {
-            #sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
-            #sidebar.open { transform: translateX(0); }
-            #main-content { margin-left: 0 !important; }
-        }
+        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #d1c5af; border-radius: 10px; }
+        @media (max-width: 768px) { #sidebar { transform: translateX(-100%); transition: transform 0.3s ease; } #sidebar.open { transform: translateX(0); } #main-content { margin-left: 0 !important; } }
     </style>
 </head>
 <body class="text-on-surface">
 
-<!-- Overlay para móvil -->
 <div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
 <!-- SIDEBAR -->
 <aside id="sidebar" class="fixed left-0 top-0 h-full w-sidebar bg-surface-container-lowest border-r border-outline-variant flex flex-col z-40">
-
-    <!-- Logo y módulo -->
     <div class="px-5 py-5 border-b border-outline-variant">
         <h1 class="text-lg font-bold text-primary leading-none">Palabra Miel Mixco</h1>
         <p class="text-xs text-secondary mt-1 font-mono uppercase tracking-wider">Módulo Librería</p>
     </div>
-
-    <!-- Navegación principal -->
     <nav class="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        <a href="libreria_dashboard.html" class="nav-item active">
-            <span class="material-symbols-outlined text-[20px]">dashboard</span>
-            Dashboard
-        </a>
-        <a href="libreria_inventario.html" class="nav-item">
-            <span class="material-symbols-outlined text-[20px]">inventory_2</span>
-            Inventario
-        </a>
-        <a href="libreria_ventas.html" class="nav-item">
-            <span class="material-symbols-outlined text-[20px]">point_of_sale</span>
-            Ventas
-        </a>
-        <a href="libreria_cobros.html" class="nav-item">
-            <span class="material-symbols-outlined text-[20px]">payments</span>
-            Cobros
-        </a>
-        <a href="libreria_clientes.html" class="nav-item">
-            <span class="material-symbols-outlined text-[20px]">group</span>
-            Clientes
-        </a>
+        <a href="libreria_dashboard.html" class="nav-item active"><span class="material-symbols-outlined text-[20px]">dashboard</span>Dashboard</a>
+        <a href="libreria_inventario.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">inventory_2</span>Inventario</a>
+        <a href="libreria_ventas.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">point_of_sale</span>Ventas</a>
+        <a href="libreria_cobros.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">payments</span>Cobros</a>
+        <a href="libreria_clientes.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">group</span>Clientes</a>
     </nav>
-
-    <!-- Footer del sidebar -->
     <div class="px-2 py-3 border-t border-outline-variant space-y-0.5">
-        <a href="#" class="nav-item">
-            <span class="material-symbols-outlined text-[20px]">settings</span>
-            Configuración
-        </a>
-        <a href="index.html" id="btnCerrarSesion" class="nav-item danger">
-            <span class="material-symbols-outlined text-[20px]">logout</span>
-            Cerrar Sesión
-        </a>
+        <a href="#" class="nav-item"><span class="material-symbols-outlined text-[20px]">settings</span>Configuración</a>
+        <a href="index.html" id="btnCerrarSesion" class="nav-item danger"><span class="material-symbols-outlined text-[20px]">logout</span>Cerrar Sesión</a>
     </div>
-
 </aside>
 
 <!-- CONTENIDO PRINCIPAL -->
@@ -142,23 +75,25 @@
 
     <!-- TOPBAR -->
     <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
-
-        <!-- Botón hamburguesa (móvil) + título -->
         <div class="flex items-center gap-3">
             <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary">
                 <span class="material-symbols-outlined">menu</span>
             </button>
             <div>
                 <h2 class="text-base font-bold text-on-surface leading-none">Dashboard</h2>
-                <p class="text-xs text-secondary mt-0.5">Librería · Resumen general</p>
+                <p id="subtitulo-dashboard" class="text-xs text-secondary mt-0.5">Librería · Cargando...</p>
             </div>
         </div>
-
-        <!-- Acciones del topbar -->
         <div class="flex items-center gap-3">
-            <button class="p-2 rounded-lg hover:bg-surface-container text-secondary transition-colors relative">
-                <span class="material-symbols-outlined text-[22px]">notifications</span>
-                <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full"></span>
+            <!-- Filtro de analista (solo encargado y admin) -->
+            <div id="filtro-analista-container" class="hidden">
+                <select id="filtro-analista" onchange="cambiarFiltroAnalista()"
+                    class="text-xs font-mono border border-outline-variant rounded-lg px-3 py-2 bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                    <option value="todos">Todos los operadores</option>
+                </select>
+            </div>
+            <button onclick="recargarDashboard()" class="p-2 rounded-lg hover:bg-surface-container text-secondary transition" title="Actualizar">
+                <span class="material-symbols-outlined text-[20px]">refresh</span>
             </button>
             <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
                 <div class="text-right hidden sm:block">
@@ -175,86 +110,78 @@
     <!-- CONTENIDO DEL DASHBOARD -->
     <main class="flex-1 p-6 space-y-6">
 
-        <!-- Fila de KPIs -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Badge de rol -->
+        <div id="badge-rol" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold border"></div>
 
-            <!-- KPI: Ventas del día -->
+        <!-- KPIs -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <div class="kpi-card bg-surface-container-lowest border border-outline-variant rounded-xl p-5">
                 <div class="flex justify-between items-start mb-3">
-                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Ventas del Día</span>
-                    <span id="badge-ventas" class="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">Cargando...</span>
+                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider" id="kpi1-label">Ventas del Día</span>
+                    <span id="kpi1-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">—</span>
                 </div>
-                <p id="kpi-ventas-dia" class="text-3xl font-bold text-on-surface font-mono">—</p>
-                <p id="kpi-ventas-cantidad" class="text-xs text-secondary mt-1">— transacciones hoy</p>
+                <p id="kpi1-valor" class="text-3xl font-bold text-on-surface font-mono">—</p>
+                <p id="kpi1-sub" class="text-xs text-secondary mt-1">—</p>
             </div>
 
-            <!-- KPI: Créditos pendientes -->
             <div class="kpi-card bg-surface-container-lowest border border-outline-variant rounded-xl p-5">
                 <div class="flex justify-between items-start mb-3">
-                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Créditos Pendientes</span>
+                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider" id="kpi2-label">Créditos Pendientes</span>
                     <span class="material-symbols-outlined text-[18px] text-primary">pending_actions</span>
                 </div>
-                <p id="kpi-creditos" class="text-3xl font-bold text-on-surface font-mono">—</p>
-                <p id="kpi-creditos-cantidad" class="text-xs text-error mt-1 font-bold">— cuentas por cobrar</p>
+                <p id="kpi2-valor" class="text-3xl font-bold text-on-surface font-mono">—</p>
+                <p id="kpi2-sub" class="text-xs text-error mt-1 font-bold">—</p>
             </div>
 
-            <!-- KPI: Ventas del mes -->
             <div class="kpi-card bg-surface-container-lowest border border-outline-variant rounded-xl p-5">
                 <div class="flex justify-between items-start mb-3">
-                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Ventas del Mes</span>
+                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider" id="kpi3-label">Ventas del Mes</span>
                     <span class="material-symbols-outlined text-[18px] text-primary">trending_up</span>
                 </div>
-                <p id="kpi-ventas-mes" class="text-3xl font-bold text-on-surface font-mono">—</p>
+                <p id="kpi3-valor" class="text-3xl font-bold text-on-surface font-mono">—</p>
                 <div class="w-full bg-surface-container-high h-1.5 rounded-full mt-3">
-                    <div id="barra-progreso" class="bg-primary-container h-full rounded-full" style="width: 0%"></div>
+                    <div id="barra-progreso" class="bg-primary-container h-full rounded-full transition-all duration-500" style="width:0%"></div>
                 </div>
             </div>
-
         </div>
 
-        <!-- Acciones rápidas -->
-        <section>
+        <!-- Acciones rápidas (solo admin y encargado) -->
+        <section id="acciones-rapidas">
             <h3 class="text-xs font-mono font-bold text-secondary uppercase tracking-widest mb-3">Acciones Rápidas</h3>
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-
                 <a href="libreria_ventas.html" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center gap-2 hover:border-primary-container hover:shadow-sm transition-all">
                     <span class="material-symbols-outlined text-[40px] text-primary">point_of_sale</span>
                     <span class="text-sm font-bold text-on-surface">Nueva Venta</span>
                     <span class="text-xs text-secondary text-center">Registrar transacción</span>
                 </a>
-
                 <a href="libreria_inventario.html" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center gap-2 hover:border-primary-container hover:shadow-sm transition-all">
                     <span class="material-symbols-outlined text-[40px] text-primary">inventory_2</span>
                     <span class="text-sm font-bold text-on-surface">Inventario</span>
                     <span class="text-xs text-secondary text-center">Stock y productos</span>
                 </a>
-
                 <a href="libreria_cobros.html" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center gap-2 hover:border-primary-container hover:shadow-sm transition-all">
                     <span class="material-symbols-outlined text-[40px] text-primary">account_balance_wallet</span>
                     <span class="text-sm font-bold text-on-surface">Cobros</span>
                     <span class="text-xs text-secondary text-center">Créditos y abonos</span>
                 </a>
-
                 <a href="libreria_clientes.html" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center gap-2 hover:border-primary-container hover:shadow-sm transition-all">
                     <span class="material-symbols-outlined text-[40px] text-primary">group</span>
                     <span class="text-sm font-bold text-on-surface">Clientes</span>
                     <span class="text-xs text-secondary text-center">Historial y deudas</span>
                 </a>
-
             </div>
         </section>
 
         <!-- Actividad reciente -->
         <section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
-
             <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/40">
-                <h3 class="text-sm font-bold text-on-surface">Actividad Reciente</h3>
+                <h3 id="titulo-actividad" class="text-sm font-bold text-on-surface">Actividad Reciente</h3>
                 <div class="flex gap-2">
-                    <button onclick="cargarActividad()" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition-colors text-secondary">
+                    <button onclick="recargarDashboard()" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition-colors text-secondary">
                         Actualizar
                     </button>
                     <a href="libreria_ventas.html" class="text-xs font-mono px-3 py-1.5 bg-primary-container text-white rounded-lg hover:opacity-90 transition-opacity">
-                        Ver Todo
+                        Ver Ventas
                     </a>
                 </div>
             </div>
@@ -265,44 +192,40 @@
                         <tr>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Venta ID</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Comprador</th>
+                            <th id="col-operador" class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Operador</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Cliente</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-actividad" class="divide-y divide-outline-variant text-sm">
-                        <tr>
-                            <td colspan="5" class="text-center py-10 text-secondary">
-                                <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">hourglass_empty</span>
-                                Cargando actividad...
-                            </td>
-                        </tr>
+                        <tr><td colspan="6" class="text-center py-10 text-secondary">
+                            <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">hourglass_empty</span>
+                            Cargando actividad...
+                        </td></tr>
                     </tbody>
                 </table>
             </div>
 
             <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center">
                 <p id="total-registros" class="text-xs font-mono text-secondary">— registros</p>
-                <div class="flex gap-2">
-                    <button id="btn-anterior" onclick="cambiarPagina(-1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary disabled:opacity-40">
+                <div class="flex gap-2 items-center">
+                    <button id="btn-anterior" onclick="cambiarPagina(-1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary">
                         <span class="material-symbols-outlined text-[18px]">chevron_left</span>
                     </button>
-                    <span id="pagina-actual" class="text-xs font-mono text-secondary self-center px-2">Pág. 1</span>
-                    <button id="btn-siguiente" onclick="cambiarPagina(1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary disabled:opacity-40">
+                    <span id="pagina-label" class="text-xs font-mono text-secondary px-2">Pág. 1</span>
+                    <button id="btn-siguiente" onclick="cambiarPagina(1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary">
                         <span class="material-symbols-outlined text-[18px]">chevron_right</span>
                     </button>
                 </div>
             </div>
-
         </section>
 
     </main>
 
-    <!-- Footer -->
     <footer class="border-t border-outline-variant px-6 py-3 text-center">
         <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Módulo Librería &copy; 2026</p>
     </footer>
-
 </div>
 
 <script src="js/api.js"></script>
@@ -310,100 +233,111 @@
 <script>
 /**
  * @file libreria_dashboard.js (inline)
- * @description Lógica del dashboard del módulo de librería.
+ * @description Dashboard adaptativo según rol del usuario.
+ * Administrador: ve todo. Encargado: ve analistas. Analista: ve solo lo suyo.
  */
 
 let paginaActual = 1;
 const POR_PAGINA = 10;
+let rangoUsuario = '';
+let cuiUsuario = '';
+let filtroAnalistaActual = 'todos';
 
-/**
- * Formatea un valor numérico como moneda en Quetzales.
- * @param {number} valor
- * @returns {string}
- */
 function formatearMoneda(valor) {
-    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
+    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-/**
- * Formatea una fecha ISO al formato DD/MM/YYYY HH:MM.
- * @param {string} fechaISO
- * @returns {string}
- */
 function formatearFecha(fechaISO) {
     if (!fechaISO) return '—';
-    const fecha = new Date(fechaISO);
-    return fecha.toLocaleString('es-GT', {
-        timeZone: 'America/Guatemala',
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
+    return new Date(fechaISO).toLocaleString('es-GT', {
+        timeZone: 'America/Guatemala', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 }
 
-/**
- * Retorna el badge HTML según el estado de la venta.
- * @param {string} estado
- * @returns {string}
- */
 function badgeEstado(estado) {
-    const estilos = {
-        pagado:   'bg-green-100 text-green-700',
-        pendiente: 'bg-red-100 text-red-700',
-        parcial:  'bg-amber-100 text-amber-700'
-    };
-    const etiquetas = {
-        pagado:   'Pagado',
-        pendiente: 'Pendiente',
-        parcial:  'Parcial'
-    };
-    const clase = estilos[estado] || 'bg-surface-container text-secondary';
-    const label = etiquetas[estado] || estado;
-    return `<span class="px-2 py-0.5 rounded-full text-xs font-bold uppercase ${clase}">${label}</span>`;
+    const estilos = { pagado: 'bg-green-100 text-green-700', pendiente: 'bg-red-100 text-red-700', parcial: 'bg-amber-100 text-amber-700' };
+    const etiquetas = { pagado: 'Pagado', pendiente: 'Pendiente', parcial: 'Parcial' };
+    return `<span class="px-2 py-0.5 rounded-full text-xs font-bold ${estilos[estado] || 'bg-surface-container text-secondary'}">${etiquetas[estado] || estado}</span>`;
 }
 
 /**
- * Aplica permisos visuales según el rango del usuario.
+ * Configura la interfaz según el rol del usuario.
  * @param {string} rango
- */
-function aplicarPermisos(rango) {
-    // Por ahora todos los roles ven el mismo sidebar
-    // Se restringirá cuando se implemente el módulo de administración
-}
-
-/**
- * Muestra los datos del usuario en el topbar.
  * @param {string} nombre
- * @param {string} rango
  */
-function mostrarUsuario(nombre, rango) {
-    const el = document.getElementById('nombre-usuario');
-    const elRango = document.getElementById('rango-usuario');
-    const elAvatar = document.getElementById('avatar-inicial');
-    if (el) el.textContent = nombre;
-    if (elRango) elRango.textContent = rango;
-    if (elAvatar) elAvatar.textContent = nombre ? nombre.charAt(0).toUpperCase() : '?';
+function configurarPorRol(rango, nombre) {
+    const badge = document.getElementById('badge-rol');
+    const subtitulo = document.getElementById('subtitulo-dashboard');
+    const colOperador = document.getElementById('col-operador');
+    const tituloActividad = document.getElementById('titulo-actividad');
+    const filtroContainer = document.getElementById('filtro-analista-container');
+    const accionesRapidas = document.getElementById('acciones-rapidas');
+
+    if (rango === 'administrador' || rango === 'super_admin') {
+        badge.textContent = 'Vista Administrador — Acceso total al módulo';
+        badge.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold border bg-amber-50 text-amber-700 border-amber-200';
+        subtitulo.textContent = 'Librería · Vista global';
+        document.getElementById('kpi1-label').textContent = 'Ventas del Día';
+        document.getElementById('kpi2-label').textContent = 'Créditos Pendientes';
+        document.getElementById('kpi3-label').textContent = 'Ventas del Mes';
+        tituloActividad.textContent = 'Actividad Reciente — Todos los operadores';
+        filtroContainer.classList.remove('hidden');
+        colOperador.classList.remove('hidden');
+        accionesRapidas.classList.remove('hidden');
+
+    } else if (rango === 'encargado') {
+        badge.textContent = 'Vista Encargado — Supervisión de analistas';
+        badge.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold border bg-blue-50 text-blue-700 border-blue-200';
+        subtitulo.textContent = 'Librería · Vista de encargado';
+        document.getElementById('kpi1-label').textContent = 'Ventas del Día';
+        document.getElementById('kpi2-label').textContent = 'Créditos Pendientes';
+        document.getElementById('kpi3-label').textContent = 'Ventas del Mes';
+        tituloActividad.textContent = 'Actividad Reciente — Analistas a cargo';
+        filtroContainer.classList.remove('hidden');
+        colOperador.classList.remove('hidden');
+        accionesRapidas.classList.remove('hidden');
+
+    } else {
+        // Analista
+        badge.textContent = `Vista Analista — Tus operaciones, ${nombre}`;
+        badge.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold border bg-green-50 text-green-700 border-green-200';
+        subtitulo.textContent = 'Librería · Mis operaciones';
+        document.getElementById('kpi1-label').textContent = 'Mis Ventas Hoy';
+        document.getElementById('kpi2-label').textContent = 'Mis Créditos';
+        document.getElementById('kpi3-label').textContent = 'Mis Ventas del Mes';
+        tituloActividad.textContent = 'Mi Actividad Reciente';
+        filtroContainer.classList.add('hidden');
+        colOperador.classList.add('hidden');
+        // Analista no ve acciones de inventario ni cobros, solo ventas
+        accionesRapidas.querySelectorAll('a').forEach(a => {
+            if (a.href.includes('inventario') || a.href.includes('cobros') || a.href.includes('clientes')) {
+                a.classList.add('hidden');
+            }
+        });
+    }
 }
 
 /**
- * Carga los KPIs del dashboard desde el backend.
+ * Carga los KPIs según el rango del usuario.
  */
 async function cargarKPIs() {
     try {
-        const res = await API.get('/libreria/dashboard/kpis', true);
+        let url = '/libreria/dashboard/kpis';
+        if (rangoUsuario === 'analista') url += `?cui=${cuiUsuario}`;
+        else if (filtroAnalistaActual !== 'todos') url += `?cui=${filtroAnalistaActual}`;
+
+        const res = await API.get(url, true);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
-        document.getElementById('kpi-ventas-dia').textContent = formatearMoneda(data.ventas_dia_total);
-        document.getElementById('kpi-ventas-cantidad').textContent = `${data.ventas_dia_cantidad || 0} transacciones hoy`;
-        document.getElementById('badge-ventas').textContent = data.ventas_dia_cantidad > 0 ? `+${data.ventas_dia_cantidad}` : '0';
+        document.getElementById('kpi1-valor').textContent = formatearMoneda(data.ventas_dia_total);
+        document.getElementById('kpi1-sub').textContent = `${data.ventas_dia_cantidad || 0} transacciones hoy`;
+        document.getElementById('kpi1-badge').textContent = `+${data.ventas_dia_cantidad || 0}`;
 
-        document.getElementById('kpi-creditos').textContent = formatearMoneda(data.creditos_pendientes_total);
-        document.getElementById('kpi-creditos-cantidad').textContent = `${data.creditos_pendientes_cantidad || 0} cuentas por cobrar`;
+        document.getElementById('kpi2-valor').textContent = formatearMoneda(data.creditos_pendientes_total);
+        document.getElementById('kpi2-sub').textContent = `${data.creditos_pendientes_cantidad || 0} cuentas por cobrar`;
 
-        document.getElementById('kpi-ventas-mes').textContent = formatearMoneda(data.ventas_mes_total);
+        document.getElementById('kpi3-valor').textContent = formatearMoneda(data.ventas_mes_total);
         const progreso = Math.min((data.ventas_mes_total / (data.meta_mes || 1)) * 100, 100);
         document.getElementById('barra-progreso').style.width = `${progreso}%`;
 
@@ -413,17 +347,21 @@ async function cargarKPIs() {
 }
 
 /**
- * Carga la actividad reciente de ventas.
+ * Carga la actividad reciente según el rango del usuario.
  */
 async function cargarActividad() {
     const tbody = document.getElementById('tabla-actividad');
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-secondary">
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-secondary">
         <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">hourglass_empty</span>
         Cargando...
     </td></tr>`;
 
     try {
-        const res = await API.get(`/libreria/dashboard/actividad?pagina=${paginaActual}&por_pagina=${POR_PAGINA}`, true);
+        let url = `/libreria/dashboard/actividad?pagina=${paginaActual}&por_pagina=${POR_PAGINA}`;
+        if (rangoUsuario === 'analista') url += `&cui=${cuiUsuario}`;
+        else if (filtroAnalistaActual !== 'todos') url += `&cui=${filtroAnalistaActual}`;
+
+        const res = await API.get(url, true);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
@@ -431,15 +369,12 @@ async function cargarActividad() {
         const total = data.paginacion?.total_registros || 0;
 
         document.getElementById('total-registros').textContent = `${total} registros`;
-        document.getElementById('pagina-actual').textContent = `Pág. ${paginaActual}`;
-
-        const btnAnterior = document.getElementById('btn-anterior');
-        const btnSiguiente = document.getElementById('btn-siguiente');
-        btnAnterior.disabled = !data.paginacion?.tiene_anterior;
-        btnSiguiente.disabled = !data.paginacion?.tiene_siguiente;
+        document.getElementById('pagina-label').textContent = `Pág. ${paginaActual} de ${data.paginacion?.total_paginas || 1}`;
+        document.getElementById('btn-anterior').disabled = !data.paginacion?.tiene_anterior;
+        document.getElementById('btn-siguiente').disabled = !data.paginacion?.tiene_siguiente;
 
         if (ventas.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-secondary">
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-secondary">
                 <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">receipt_long</span>
                 No hay actividad reciente.
             </td></tr>`;
@@ -451,8 +386,9 @@ async function cargarActividad() {
             const tr = document.createElement('tr');
             tr.className = 'table-row transition-colors';
             tr.innerHTML = `
-                <td class="px-5 py-3 font-mono text-xs text-secondary">${v.id.substring(0, 8)}...</td>
+                <td class="px-5 py-3 font-mono text-xs text-secondary">${v.id.substring(0,8)}...</td>
                 <td class="px-5 py-3 text-sm">${formatearFecha(v.created_at)}</td>
+                <td class="px-5 py-3 text-sm font-mono text-secondary" id="col-op-${v.id}">${v.digitado_por || '—'}</td>
                 <td class="px-5 py-3 text-sm font-medium">${v.comprador_cui || '—'}</td>
                 <td class="px-5 py-3 text-sm font-bold text-right font-mono">${formatearMoneda(v.total_venta)}</td>
                 <td class="px-5 py-3 text-center">${badgeEstado(v.estado_pago)}</td>
@@ -460,17 +396,53 @@ async function cargarActividad() {
             tbody.appendChild(tr);
         });
 
+        // Ocultar columna operador si es analista
+        if (rangoUsuario === 'analista') {
+            document.querySelectorAll('[id^="col-op-"]').forEach(el => el.classList.add('hidden'));
+        }
+
     } catch (err) {
         console.error('[Dashboard] Error al cargar actividad:', err);
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-red-500 font-bold">
-            Error al cargar la actividad reciente.
-        </td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-error font-bold">Error al cargar la actividad.</td></tr>`;
     }
 }
 
 /**
+ * Carga la lista de analistas para el filtro (encargado y admin).
+ */
+async function cargarFiltroAnalistas() {
+    try {
+        const res = await API.get('/libreria/clientes', true);
+        if (!res.ok) return;
+        const clientes = await res.json();
+
+        // Por ahora cargamos todos los usuarios como opciones
+        // Cuando exista el módulo de usuarios se filtrará por rango analista
+        const select = document.getElementById('filtro-analista');
+        clientes.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.cui;
+            opt.textContent = c.nombre_completo;
+            select.appendChild(opt);
+        });
+    } catch (err) {
+        console.error('[Dashboard] Error al cargar analistas:', err);
+    }
+}
+
+/**
+ * Cambia el filtro de analista y recarga los datos.
+ */
+function cambiarFiltroAnalista() {
+    filtroAnalistaActual = document.getElementById('filtro-analista').value;
+    paginaActual = 1;
+    cargarKPIs();
+    cargarActividad();
+}
+
+/**
  * Cambia la página de la tabla de actividad.
- * @param {number} direccion - 1 para siguiente, -1 para anterior
+ * @param {number} direccion
  */
 function cambiarPagina(direccion) {
     paginaActual += direccion;
@@ -480,47 +452,50 @@ function cambiarPagina(direccion) {
 }
 
 /**
- * Alterna la visibilidad del sidebar en móvil.
+ * Recarga todos los datos del dashboard.
  */
+async function recargarDashboard() {
+    paginaActual = 1;
+    await Promise.all([cargarKPIs(), cargarActividad()]);
+}
+
 function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('overlay');
-    sidebar.classList.toggle('open');
-    overlay.classList.toggle('hidden');
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('hidden');
 }
 
 /**
  * Inicializa el dashboard al cargar la página.
  */
 document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        // 1. Verificar sesión
-        const sesion = Auth.getSesion ? Auth.getSesion() : null;
-        const token = localStorage.getItem('token');
-        if (!token) {
-            window.location.href = 'index.html';
-            return;
-        }
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = 'index.html'; return; }
 
-        // 2. Mostrar usuario
-        const nombre = localStorage.getItem('usuario') || 'Usuario';
-        const rango = localStorage.getItem('rango') || '';
-        mostrarUsuario(nombre, rango);
-        aplicarPermisos(rango);
+    const nombre = localStorage.getItem('usuario') || 'Usuario';
+    rangoUsuario = localStorage.getItem('rango') || 'analista';
+    cuiUsuario = localStorage.getItem('cui') || '';
 
-        // 3. Cerrar sesión
-        document.getElementById('btnCerrarSesion').addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.clear();
-            window.location.href = 'index.html';
-        });
+    document.getElementById('nombre-usuario').textContent = nombre;
+    document.getElementById('rango-usuario').textContent = rangoUsuario;
+    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
 
-        // 4. Cargar datos
-        await Promise.all([cargarKPIs(), cargarActividad()]);
+    document.getElementById('btnCerrarSesion').addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.clear();
+        window.location.href = 'index.html';
+    });
 
-    } catch (error) {
-        console.error('[Dashboard] Error al inicializar:', error);
-    }
+    // Configurar UI según rol
+    configurarPorRol(rangoUsuario, nombre);
+
+    // Cargar filtro de analistas si aplica
+    if (rangoUsuario !== 'analista') await cargarFiltroAnalistas();
+
+    // Cargar datos
+    await Promise.all([cargarKPIs(), cargarActividad()]);
+
+    // Auto-refresco cada 5 minutos
+    setInterval(recargarDashboard, 5 * 60 * 1000);
 });
 </script>
 

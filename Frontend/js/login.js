@@ -1,7 +1,6 @@
 /**
  * @file login.js
  * @description Lógica de autenticación para la pantalla de ingreso.
- * @module Login
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -10,18 +9,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const form     = document.getElementById('loginForm');
     const errorMsg = document.getElementById('error-msg');
 
-    /**
-     * Muestra el mensaje de error en pantalla.
-     * @param {string} texto - Mensaje a mostrar al usuario
-     */
     function mostrarError(texto) {
         errorMsg.textContent = texto;
         errorMsg.classList.add('visible');
     }
 
-    /**
-     * Oculta el mensaje de error.
-     */
     function ocultarError() {
         errorMsg.classList.remove('visible');
     }
@@ -30,16 +22,25 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         ocultarError();
 
+        const cui = document.getElementById('cui').value.trim();
+
         try {
             const response = await API.post('/login', {
-                cui:       document.getElementById('cui').value.trim(),
+                cui,
                 contrasena: document.getElementById('contrasena').value
             });
 
             if (response.ok) {
                 const data = await response.json();
-                Auth.guardarSesion(data.access_token, data.nombre_completo, data.rango, data.modulos);
-                window.location.href = 'libreria.html';
+                // Guardar sesión incluyendo el CUI para uso en dashboards
+                Auth.guardarSesion(
+                    data.access_token,
+                    data.nombre_completo,
+                    data.rango,
+                    data.modulos,
+                    cui
+                );
+                window.location.href = 'libreria_dashboard.html';
             } else {
                 const data = await response.json();
                 mostrarError(data.detail || 'CUI o contraseña incorrectos.');

@@ -36,3 +36,11 @@ class PagoLibreriaCreate(BaseModel):
     monto_abonado: float = Field(..., gt=0)
     metodo_pago_id: int = 1
     digitado_por: str
+
+class AbonoDistribuidoCreate(BaseModel):
+    """
+    Schema para distribuir un abono entre múltiples ventas pendientes de un cliente.
+    """
+    comprador_cui: str = Field(..., description="CUI del cliente con deuda")
+    monto_abonado: float = Field(..., gt=0, description="Monto total a distribuir")
+    metodo_pago_id: int = Field(default=1, description="ID del método de pago")
