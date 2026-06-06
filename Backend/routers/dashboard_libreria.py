@@ -148,7 +148,7 @@ async def obtener_actividad(
 
         # Registros paginados
         query = supabase.table("libreria_ventas") \
-            .select("id, comprador_cui, total_venta, total_pagado, estado_pago, created_at") \
+            .select("id, comprador_cui, total_venta, total_pagado, estado_pago, created_at, digitado_por") \
             .order("created_at", desc=True) \
             .range(offset, offset + por_pagina - 1)
 

@@ -156,7 +156,8 @@ def registrar_venta(
             "comprador_cui": payload.comprador_cui,
             "total_venta": total_venta,
             "total_pagado": monto_ingresado,
-            "estado_pago": estado_inicial
+            "estado_pago": estado_inicial,
+            "digitado_por": usuario_actual["sub"]
         }).execute()
 
         venta_id = res_venta.data[0]["id"]
@@ -299,14 +300,16 @@ async def distribuir_abono(
                 detail=f"El monto ingresado (Q{payload.monto_abonado:.2f}) supera la deuda total (Q{deuda_total:.2f})."
             )
 
-        monto_restante = payload.monto_abonado
+        monto_restante = float(payload.monto_abonado)
         ventas_pagadas = []
 
         for venta in ventas:
             if monto_restante <= 0:
                 break
 
-            pendiente_venta = venta["total_venta"] - venta["total_pagado"]
+            pendiente_venta = float(venta["total_venta"]) - float(venta["total_pagado"])
+            if pendiente_venta <= 0:
+                continue
             abono_aplicar = min(monto_restante, pendiente_venta)
 
             supabase.table("libreria_pagos").insert({
@@ -380,15 +383,22 @@ async def obtener_historial_cliente(
     cui: str,
     usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
 ):
-    """Retorna el historial completo de ventas de un cliente."""
+    """Retorna el historial completo de ventas de un cliente con nombre del operador."""
     try:
         res = supabase.table("libreria_ventas") \
-            .select("id, total_venta, total_pagado, estado_pago, created_at") \
+            .select("id, total_venta, total_pagado, estado_pago, created_at, digitado_por, usuarios!libreria_ventas_digitado_por_fkey(nombre_completo)") \
             .eq("comprador_cui", cui) \
             .order("created_at", desc=True) \
             .execute()
 
-        return {"ventas": res.data or [], "ok": True}
+        ventas = res.data or []
+
+        # Aplanar el nombre del operador para simplificar el consumo en el frontend
+        for v in ventas:
+            usuario_data = v.pop("usuarios", None)
+            v["nombre_operador"] = usuario_data["nombre_completo"] if usuario_data else None
+
+        return {"ventas": ventas, "ok": True}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
