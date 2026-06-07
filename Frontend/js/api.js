@@ -3,10 +3,34 @@
  * @description Módulo centralizado de comunicación con el backend.
  * Todas las peticiones HTTP pasan por aquí.
  * Maneja automáticamente: token JWT, sesión expirada y errores de red.
+ * 
+ * Versión dinámica: detecta el entorno (local/producción) sin necesidad de modificar el archivo.
  */
 
+// Función que determina la URL del backend según el dominio actual
+function getApiUrl() {
+    const hostname = window.location.hostname;
+    
+    // Si estamos en desarrollo local
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://127.0.0.1:8000';
+    }
+    
+   
+    const currentDomain = window.location.hostname;
+    if (currentDomain.includes('onrender.com')) {
+        // Reemplazar "frontend" por "backend" en el subdominio
+        const backendDomain = currentDomain.replace('-frontend', '-backend');
+        return `https://${backendDomain}`;
+    }
+    
+    // Fallback: si no se detecta ningún patrón, usa la URL que prefieras (cámbiala si es necesario)
+    return 'https://tu-backend.onrender.com';  // <-- Cambia esto por tu URL real de backend en producción si el patrón anterior no funciona
+}
+
+// Configuración global
 const CONFIG = {
-    API_URL: window.location.origin,
+    API_URL: getApiUrl(),
     APP_NOMBRE: "PM Mixco ERP",
     APP_VERSION: "2.0.0"
 };
