@@ -6,7 +6,7 @@
  */
 
 const CONFIG = {
-    API_URL: "http://127.0.0.1:8000",
+    API_URL: window.location.origin,
     APP_NOMBRE: "PM Mixco ERP",
     APP_VERSION: "2.0.0"
 };
