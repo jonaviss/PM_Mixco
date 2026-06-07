@@ -114,7 +114,10 @@ def registrar_producto(
         HTTPException 403: Si el usuario no tiene rango suficiente
     """
     if usuario_actual.get("rango") not in ["encargado", "administrador", "super_admin"]:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tiene permisos para registrar productos.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tiene permisos para registrar productos."
+        )
 
     try:
         data = payload.model_dump(exclude_none=True)
@@ -135,7 +138,9 @@ def registrar_venta(
     """Registra una nueva venta en librería (contado o crédito)."""
     try:
         res_producto = supabase.table("inventario_libreria") \
-            .select("id, nombre, stock, precio").eq("id", payload.producto_id).execute()
+            .select("id, nombre, stock, precio") \
+            .eq("id", payload.producto_id) \
+            .execute()
 
         if not res_producto.data:
             raise HTTPException(status_code=404, detail="Producto no encontrado.")
@@ -146,7 +151,7 @@ def registrar_venta(
         if stock_actual < payload.cantidad:
             raise HTTPException(status_code=400, detail="Existencias insuficientes en inventario.")
 
-        precio_unitario = producto["precio"]
+        precio_unitario = float(producto["precio"])
         total_venta = precio_unitario * payload.cantidad
         es_contado = payload.tipo_pago == "contado"
         estado_inicial = "pagado" if es_contado else "pendiente"
@@ -180,7 +185,8 @@ def registrar_venta(
 
         supabase.table("inventario_libreria") \
             .update({"stock": stock_actual - payload.cantidad}) \
-            .eq("id", payload.producto_id).execute()
+            .eq("id", payload.producto_id) \
+            .execute()
 
         tipo_notif = "venta_contado" if es_contado else "venta_credito"
         background_tasks.add_task(despachar_correo_libreria, {
@@ -211,7 +217,8 @@ async def registrar_abono(
     try:
         res_venta = supabase.table("libreria_ventas") \
             .select("id, total_venta, total_pagado, estado_pago") \
-            .eq("id", payload.venta_id).execute()
+            .eq("id", payload.venta_id) \
+            .execute()
 
         if not res_venta.data:
             raise HTTPException(status_code=404, detail="Registro de venta no localizado.")
@@ -231,10 +238,12 @@ async def registrar_abono(
         pago_id = res_pago.data[0]["id"]
 
         res_pagos = supabase.table("libreria_pagos") \
-            .select("monto_abonado").eq("venta_id", payload.venta_id).execute()
+            .select("monto_abonado") \
+            .eq("venta_id", payload.venta_id) \
+            .execute()
 
-        total_acumulado = sum(p["monto_abonado"] for p in res_pagos.data)
-        estado_nuevo = "pagado" if total_acumulado >= venta["total_venta"] else "parcial"
+        total_acumulado = sum(float(p["monto_abonado"]) for p in res_pagos.data)
+        estado_nuevo = "pagado" if total_acumulado >= float(venta["total_venta"]) else "parcial"
 
         supabase.table("libreria_ventas").update({
             "total_pagado": total_acumulado,
@@ -243,7 +252,9 @@ async def registrar_abono(
 
         res_detalle = supabase.table("libreria_ventas_detalle") \
             .select("producto_id, inventario_libreria(nombre)") \
-            .eq("venta_id", payload.venta_id).limit(1).execute()
+            .eq("venta_id", payload.venta_id) \
+            .limit(1) \
+            .execute()
 
         nombre_prod = "Abono a Cuenta Credito"
         if res_detalle.data and res_detalle.data[0].get("inventario_libreria"):
@@ -274,10 +285,6 @@ async def distribuir_abono(
     """
     Distribuye un abono entre múltiples ventas pendientes de un cliente.
     Aplica el pago a las ventas más antiguas primero hasta agotar el monto.
-
-    Raises:
-        HTTPException 404: Si el cliente no tiene ventas pendientes
-        HTTPException 400: Si el monto supera la deuda total
     """
     try:
         res_ventas = supabase.table("libreria_ventas") \
@@ -292,9 +299,13 @@ async def distribuir_abono(
         if not ventas:
             raise HTTPException(status_code=404, detail="Este cliente no tiene ventas pendientes de pago.")
 
-        deuda_total = sum(v["total_venta"] - v["total_pagado"] for v in ventas)
+        deuda_total = sum(
+            float(v["total_venta"]) - float(v["total_pagado"])
+            for v in ventas
+            if float(v["total_venta"]) - float(v["total_pagado"]) > 0
+        )
 
-        if payload.monto_abonado > deuda_total:
+        if float(payload.monto_abonado) > deuda_total:
             raise HTTPException(
                 status_code=400,
                 detail=f"El monto ingresado (Q{payload.monto_abonado:.2f}) supera la deuda total (Q{deuda_total:.2f})."
@@ -307,9 +318,13 @@ async def distribuir_abono(
             if monto_restante <= 0:
                 break
 
-            pendiente_venta = float(venta["total_venta"]) - float(venta["total_pagado"])
+            total_venta = float(venta["total_venta"])
+            total_pagado = float(venta["total_pagado"])
+            pendiente_venta = total_venta - total_pagado
+
             if pendiente_venta <= 0:
                 continue
+
             abono_aplicar = min(monto_restante, pendiente_venta)
 
             supabase.table("libreria_pagos").insert({
@@ -319,8 +334,8 @@ async def distribuir_abono(
                 "digitado_por": usuario_actual["sub"]
             }).execute()
 
-            nuevo_pagado = venta["total_pagado"] + abono_aplicar
-            nuevo_estado = "pagado" if nuevo_pagado >= venta["total_venta"] else "parcial"
+            nuevo_pagado = total_pagado + abono_aplicar
+            nuevo_estado = "pagado" if nuevo_pagado >= total_venta else "parcial"
 
             supabase.table("libreria_ventas").update({
                 "total_pagado": nuevo_pagado,
@@ -335,13 +350,14 @@ async def distribuir_abono(
 
             monto_restante -= abono_aplicar
 
-        background_tasks.add_task(despachar_correo_libreria, {
-            "id_transaccion": ventas_pagadas[0]["venta_id"],
-            "tipo_notificacion": "abono_parcial",
-            "detalle_producto": f"Abono distribuido en {len(ventas_pagadas)} venta(s)",
-            "cantidad": 1,
-            "monto": payload.monto_abonado
-        })
+        if ventas_pagadas:
+            background_tasks.add_task(despachar_correo_libreria, {
+                "id_transaccion": ventas_pagadas[0]["venta_id"],
+                "tipo_notificacion": "abono_parcial",
+                "detalle_producto": f"Abono distribuido en {len(ventas_pagadas)} venta(s)",
+                "cantidad": 1,
+                "monto": payload.monto_abonado
+            })
 
         return {
             "mensaje": f"Abono de Q{payload.monto_abonado:.2f} distribuido correctamente.",
@@ -385,20 +401,142 @@ async def obtener_historial_cliente(
 ):
     """Retorna el historial completo de ventas de un cliente con nombre del operador."""
     try:
+        # 1. Obtener ventas del cliente
         res = supabase.table("libreria_ventas") \
-            .select("id, total_venta, total_pagado, estado_pago, created_at, digitado_por, usuarios!libreria_ventas_digitado_por_fkey(nombre_completo)") \
+            .select("id, total_venta, total_pagado, estado_pago, created_at, digitado_por") \
             .eq("comprador_cui", cui) \
             .order("created_at", desc=True) \
             .execute()
 
         ventas = res.data or []
 
-        # Aplanar el nombre del operador para simplificar el consumo en el frontend
+        # 2. Obtener nombres de operadores en una sola consulta
+        cuis_operadores = list(set(v["digitado_por"] for v in ventas if v.get("digitado_por")))
+
+        nombres_operadores = {}
+        if cuis_operadores:
+            res_usuarios = supabase.table("usuarios") \
+                .select("cui, nombre_completo") \
+                .in_("cui", cuis_operadores) \
+                .execute()
+            print(f"[DEBUG] CUIs buscados: {cuis_operadores}")
+            print(f"[DEBUG] Usuarios encontrados: {res_usuarios.data}")
+            nombres_operadores = {u["cui"]: u["nombre_completo"] for u in (res_usuarios.data or [])}
+            print(f"[DEBUG] Mapa de nombres: {nombres_operadores}")
+
+        # 3. Enriquecer cada venta con el nombre del operador
         for v in ventas:
-            usuario_data = v.pop("usuarios", None)
-            v["nombre_operador"] = usuario_data["nombre_completo"] if usuario_data else None
+            cui_op = v.get("digitado_por")
+            v["nombre_operador"] = nombres_operadores.get(cui_op) if cui_op else None
 
         return {"ventas": ventas, "ok": True}
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/ventas/{venta_id}/detalle")
+async def obtener_detalle_venta(
+    venta_id: str,
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    """
+    Retorna el detalle completo de una venta: productos comprados y pagos realizados.
+
+    Args:
+        venta_id: UUID de la venta
+
+    Returns:
+        dict: Cabecera de venta, productos del detalle y pagos registrados
+
+    Raises:
+        HTTPException 404: Si la venta no existe
+        HTTPException 500: Si ocurre un error al consultar la base de datos
+    """
+    try:
+        # 1. Cabecera de la venta
+        res_venta = supabase.table("libreria_ventas") \
+            .select("id, comprador_cui, total_venta, total_pagado, estado_pago, created_at, digitado_por") \
+            .eq("id", venta_id) \
+            .execute()
+
+        if not res_venta.data:
+            raise HTTPException(status_code=404, detail="Venta no encontrada.")
+
+        venta = res_venta.data[0]
+
+        # 2. Detalle de productos
+        res_detalle = supabase.table("libreria_ventas_detalle") \
+            .select("cantidad, precio_unitario, subtotal, inventario_libreria(nombre, tipo_producto)") \
+            .eq("venta_id", venta_id) \
+            .execute()
+
+        productos = []
+        for d in (res_detalle.data or []):
+            producto_info = d.get("inventario_libreria") or {}
+            productos.append({
+                "nombre": producto_info.get("nombre", "Producto no disponible"),
+                "tipo_producto": producto_info.get("tipo_producto", "—"),
+                "cantidad": d["cantidad"],
+                "precio_unitario": float(d["precio_unitario"]),
+                "subtotal": float(d["subtotal"])
+            })
+
+        # 3. Pagos registrados
+        res_pagos = supabase.table("libreria_pagos") \
+            .select("id, monto_abonado, fecha_pago, digitado_por") \
+            .eq("venta_id", venta_id) \
+            .order("fecha_pago", desc=False) \
+            .execute()
+
+        # 4. Obtener nombres de operadores de pagos
+        pagos = res_pagos.data or []
+        cuis_pagos = list(set(p["digitado_por"] for p in pagos if p.get("digitado_por")))
+        nombres_pagos = {}
+        if cuis_pagos:
+            res_op = supabase.table("usuarios") \
+                .select("cui, nombre_completo") \
+                .in_("cui", cuis_pagos) \
+                .execute()
+            nombres_pagos = {u["cui"]: u["nombre_completo"] for u in (res_op.data or [])}
+
+        pagos_enriquecidos = []
+        for p in pagos:
+            cui_op = p.get("digitado_por")
+            pagos_enriquecidos.append({
+                "monto_abonado": float(p["monto_abonado"]),
+                "fecha_pago": p["fecha_pago"],
+                "operador": nombres_pagos.get(cui_op, cui_op or "—")
+            })
+
+        # 5. Nombre del operador de la venta
+        cui_venta = venta.get("digitado_por")
+        nombre_operador_venta = "—"
+        if cui_venta:
+            res_op_venta = supabase.table("usuarios") \
+                .select("nombre_completo") \
+                .eq("cui", cui_venta) \
+                .execute()
+            if res_op_venta.data:
+                nombre_operador_venta = res_op_venta.data[0]["nombre_completo"]
+
+        return {
+            "venta": {
+                "id": venta["id"],
+                "comprador_cui": venta["comprador_cui"],
+                "total_venta": float(venta["total_venta"]),
+                "total_pagado": float(venta["total_pagado"]),
+                "saldo_pendiente": float(venta["total_venta"]) - float(venta["total_pagado"]),
+                "estado_pago": venta["estado_pago"],
+                "created_at": venta["created_at"],
+                "operador": nombre_operador_venta
+            },
+            "productos": productos,
+            "pagos": pagos_enriquecidos,
+            "ok": True
+        }
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
