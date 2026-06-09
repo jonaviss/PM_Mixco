@@ -25,6 +25,19 @@ class ProductoLibreriaCreate(BaseModel):
     estado: bool = True
     atributos_especificos: Dict[str, Any] = Field(default_factory=dict)
 
+class ProductoLibreriaUpdate(BaseModel):
+    """
+    Esquema para actualizar un producto de librería.
+    Todos los campos son opcionales para permitir actualización parcial.
+    """
+    tipo_producto: Optional[str] = Field(None, description="Categoría del producto")
+    nombre: Optional[str] = Field(None, description="Nombre del producto")
+    descripcion: Optional[str] = Field(None, description="Descripción opcional")
+    precio: Optional[float] = Field(None, gt=0, description="Precio de venta")
+    stock: Optional[int] = Field(None, ge=0, description="Cantidad en inventario")
+    estado: Optional[bool] = Field(None, description="Activo o inactivo")
+    atributos_especificos: Optional[Dict[str, Any]] = Field(None, description="Atributos adicionales")
+
 class VentaLibreriaCreate(BaseModel):
     producto_id: str
     comprador_cui: str

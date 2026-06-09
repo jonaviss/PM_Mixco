@@ -8,7 +8,7 @@ import base64
 import httpx
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Depends, Query
 from database import supabase
-from schemas import ProductoLibreriaCreate, VentaLibreriaCreate, PagoLibreriaCreate, AbonoDistribuidoCreate
+from schemas import ProductoLibreriaCreate, VentaLibreriaCreate, PagoLibreriaCreate, AbonoDistribuidoCreate, ProductoLibreriaUpdate
 from routers.dependencies import obtener_usuario_actual
 from routers.pdf_libreria import generar_pdf_comprobante
 from typing import Dict, Any, Optional
@@ -145,6 +145,48 @@ def registrar_producto(
         data = payload.model_dump(exclude_none=True)
         res = supabase.table("inventario_libreria").insert(data).execute()
         return {"mensaje": "Producto registrado", "data": res.data[0]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/productos/{producto_id}")
+def actualizar_producto(
+    producto_id: str,
+    payload: ProductoLibreriaUpdate,
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    """
+    Actualiza un producto existente en el inventario de librería.
+    Solo permite actualizar campos enviados (actualización parcial).
+    Requiere rango: encargado, administrador o super_admin.
+    """
+    if usuario_actual.get("rango") not in ["encargado", "administrador", "super_admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tiene permisos para modificar productos."
+        )
+
+    try:
+        # Verificar que el producto existe y está activo
+        res_exist = supabase.table("inventario_libreria").select("id").eq("id", producto_id).eq("estado", True).execute()
+        if not res_exist.data:
+            raise HTTPException(status_code=404, detail="Producto no encontrado o inactivo.")
+
+        # Construir diccionario solo con campos no nulos
+        update_data = payload.model_dump(exclude_none=True)
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No se enviaron campos para actualizar.")
+
+        # Actualizar el producto
+        res_update = supabase.table("inventario_libreria").update(update_data).eq("id", producto_id).execute()
+        if not res_update.data:
+            raise HTTPException(status_code=500, detail="Error al actualizar el producto.")
+
+        # Retornar el producto actualizado
+        return {"mensaje": "Producto actualizado", "data": res_update.data[0]}
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -517,10 +559,7 @@ async def obtener_historial_cliente(
                 .select("cui, nombre_completo") \
                 .in_("cui", cuis_operadores) \
                 .execute()
-            print(f"[DEBUG] CUIs buscados: {cuis_operadores}")
-            print(f"[DEBUG] Usuarios encontrados: {res_usuarios.data}")
             nombres_operadores = {u["cui"]: u["nombre_completo"] for u in (res_usuarios.data or [])}
-            print(f"[DEBUG] Mapa de nombres: {nombres_operadores}")
 
         # 3. Enriquecer cada venta con el nombre del operador
         for v in ventas:

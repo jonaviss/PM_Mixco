@@ -81,7 +81,6 @@
 <!-- CONTENIDO PRINCIPAL -->
 <div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
 
-    <!-- TOPBAR -->
     <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
         <div class="flex items-center gap-3">
             <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary">
@@ -109,7 +108,6 @@
         </div>
     </header>
 
-    <!-- CONTENIDO -->
     <main class="flex-1 p-6 space-y-5">
 
         <!-- Stats -->
@@ -137,26 +135,15 @@
             <!-- Filtros y buscador -->
             <div class="p-4 border-b border-outline-variant flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-surface-container-low/30">
                 <div class="flex gap-2 flex-wrap">
-                    <button onclick="filtrarCategoria('todos')" class="filter-btn active px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors" data-cat="todos">
-                        Todos
-                    </button>
-                    <button onclick="filtrarCategoria('Biblia')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Biblia">
-                        Biblias
-                    </button>
-                    <button onclick="filtrarCategoria('Libro')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Libro">
-                        Libros
-                    </button>
-                    <button onclick="filtrarCategoria('Material')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Material">
-                        Material
-                    </button>
-                    <button onclick="filtrarCategoria('Accesorio')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Accesorio">
-                        Accesorios
-                    </button>
+                    <button onclick="filtrarCategoria('todos')" class="filter-btn active px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors" data-cat="todos">Todos</button>
+                    <button onclick="filtrarCategoria('Biblia')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Biblia">Biblias</button>
+                    <button onclick="filtrarCategoria('Libro')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Libro">Libros</button>
+                    <button onclick="filtrarCategoria('Material')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Material">Material</button>
+                    <button onclick="filtrarCategoria('Accesorio')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Accesorio">Accesorios</button>
                 </div>
                 <div class="relative w-full sm:w-64">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
-                    <input type="text" id="buscador" placeholder="Buscar producto..."
-                        class="w-full pl-9 pr-4 py-2 text-sm bg-surface-container-lowest border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-primary-container transition">
+                    <input type="text" id="buscador" placeholder="Buscar producto..." class="w-full pl-9 pr-4 py-2 text-sm bg-surface-container-lowest border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-container transition">
                 </div>
             </div>
 
@@ -171,15 +158,11 @@
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Stock</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Precio</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-productos" class="divide-y divide-outline-variant text-sm">
-                        <tr>
-                            <td colspan="6" class="text-center py-10 text-secondary">
-                                <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">hourglass_empty</span>
-                                Cargando productos...
-                            </td>
-                        </tr>
+                        <tr><td colspan="7" class="text-center py-10 text-secondary">Cargando productos...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -188,40 +171,29 @@
             <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center">
                 <p id="info-paginacion" class="text-xs font-mono text-secondary">— productos</p>
                 <div class="flex gap-2 items-center">
-                    <button id="btn-anterior" onclick="cambiarPagina(-1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary">
-                        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
-                    </button>
+                    <button id="btn-anterior" onclick="cambiarPagina(-1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
                     <span id="pagina-label" class="text-xs font-mono text-secondary px-2">Pág. 1</span>
-                    <button id="btn-siguiente" onclick="cambiarPagina(1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary">
-                        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-                    </button>
+                    <button id="btn-siguiente" onclick="cambiarPagina(1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
                 </div>
             </div>
-
         </div>
     </main>
 
     <footer class="border-t border-outline-variant px-6 py-3 text-center">
-        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Módulo Librería &copy; 2026</p>
+        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 — Módulo Librería © 2026</p>
     </footer>
 </div>
 
 <!-- MODAL: NUEVO / EDITAR PRODUCTO -->
 <div id="modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
     <div class="bg-surface-container-lowest rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
-
         <div class="bg-primary px-5 py-4 flex justify-between items-center">
             <h3 id="modal-titulo" class="text-base font-bold text-white">Nuevo Producto</h3>
-            <button onclick="cerrarModal()" class="text-white/70 hover:text-white transition-colors">
-                <span class="material-symbols-outlined">close</span>
-            </button>
+            <button onclick="cerrarModal()" class="text-white/70 hover:text-white transition-colors"><span class="material-symbols-outlined">close</span></button>
         </div>
-
         <div class="p-5">
             <div id="msg-modal" class="hidden px-4 py-2 rounded-lg mb-4 text-sm font-bold"></div>
-
             <input type="hidden" id="producto-id">
-
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Categoría <span class="text-error">*</span></label>
@@ -234,51 +206,25 @@
                 </div>
                 <div class="col-span-2">
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Nombre del Producto <span class="text-error">*</span></label>
-                    <input type="text" id="prod-nombre" placeholder="Ej. Biblia de Estudio MacArthur"
-                        class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                    <input type="text" id="prod-nombre" placeholder="Ej. Biblia de Estudio MacArthur" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary-container transition">
                 </div>
                 <div class="col-span-2">
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Descripción</label>
-                    <input type="text" id="prod-desc" placeholder="Detalles adicionales..."
-                        class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                    <input type="text" id="prod-desc" placeholder="Detalles adicionales..." class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary-container transition">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Precio (Q) <span class="text-error">*</span></label>
-                    <input type="number" id="prod-precio" step="0.01" min="0.01" placeholder="0.00"
-                        class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary-container transition font-mono">
+                    <input type="number" id="prod-precio" step="0.01" min="0.01" placeholder="0.00" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low font-mono">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Stock <span class="text-error">*</span></label>
-                    <input type="number" id="prod-stock" min="0" placeholder="0"
-                        class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary-container transition font-mono">
+                    <input type="number" id="prod-stock" min="0" placeholder="0" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low font-mono">
                 </div>
             </div>
         </div>
-
         <div class="bg-surface-container-low px-5 py-4 border-t border-outline-variant flex justify-end gap-3">
-            <button onclick="cerrarModal()" class="px-5 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">
-                Cancelar
-            </button>
-            <button id="btn-guardar" onclick="guardarProducto()" class="px-5 py-2 text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition shadow-sm">
-                Guardar
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL: CONFIRMAR ELIMINACIÓN -->
-<div id="modal-eliminar" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
-    <div class="bg-surface-container-lowest rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
-        <span class="material-symbols-outlined text-[48px] text-error mb-3 block">delete_forever</span>
-        <h3 class="text-base font-bold text-on-surface mb-2">Desactivar Producto</h3>
-        <p class="text-sm text-secondary mb-5">El producto no se eliminará permanentemente, solo se desactivará del catálogo.</p>
-        <div class="flex gap-3">
-            <button onclick="cerrarModalEliminar()" class="flex-1 py-2 text-sm font-bold text-secondary border border-outline-variant rounded-lg hover:bg-surface-container transition">
-                Cancelar
-            </button>
-            <button id="btn-confirmar-eliminar" class="flex-1 py-2 text-sm font-bold bg-error text-white rounded-lg hover:opacity-90 transition">
-                Desactivar
-            </button>
+            <button onclick="cerrarModal()" class="px-5 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cancelar</button>
+            <button id="btn-guardar" onclick="guardarProducto()" class="px-5 py-2 text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition shadow-sm">Guardar</button>
         </div>
     </div>
 </div>
@@ -286,31 +232,24 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script>
-/**
- * @file libreria_inventario.js (inline)
- * @description Lógica del módulo de inventario de librería.
- */
-
+// Variables globales
 let todosLosProductos = [];
 let categoriaActiva = 'todos';
 let busquedaActiva = '';
 let paginaActual = 1;
 const POR_PAGINA = 15;
-let productoAEliminar = null;
 
 function formatearMoneda(valor) {
-    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', {
-        minimumFractionDigits: 2, maximumFractionDigits: 2
-    });
+    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function mostrarUsuario() {
     const nombre = localStorage.getItem('usuario') || 'Usuario';
     const rango = localStorage.getItem('rango') || '';
-    const el = document.getElementById('nombre-usuario');
+    const elNombre = document.getElementById('nombre-usuario');
     const elRango = document.getElementById('rango-usuario');
     const elAvatar = document.getElementById('avatar-inicial');
-    if (el) el.textContent = nombre;
+    if (elNombre) elNombre.textContent = nombre;
     if (elRango) elRango.textContent = rango;
     if (elAvatar) elAvatar.textContent = nombre.charAt(0).toUpperCase();
 }
@@ -324,10 +263,7 @@ async function cargarProductos() {
         renderizarTabla();
     } catch (err) {
         console.error('[Inventario] Error al cargar productos:', err);
-        document.getElementById('tabla-productos').innerHTML = `
-            <tr><td colspan="6" class="text-center py-10 text-error font-bold">
-                Error al cargar el inventario. Recargue la página.
-            </td></tr>`;
+        document.getElementById('tabla-productos').innerHTML = `<tr><td colspan="7" class="text-center py-10 text-error font-bold">Error al cargar el inventario. Recargue la página.</td></tr>`;
     }
 }
 
@@ -357,32 +293,32 @@ function renderizarTabla() {
     document.getElementById('btn-siguiente').disabled = paginaActual >= totalPaginas;
     const tbody = document.getElementById('tabla-productos');
     if (pagina.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-secondary">
-            <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">search_off</span>
-            No se encontraron productos con ese criterio.
-        </td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-secondary">No se encontraron productos con ese criterio.</td></tr>`;
         return;
     }
     tbody.innerHTML = '';
     pagina.forEach(p => {
         const idCorto = p.id.substring(0, 8) + '...';
         const claseStock = p.stock === 0 ? 'text-error font-bold' : p.stock < 5 ? 'text-amber-600 font-bold' : 'text-on-surface font-bold';
-        const badgeStock = p.stock === 0
-            ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Agotado</span>'
-            : p.stock < 5
-            ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Bajo Stock</span>'
-            : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">En Stock</span>';
+        let badgeStock = '';
+        if (p.stock === 0) badgeStock = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Agotado</span>';
+        else if (p.stock < 5) badgeStock = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Bajo Stock</span>';
+        else badgeStock = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">En Stock</span>';
+
         const tr = document.createElement('tr');
         tr.className = 'table-row transition-colors';
         tr.innerHTML = `
             <td class="px-5 py-3 font-mono text-xs text-secondary" title="${p.id}">${idCorto}</td>
             <td class="px-5 py-3 font-bold text-on-surface">${p.nombre}</td>
-            <td class="px-5 py-3">
-                <span class="px-2 py-0.5 bg-surface-container text-secondary rounded text-xs font-mono">${p.tipo_producto}</span>
-            </td>
+            <td class="px-5 py-3"><span class="px-2 py-0.5 bg-surface-container text-secondary rounded text-xs font-mono">${p.tipo_producto}</span></td>
             <td class="px-5 py-3 text-right font-mono ${claseStock}">${p.stock}</td>
             <td class="px-5 py-3 text-right font-mono font-bold">${formatearMoneda(p.precio)}</td>
             <td class="px-5 py-3 text-center">${badgeStock}</td>
+            <td class="px-5 py-3 text-center">
+                <button onclick="editarProducto('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Editar">
+                    <span class="material-symbols-outlined text-[16px]">edit</span>
+                </button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
@@ -427,23 +363,37 @@ function cerrarModal() {
 function mostrarMsgModal(texto, tipo) {
     const msg = document.getElementById('msg-modal');
     msg.textContent = texto;
-    msg.className = `px-4 py-2 rounded-lg mb-4 text-sm font-bold block ${
-        tipo === 'error'
-            ? 'bg-red-50 text-red-700 border border-red-200'
-            : 'bg-green-50 text-green-700 border border-green-200'
-    }`;
+    msg.className = `px-4 py-2 rounded-lg mb-4 text-sm font-bold block ${tipo === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`;
+}
+
+async function editarProducto(id) {
+    const producto = todosLosProductos.find(p => p.id === id);
+    if (!producto) return;
+    document.getElementById('modal-titulo').textContent = 'Editar Producto';
+    document.getElementById('producto-id').value = producto.id;
+    document.getElementById('prod-tipo').value = producto.tipo_producto;
+    document.getElementById('prod-nombre').value = producto.nombre;
+    document.getElementById('prod-desc').value = producto.descripcion || '';
+    document.getElementById('prod-precio').value = producto.precio;
+    document.getElementById('prod-stock').value = producto.stock;
+    document.getElementById('msg-modal').classList.add('hidden');
+    document.getElementById('modal').classList.remove('hidden');
+    document.getElementById('modal').classList.add('flex');
 }
 
 async function guardarProducto() {
     const btn = document.getElementById('btn-guardar');
+    const id = document.getElementById('producto-id').value;
     const nombre = document.getElementById('prod-nombre').value.trim();
     const precio = parseFloat(document.getElementById('prod-precio').value);
     const stock = parseInt(document.getElementById('prod-stock').value);
     if (!nombre) { mostrarMsgModal('El nombre del producto es obligatorio.', 'error'); return; }
     if (isNaN(precio) || precio <= 0) { mostrarMsgModal('Ingresa un precio válido mayor a Q0.00.', 'error'); return; }
     if (isNaN(stock) || stock < 0) { mostrarMsgModal('Ingresa un stock válido mayor o igual a 0.', 'error'); return; }
+
     btn.disabled = true;
     btn.textContent = 'Guardando...';
+
     const payload = {
         tipo_producto: document.getElementById('prod-tipo').value,
         nombre,
@@ -452,8 +402,16 @@ async function guardarProducto() {
         stock,
         estado: true
     };
+
     try {
-        const res = await API.post('/libreria/productos', payload, true);
+        let res;
+        if (id) {
+            // Actualizar (PUT)
+            res = await API.put(`/libreria/productos/${id}`, payload, true);
+        } else {
+            // Crear (POST)
+            res = await API.post('/libreria/productos', payload, true);
+        }
         const data = await res.json();
         if (res.ok) {
             cerrarModal();
@@ -470,12 +428,6 @@ async function guardarProducto() {
     }
 }
 
-function cerrarModalEliminar() {
-    document.getElementById('modal-eliminar').classList.add('hidden');
-    document.getElementById('modal-eliminar').classList.remove('flex');
-    productoAEliminar = null;
-}
-
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('overlay').classList.toggle('hidden');
@@ -485,11 +437,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
     if (!token) { window.location.href = 'index.html'; return; }
     mostrarUsuario();
-    document.getElementById('btnCerrarSesion').addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.clear();
-        window.location.href = 'index.html';
-    });
+    document.getElementById('btnCerrarSesion').addEventListener('click', (e) => { e.preventDefault(); localStorage.clear(); window.location.href = 'index.html'; });
     let debounce;
     document.getElementById('buscador').addEventListener('input', (e) => {
         clearTimeout(debounce);
@@ -502,6 +450,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     await cargarProductos();
 });
 </script>
-
 </body>
 </html>
