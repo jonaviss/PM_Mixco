@@ -13,11 +13,13 @@ app = FastAPI(title="PM Mixco ERP API", version="2.0.0")
 # CORS configurado desde variable de entorno
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
 
+# Configuración de CORS corregida para producción
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[FRONTEND_URL],
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Registro de routers por módulo

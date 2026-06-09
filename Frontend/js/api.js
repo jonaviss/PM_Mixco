@@ -3,8 +3,6 @@
  * @description Módulo centralizado de comunicación con el backend.
  * Todas las peticiones HTTP pasan por aquí.
  * Maneja automáticamente: token JWT, sesión expirada y errores de red.
- * 
- * Versión dinámica: detecta el entorno (local/producción) sin necesidad de modificar el archivo.
  */
 
 // Función que determina la URL del backend según el dominio actual
@@ -16,16 +14,14 @@ function getApiUrl() {
         return 'http://127.0.0.1:8000';
     }
     
-   
-    const currentDomain = window.location.hostname;
-    if (currentDomain.includes('onrender.com')) {
-        // Reemplazar "frontend" por "backend" en el subdominio
-        const backendDomain = currentDomain.replace('-frontend', '-backend');
-        return `https://${backendDomain}`;
+    // Si estamos en producción (Render)
+    if (hostname.includes('onrender.com')) {
+        // URL fija de tu backend en producción
+        return 'https://pm-mixco.onrender.com';
     }
     
-    // Fallback: si no se detecta ningún patrón, usa la URL que prefieras (cámbiala si es necesario)
-    return 'https://tu-backend.onrender.com';  // <-- Cambia esto por tu URL real de backend en producción si el patrón anterior no funciona
+    // Fallback por si acaso
+    return 'https://pm-mixco.onrender.com';
 }
 
 // Configuración global
@@ -37,12 +33,10 @@ const CONFIG = {
 
 /**
  * Muestra un mensaje de sesión expirada y redirige al login.
- * Se ejecuta automáticamente cuando el backend retorna 401.
  */
 function manejarSesionExpirada() {
     localStorage.clear();
 
-    // Crear toast de notificación
     const toast = document.createElement('div');
     toast.style.cssText = `
         position: fixed; top: 20px; right: 20px; z-index: 9999;
@@ -65,9 +59,6 @@ const API = {
 
     /**
      * Realiza una petición GET al backend.
-     * @param {string} endpoint - Ruta del endpoint (ej: '/libreria/productos')
-     * @param {boolean} requerirToken - Si true, agrega el token JWT al header
-     * @returns {Promise<Response>} Respuesta del servidor
      */
     get: async (endpoint, requerirToken = true) => {
         const headers = {};
@@ -102,10 +93,6 @@ const API = {
 
     /**
      * Realiza una petición POST al backend.
-     * @param {string} endpoint - Ruta del endpoint
-     * @param {Object} datos - Cuerpo de la petición
-     * @param {boolean} requerirToken - Si true, agrega el token JWT al header
-     * @returns {Promise<Response>} Respuesta del servidor
      */
     post: async (endpoint, datos, requerirToken = false) => {
         const headers = { 'Content-Type': 'application/json' };
@@ -141,9 +128,6 @@ const API = {
 
     /**
      * Realiza una petición PUT al backend.
-     * @param {string} endpoint - Ruta del endpoint
-     * @param {Object} datos - Cuerpo de la petición
-     * @returns {Promise<Response>} Respuesta del servidor
      */
     put: async (endpoint, datos) => {
         const headers = { 'Content-Type': 'application/json' };
@@ -177,8 +161,6 @@ const API = {
 
     /**
      * Realiza una petición DELETE al backend.
-     * @param {string} endpoint - Ruta del endpoint
-     * @returns {Promise<Response>} Respuesta del servidor
      */
     delete: async (endpoint) => {
         const token = localStorage.getItem('token');
@@ -209,8 +191,6 @@ const API = {
 
     /**
      * Formatea un mensaje de error del backend en texto legible.
-     * @param {Object} data - Respuesta JSON del backend
-     * @returns {string} Mensaje de error formateado
      */
     mensajeError: (data) => {
         if (!data) return 'Error desconocido.';
