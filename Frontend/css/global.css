@@ -1,0 +1,158 @@
+/**
+ * @file global.css
+ * @description Estilos globales del sistema.
+ * Contiene clases personalizadas que se usan en todos los módulos.
+ * Este es el unico lugar donde se definen estilos no generados por Tailwind.
+ */
+
+/* ============================================
+   ESTILOS BASE
+   ============================================ */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Sora', sans-serif;
+    background-color: #ffffff;
+    color: #1E293B;
+}
+
+/* ============================================
+   SIDEBAR Y NAVEGACION
+   ============================================ */
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1.25rem;
+    border-radius: 0.5rem;
+    font-size: 14px;
+    color: #475569;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.nav-item:hover {
+    background-color: #F1F5F9;
+    color: #755b00;
+}
+
+.nav-item.active {
+    background-color: #F1F5F9;
+    border-left: 3px solid #C9A227;
+    color: #755b00;
+    font-weight: 700;
+    border-radius: 0 0.5rem 0.5rem 0;
+    padding-left: calc(1.25rem - 3px);
+}
+
+.nav-item.danger:hover {
+    color: #EF4444;
+    background-color: #FEF2F2;
+}
+
+/* ============================================
+   COMPONENTES DE INTERFAZ
+   ============================================ */
+/* Tarjetas KPI */
+.kpi-card {
+    transition: box-shadow 0.2s ease;
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 0.75rem;
+}
+
+.kpi-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Filas de tabla */
+.table-row:hover {
+    background-color: #F8FAFC;
+}
+
+/* Botones de filtro activos */
+.filter-btn {
+    transition: all 0.15s ease;
+}
+
+.filter-btn.active {
+    background-color: #C9A227;
+    color: #ffffff;
+    font-weight: 700;
+    border-color: #C9A227;
+}
+
+/* Estilos para inputs y selects (mejora visual) */
+input, select, textarea {
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #C9A227;
+    box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
+}
+
+/* Botones tipo pago (efectivo/crédito) */
+.tipo-pago-btn {
+    transition: all 0.15s ease;
+}
+
+.tipo-pago-btn.active {
+    background-color: #C9A227;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+/* Items del carrito */
+.cart-item {
+    transition: border-color 0.15s ease;
+}
+
+.cart-item:hover {
+    border-color: #C9A227;
+}
+
+/* ============================================
+   SCROLLBAR PERSONALIZADA
+   ============================================ */
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* ============================================
+   UTILIDADES RESPONSIVE PARA SIDEBAR
+   ============================================ */
+@media (max-width: 768px) {
+    #sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+    #sidebar.open {
+        transform: translateX(0);
+    }
+    #main-content {
+        margin-left: 0 !important;
+    }
+    #panel-carrito {
+        display: none;
+    }
+    #panel-carrito.show {
+        display: flex;
+    }
+}

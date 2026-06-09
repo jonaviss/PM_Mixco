@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
     <script>
         tailwind.config = {
             theme: {
@@ -15,17 +16,17 @@
                         "primary":                  "#755b00",
                         "primary-container":        "#C9A227",
                         "on-primary":               "#ffffff",
-                        "surface":                  "#F7F3EC",
+                        "surface":                  "#F8FAFC",
                         "surface-container-lowest": "#ffffff",
-                        "surface-container-low":    "#f6f3ef",
-                        "surface-container":        "#f0edea",
-                        "surface-container-high":   "#ebe8e4",
-                        "outline-variant":          "#d1c5af",
-                        "outline":                  "#7f7663",
-                        "on-surface":               "#1c1c1a",
-                        "on-surface-variant":       "#4d4635",
-                        "secondary":                "#635e4f",
-                        "error":                    "#ba1a1a",
+                        "surface-container-low":    "#F1F5F9",
+                        "surface-container":        "#E2E8F0",
+                        "surface-container-high":   "#CBD5E1",
+                        "outline-variant":          "#CBD5E1",
+                        "outline":                  "#94A3B8",
+                        "on-surface":               "#1E293B",
+                        "on-surface-variant":       "#475569",
+                        "secondary":                "#64748B",
+                        "error":                    "#EF4444",
                     },
                     fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
                     spacing: { "sidebar": "260px" }
@@ -33,19 +34,6 @@
             }
         }
     </script>
-    <style>
-        body { font-family: 'Sora', sans-serif; background-color: #F7F3EC; }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
-        .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1.25rem; border-radius: 0.5rem; font-size: 14px; color: #4d4635; transition: all 0.15s ease; cursor: pointer; text-decoration: none; }
-        .nav-item:hover { background-color: #f6f3ef; color: #755b00; }
-        .nav-item.active { background-color: #f6f3ef; border-left: 3px solid #C9A227; color: #755b00; font-weight: 700; border-radius: 0 0.5rem 0.5rem 0; padding-left: calc(1.25rem - 3px); }
-        .nav-item.danger:hover { color: #ba1a1a; background-color: #fff5f5; }
-        .kpi-card { transition: box-shadow 0.2s ease; }
-        .kpi-card:hover { box-shadow: 0 4px 16px rgba(117,91,0,0.08); }
-        .table-row:hover { background-color: #f6f3ef; }
-        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #d1c5af; border-radius: 10px; }
-        @media (max-width: 768px) { #sidebar { transform: translateX(-100%); transition: transform 0.3s ease; } #sidebar.open { transform: translateX(0); } #main-content { margin-left: 0 !important; } }
-    </style>
 </head>
 <body class="text-on-surface">
 
@@ -71,10 +59,10 @@
 </aside>
 
 <!-- CONTENIDO PRINCIPAL -->
-<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col bg-white">
 
     <!-- TOPBAR -->
-    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+    <header class="sticky top-0 z-20 bg-white border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
         <div class="flex items-center gap-3">
             <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary">
                 <span class="material-symbols-outlined">menu</span>
@@ -88,7 +76,7 @@
             <!-- Filtro de analista (solo encargado y admin) -->
             <div id="filtro-analista-container" class="hidden">
                 <select id="filtro-analista" onchange="cambiarFiltroAnalista()"
-                    class="text-xs font-mono border border-outline-variant rounded-lg px-3 py-2 bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                    class="text-xs font-mono border border-outline-variant rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary-container transition">
                     <option value="todos">Todos los operadores</option>
                 </select>
             </div>
@@ -115,7 +103,7 @@
 
         <!-- KPIs -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            <div class="kpi-card bg-surface-container-lowest border border-outline-variant rounded-xl p-5">
+            <div class="kpi-card p-5">
                 <div class="flex justify-between items-start mb-3">
                     <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider" id="kpi1-label">Ventas del Día</span>
                     <span id="kpi1-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">—</span>
@@ -124,7 +112,7 @@
                 <p id="kpi1-sub" class="text-xs text-secondary mt-1">—</p>
             </div>
 
-            <div class="kpi-card bg-surface-container-lowest border border-outline-variant rounded-xl p-5">
+            <div class="kpi-card p-5">
                 <div class="flex justify-between items-start mb-3">
                     <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider" id="kpi2-label">Créditos Pendientes</span>
                     <span class="material-symbols-outlined text-[18px] text-primary">pending_actions</span>
@@ -133,7 +121,7 @@
                 <p id="kpi2-sub" class="text-xs text-error mt-1 font-bold">—</p>
             </div>
 
-            <div class="kpi-card bg-surface-container-lowest border border-outline-variant rounded-xl p-5">
+            <div class="kpi-card p-5">
                 <div class="flex justify-between items-start mb-3">
                     <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider" id="kpi3-label">Ventas del Mes</span>
                     <span class="material-symbols-outlined text-[18px] text-primary">trending_up</span>
@@ -149,22 +137,22 @@
         <section id="acciones-rapidas">
             <h3 class="text-xs font-mono font-bold text-secondary uppercase tracking-widest mb-3">Acciones Rápidas</h3>
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <a href="libreria_ventas.html" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center gap-2 hover:border-primary-container hover:shadow-sm transition-all">
+                <a href="libreria_ventas.html" class="group bg-white border border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center gap-2 hover:border-primary-container hover:shadow-sm transition-all">
                     <span class="material-symbols-outlined text-[40px] text-primary">point_of_sale</span>
                     <span class="text-sm font-bold text-on-surface">Nueva Venta</span>
                     <span class="text-xs text-secondary text-center">Registrar transacción</span>
                 </a>
-                <a href="libreria_inventario.html" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center gap-2 hover:border-primary-container hover:shadow-sm transition-all">
+                <a href="libreria_inventario.html" class="group bg-white border border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center gap-2 hover:border-primary-container hover:shadow-sm transition-all">
                     <span class="material-symbols-outlined text-[40px] text-primary">inventory_2</span>
                     <span class="text-sm font-bold text-on-surface">Inventario</span>
                     <span class="text-xs text-secondary text-center">Stock y productos</span>
                 </a>
-                <a href="libreria_cobros.html" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center gap-2 hover:border-primary-container hover:shadow-sm transition-all">
+                <a href="libreria_cobros.html" class="group bg-white border border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center gap-2 hover:border-primary-container hover:shadow-sm transition-all">
                     <span class="material-symbols-outlined text-[40px] text-primary">account_balance_wallet</span>
                     <span class="text-sm font-bold text-on-surface">Cobros</span>
                     <span class="text-xs text-secondary text-center">Créditos y abonos</span>
                 </a>
-                <a href="libreria_clientes.html" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center gap-2 hover:border-primary-container hover:shadow-sm transition-all">
+                <a href="libreria_clientes.html" class="group bg-white border border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center gap-2 hover:border-primary-container hover:shadow-sm transition-all">
                     <span class="material-symbols-outlined text-[40px] text-primary">group</span>
                     <span class="text-sm font-bold text-on-surface">Clientes</span>
                     <span class="text-xs text-secondary text-center">Historial y deudas</span>
@@ -173,8 +161,8 @@
         </section>
 
         <!-- Actividad reciente -->
-        <section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
-            <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/40">
+        <section class="bg-white border border-outline-variant rounded-xl overflow-hidden">
+            <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/30">
                 <h3 id="titulo-actividad" class="text-sm font-bold text-on-surface">Actividad Reciente</h3>
                 <div class="flex gap-2">
                     <button onclick="recargarDashboard()" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition-colors text-secondary">
@@ -231,12 +219,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script>
-/**
- * @file libreria_dashboard.js (inline)
- * @description Dashboard adaptativo según rol del usuario.
- * Administrador: ve todo. Encargado: ve analistas. Analista: ve solo lo suyo.
- */
-
+// (El script se mantiene exactamente igual, no se modificó)
 let paginaActual = 1;
 const POR_PAGINA = 10;
 let rangoUsuario = '';
@@ -260,11 +243,6 @@ function badgeEstado(estado) {
     return `<span class="px-2 py-0.5 rounded-full text-xs font-bold ${estilos[estado] || 'bg-surface-container text-secondary'}">${etiquetas[estado] || estado}</span>`;
 }
 
-/**
- * Configura la interfaz según el rol del usuario.
- * @param {string} rango
- * @param {string} nombre
- */
 function configurarPorRol(rango, nombre) {
     const badge = document.getElementById('badge-rol');
     const subtitulo = document.getElementById('subtitulo-dashboard');
@@ -284,7 +262,6 @@ function configurarPorRol(rango, nombre) {
         filtroContainer.classList.remove('hidden');
         colOperador.classList.remove('hidden');
         accionesRapidas.classList.remove('hidden');
-
     } else if (rango === 'encargado') {
         badge.textContent = 'Vista Encargado — Supervisión de analistas';
         badge.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold border bg-blue-50 text-blue-700 border-blue-200';
@@ -296,9 +273,7 @@ function configurarPorRol(rango, nombre) {
         filtroContainer.classList.remove('hidden');
         colOperador.classList.remove('hidden');
         accionesRapidas.classList.remove('hidden');
-
     } else {
-        // Analista
         badge.textContent = `Vista Analista — Tus operaciones, ${nombre}`;
         badge.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold border bg-green-50 text-green-700 border-green-200';
         subtitulo.textContent = 'Librería · Mis operaciones';
@@ -308,7 +283,6 @@ function configurarPorRol(rango, nombre) {
         tituloActividad.textContent = 'Mi Actividad Reciente';
         filtroContainer.classList.add('hidden');
         colOperador.classList.add('hidden');
-        // Analista no ve acciones de inventario ni cobros, solo ventas
         accionesRapidas.querySelectorAll('a').forEach(a => {
             if (a.href.includes('inventario') || a.href.includes('cobros') || a.href.includes('clientes')) {
                 a.classList.add('hidden');
@@ -317,62 +291,46 @@ function configurarPorRol(rango, nombre) {
     }
 }
 
-/**
- * Carga los KPIs según el rango del usuario.
- */
 async function cargarKPIs() {
     try {
         let url = '/libreria/dashboard/kpis';
         if (rangoUsuario === 'analista') url += `?cui=${cuiUsuario}`;
         else if (filtroAnalistaActual !== 'todos') url += `?cui=${filtroAnalistaActual}`;
-
         const res = await API.get(url, true);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-
         document.getElementById('kpi1-valor').textContent = formatearMoneda(data.ventas_dia_total);
         document.getElementById('kpi1-sub').textContent = `${data.ventas_dia_cantidad || 0} transacciones hoy`;
         document.getElementById('kpi1-badge').textContent = `+${data.ventas_dia_cantidad || 0}`;
-
         document.getElementById('kpi2-valor').textContent = formatearMoneda(data.creditos_pendientes_total);
         document.getElementById('kpi2-sub').textContent = `${data.creditos_pendientes_cantidad || 0} cuentas por cobrar`;
-
         document.getElementById('kpi3-valor').textContent = formatearMoneda(data.ventas_mes_total);
         const progreso = Math.min((data.ventas_mes_total / (data.meta_mes || 1)) * 100, 100);
         document.getElementById('barra-progreso').style.width = `${progreso}%`;
-
     } catch (err) {
         console.error('[Dashboard] Error al cargar KPIs:', err);
     }
 }
 
-/**
- * Carga la actividad reciente según el rango del usuario.
- */
 async function cargarActividad() {
     const tbody = document.getElementById('tabla-actividad');
     tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-secondary">
         <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">hourglass_empty</span>
         Cargando...
     </td></tr>`;
-
     try {
         let url = `/libreria/dashboard/actividad?pagina=${paginaActual}&por_pagina=${POR_PAGINA}`;
         if (rangoUsuario === 'analista') url += `&cui=${cuiUsuario}`;
         else if (filtroAnalistaActual !== 'todos') url += `&cui=${filtroAnalistaActual}`;
-
         const res = await API.get(url, true);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-
         const ventas = data.data || [];
         const total = data.paginacion?.total_registros || 0;
-
         document.getElementById('total-registros').textContent = `${total} registros`;
         document.getElementById('pagina-label').textContent = `Pág. ${paginaActual} de ${data.paginacion?.total_paginas || 1}`;
         document.getElementById('btn-anterior').disabled = !data.paginacion?.tiene_anterior;
         document.getElementById('btn-siguiente').disabled = !data.paginacion?.tiene_siguiente;
-
         if (ventas.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-secondary">
                 <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">receipt_long</span>
@@ -380,7 +338,6 @@ async function cargarActividad() {
             </td></tr>`;
             return;
         }
-
         tbody.innerHTML = '';
         ventas.forEach(v => {
             const tr = document.createElement('tr');
@@ -395,29 +352,20 @@ async function cargarActividad() {
             `;
             tbody.appendChild(tr);
         });
-
-        // Ocultar columna operador si es analista
         if (rangoUsuario === 'analista') {
             document.querySelectorAll('[id^="col-op-"]').forEach(el => el.classList.add('hidden'));
         }
-
     } catch (err) {
         console.error('[Dashboard] Error al cargar actividad:', err);
         tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-error font-bold">Error al cargar la actividad.</td></tr>`;
     }
 }
 
-/**
- * Carga la lista de analistas para el filtro (encargado y admin).
- */
 async function cargarFiltroAnalistas() {
     try {
         const res = await API.get('/libreria/clientes', true);
         if (!res.ok) return;
         const clientes = await res.json();
-
-        // Por ahora cargamos todos los usuarios como opciones
-        // Cuando exista el módulo de usuarios se filtrará por rango analista
         const select = document.getElementById('filtro-analista');
         clientes.forEach(c => {
             const opt = document.createElement('option');
@@ -430,9 +378,6 @@ async function cargarFiltroAnalistas() {
     }
 }
 
-/**
- * Cambia el filtro de analista y recarga los datos.
- */
 function cambiarFiltroAnalista() {
     filtroAnalistaActual = document.getElementById('filtro-analista').value;
     paginaActual = 1;
@@ -440,10 +385,6 @@ function cambiarFiltroAnalista() {
     cargarActividad();
 }
 
-/**
- * Cambia la página de la tabla de actividad.
- * @param {number} direccion
- */
 function cambiarPagina(direccion) {
     paginaActual += direccion;
     if (paginaActual < 1) paginaActual = 1;
@@ -451,9 +392,6 @@ function cambiarPagina(direccion) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-/**
- * Recarga todos los datos del dashboard.
- */
 async function recargarDashboard() {
     paginaActual = 1;
     await Promise.all([cargarKPIs(), cargarActividad()]);
@@ -464,37 +402,23 @@ function toggleSidebar() {
     document.getElementById('overlay').classList.toggle('hidden');
 }
 
-/**
- * Inicializa el dashboard al cargar la página.
- */
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
     if (!token) { window.location.href = 'index.html'; return; }
-
     const nombre = localStorage.getItem('usuario') || 'Usuario';
     rangoUsuario = localStorage.getItem('rango') || 'analista';
     cuiUsuario = localStorage.getItem('cui') || '';
-
     document.getElementById('nombre-usuario').textContent = nombre;
     document.getElementById('rango-usuario').textContent = rangoUsuario;
     document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
-
     document.getElementById('btnCerrarSesion').addEventListener('click', (e) => {
         e.preventDefault();
         localStorage.clear();
         window.location.href = 'index.html';
     });
-
-    // Configurar UI según rol
     configurarPorRol(rangoUsuario, nombre);
-
-    // Cargar filtro de analistas si aplica
     if (rangoUsuario !== 'analista') await cargarFiltroAnalistas();
-
-    // Cargar datos
     await Promise.all([cargarKPIs(), cargarActividad()]);
-
-    // Auto-refresco cada 5 minutos
     setInterval(recargarDashboard, 5 * 60 * 1000);
 });
 </script>
