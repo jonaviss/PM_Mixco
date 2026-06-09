@@ -59,10 +59,11 @@
 </aside>
 
 <!-- CONTENIDO PRINCIPAL -->
-<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col bg-white">
+<!-- QUITO la clase bg-white para que herede el fondo del body -->
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
 
     <!-- TOPBAR -->
-    <header class="sticky top-0 z-20 bg-white border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
         <div class="flex items-center gap-3">
             <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary">
                 <span class="material-symbols-outlined">menu</span>
@@ -73,7 +74,6 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
-            <!-- Filtro de analista (solo encargado y admin) -->
             <div id="filtro-analista-container" class="hidden">
                 <select id="filtro-analista" onchange="cambiarFiltroAnalista()"
                     class="text-xs font-mono border border-outline-variant rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary-container transition">
@@ -98,7 +98,6 @@
     <!-- CONTENIDO DEL DASHBOARD -->
     <main class="flex-1 p-6 space-y-6">
 
-        <!-- Badge de rol -->
         <div id="badge-rol" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold border"></div>
 
         <!-- KPIs -->
@@ -133,7 +132,7 @@
             </div>
         </div>
 
-        <!-- Acciones rápidas (solo admin y encargado) -->
+        <!-- Acciones rápidas -->
         <section id="acciones-rapidas">
             <h3 class="text-xs font-mono font-bold text-secondary uppercase tracking-widest mb-3">Acciones Rápidas</h3>
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -219,7 +218,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script>
-// (El script se mantiene exactamente igual, no se modificó)
+// (El script se mantiene exactamente igual, sin cambios)
 let paginaActual = 1;
 const POR_PAGINA = 10;
 let rangoUsuario = '';

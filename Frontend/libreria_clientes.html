@@ -7,17 +7,26 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#755b00", "primary-container": "#C9A227", "on-primary": "#ffffff",
-                        "surface": "#F7F3EC", "surface-container-lowest": "#ffffff",
-                        "surface-container-low": "#f6f3ef", "surface-container": "#f0edea",
-                        "surface-container-high": "#ebe8e4", "outline-variant": "#d1c5af",
-                        "outline": "#7f7663", "on-surface": "#1c1c1a", "on-surface-variant": "#4d4635",
-                        "secondary": "#635e4f", "error": "#ba1a1a",
+                        "primary":                  "#755b00",
+                        "primary-container":        "#C9A227",
+                        "on-primary":               "#ffffff",
+                        "surface":                  "#F8FAFC",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low":    "#F1F5F9",
+                        "surface-container":        "#E2E8F0",
+                        "surface-container-high":   "#CBD5E1",
+                        "outline-variant":          "#CBD5E1",
+                        "outline":                  "#94A3B8",
+                        "on-surface":               "#1E293B",
+                        "on-surface-variant":       "#475569",
+                        "secondary":                "#64748B",
+                        "error":                    "#EF4444",
                     },
                     fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
                     spacing: { "sidebar": "260px" }
@@ -25,17 +34,6 @@
             }
         }
     </script>
-    <style>
-        body { font-family: 'Sora', sans-serif; background-color: #F7F3EC; }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
-        .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1.25rem; border-radius: 0.5rem; font-size: 14px; color: #4d4635; transition: all 0.15s ease; cursor: pointer; text-decoration: none; }
-        .nav-item:hover { background-color: #f6f3ef; color: #755b00; }
-        .nav-item.active { background-color: #f6f3ef; border-left: 3px solid #C9A227; color: #755b00; font-weight: 700; border-radius: 0 0.5rem 0.5rem 0; padding-left: calc(1.25rem - 3px); }
-        .nav-item.danger:hover { color: #ba1a1a; background-color: #fff5f5; }
-        .table-row:hover { background-color: #f6f3ef; }
-        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #d1c5af; border-radius: 10px; }
-        @media (max-width: 768px) { #sidebar { transform: translateX(-100%); transition: transform 0.3s ease; } #sidebar.open { transform: translateX(0); } #main-content { margin-left: 0 !important; } }
-    </style>
 </head>
 <body class="text-on-surface">
 
@@ -265,20 +263,17 @@ function configurarBuscador() {
 
 async function cargarPerfilCliente(cliente) {
     try {
-        // Mostrar perfil básico
         document.getElementById('perfil-avatar').textContent = cliente.nombre_completo.charAt(0).toUpperCase();
         document.getElementById('perfil-nombre').textContent = cliente.nombre_completo;
         document.getElementById('perfil-cui').textContent = `CUI: ${cliente.cui}`;
         document.getElementById('perfil-correo').textContent = cliente.correo || '—';
         document.getElementById('perfil-fecha').textContent = formatearFecha(cliente.created_at);
 
-        // Cargar historial de ventas
         const res = await API.get(`/libreria/clientes/${cliente.cui}/historial`, true);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         historialCompleto = data.ventas || [];
 
-        // Calcular métricas
         const totalCompras = historialCompleto.reduce((acc, v) => acc + v.total_venta, 0);
         const totalPagado = historialCompleto.reduce((acc, v) => acc + v.total_pagado, 0);
         const totalDeuda = totalCompras - totalPagado;
@@ -290,7 +285,6 @@ async function cargarPerfilCliente(cliente) {
         document.getElementById('metrica-deuda').textContent = formatearMoneda(totalDeuda);
         document.getElementById('metrica-deuda-cantidad').textContent = `${ventasPendientes} ventas pendientes`;
 
-        // Mostrar secciones
         document.getElementById('estado-inicial').classList.add('hidden');
         document.getElementById('perfil-cliente').classList.remove('hidden');
         document.getElementById('historial-section').classList.remove('hidden');
@@ -305,7 +299,6 @@ async function cargarPerfilCliente(cliente) {
 function filtrarHistorial(filtro) {
     filtroActivo = filtro;
 
-    // Actualizar botones de filtro
     ['todos', 'pagado', 'pendiente'].forEach(f => {
         const btn = document.getElementById(`filtro-${f}`);
         const esActivo = f === filtro;

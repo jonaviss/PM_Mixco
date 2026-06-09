@@ -38,23 +38,11 @@
             overflow: hidden;
         }
 
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(var(--border) 1px, transparent 1px),
-                linear-gradient(90deg, var(--border) 1px, transparent 1px);
-            background-size: 40px 40px;
-            opacity: 0.4;
-            pointer-events: none;
-        }
-
         .orbe-top {
             position: fixed;
             width: 500px;
             height: 500px;
-            background: radial-gradient(circle, rgba(201,162,39,0.07) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(201,162,39,0.08) 0%, transparent 70%);
             top: -150px;
             right: -100px;
             pointer-events: none;
@@ -64,7 +52,7 @@
             position: fixed;
             width: 400px;
             height: 400px;
-            background: radial-gradient(circle, rgba(201,162,39,0.05) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(201,162,39,0.06) 0%, transparent 70%);
             bottom: -100px;
             left: -100px;
             pointer-events: none;
@@ -87,6 +75,15 @@
             text-align: center;
             margin-bottom: 2rem;
         }
+
+       .logo {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 120px;  
+    height: auto;
+    margin-bottom: 1rem;
+}
 
         .brand-name {
             font-family: 'Playfair Display', serif;
@@ -251,6 +248,7 @@
 
         @media (max-width: 480px) {
             .login-card { padding: 1.5rem; }
+            .logo { width: 90px; }
         }
     </style>
 </head>
@@ -262,11 +260,11 @@
     <div class="login-wrapper">
 
         <div class="brand-header">
+            <img src="img/logo_pm.svg" alt="Logo Palabra Miel Mixco" class="logo">
             <h1 class="brand-name">Palabra Miel <span>Mixco</span></h1>
         </div>
 
         <div class="login-card">
-
             <div class="card-divider">
                 <div class="card-divider-line"></div>
                 <span class="card-divider-text">Acceso al sistema</span>
@@ -276,54 +274,31 @@
             <div id="error-msg" class="error-box"></div>
 
             <form id="loginForm" autocomplete="off">
-
                 <div class="field-group">
                     <label for="cui" class="field-label">CUI de usuario</label>
-                    <input
-                        type="text"
-                        id="cui"
-                        class="field-input"
-                        placeholder="0000000000000"
-                        maxlength="13"
-                        required
-                    >
+                    <input type="text" id="cui" class="field-input" placeholder="0000000000000" maxlength="13" required>
                 </div>
-
                 <div class="field-group">
                     <label for="contrasena" class="field-label">Contraseña</label>
-                    <input
-                        type="password"
-                        id="contrasena"
-                        class="field-input"
-                        placeholder="••••••••"
-                        required
-                    >
+                    <input type="password" id="contrasena" class="field-input" placeholder="••••••••" required>
                 </div>
-
-                <button type="submit" id="btn-login" class="btn-login">
-                    Ingresar al sistema
-                </button>
-
+                <button type="submit" id="btn-login" class="btn-login">Ingresar al sistema</button>
             </form>
         </div>
 
         <p class="login-footer">v2.0.0 &mdash; <span>PM Mixco ERP</span> &copy; 2026</p>
-
     </div>
 
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/login.js"></script>
-
     <script>
         const form = document.getElementById('loginForm');
         const btn  = document.getElementById('btn-login');
-
         form.addEventListener('submit', () => {
             btn.disabled = true;
             btn.innerHTML = '<span class="btn-spinner"></span>Verificando...';
         });
-
         const observer = new MutationObserver(() => {
             if (document.getElementById('error-msg').classList.contains('visible')) {
                 btn.disabled = false;
@@ -332,6 +307,5 @@
         });
         observer.observe(document.getElementById('error-msg'), { attributes: true });
     </script>
-
 </body>
 </html>
