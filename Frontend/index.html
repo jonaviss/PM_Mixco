@@ -6,6 +6,7 @@
     <title>PM Mixco ERP — Acceso</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <style>
         :root {
             --gold:        #C9A227;
@@ -21,6 +22,7 @@
             --error:       #EF4444;
             --error-bg:    #FEF2F2;
             --error-border:#FEE2E2;
+            --success:     #10B981;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -76,14 +78,14 @@
             margin-bottom: 2rem;
         }
 
-       .logo {
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    width: 120px;  
-    height: auto;
-    margin-bottom: 1rem;
-}
+        .logo {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            width: 120px;
+            height: auto;
+            margin-bottom: 1rem;
+        }
 
         .brand-name {
             font-family: 'Playfair Display', serif;
@@ -104,10 +106,7 @@
             border: 1px solid var(--border);
             border-radius: 20px;
             padding: 2.25rem;
-            box-shadow:
-                0 1px 3px rgba(0,0,0,0.04),
-                0 8px 32px rgba(0,0,0,0.06),
-                0 0 0 1px rgba(201,162,39,0.06);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.06), 0 0 0 1px rgba(201,162,39,0.06);
         }
 
         .card-divider {
@@ -155,6 +154,7 @@
         }
 
         .field-group { margin-bottom: 1.25rem; }
+        .field-group.password-group { position: relative; }
 
         .field-label {
             display: block;
@@ -179,6 +179,11 @@
             transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
         }
 
+        /* Espacio para el ícono en campo de contraseña */
+        .password-group .field-input {
+            padding-right: 2.8rem;
+        }
+
         .field-input::placeholder {
             color: #94A3B8;
             font-family: 'Sora', sans-serif;
@@ -189,6 +194,64 @@
             border-color: var(--gold);
             background: #fff;
             box-shadow: 0 0 0 3px var(--gold-glow);
+        }
+
+        /* Botón ojo */
+        .toggle-password {
+            position: absolute;
+            right: 1rem;
+            bottom: 0.75rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+        .toggle-password:hover {
+            color: var(--gold);
+        }
+
+        /* Indicador Caps Lock */
+        .capslock-warning {
+            display: none;
+            font-size: 0.7rem;
+            margin-top: 0.3rem;
+            color: var(--error);
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .capslock-warning .material-symbols-outlined {
+            font-size: 0.9rem;
+        }
+        .capslock-warning.visible {
+            display: flex;
+        }
+
+        /* Checkbox recordar */
+        .remember-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .remember-group label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+        }
+        .remember-group input {
+            width: 1rem;
+            height: 1rem;
+            accent-color: var(--gold);
+            cursor: pointer;
         }
 
         .btn-login {
@@ -203,7 +266,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
-            margin-top: 0.75rem;
+            margin-top: 0.5rem;
             letter-spacing: 0.02em;
             box-shadow: 0 4px 16px rgba(201, 162, 39, 0.35);
             text-shadow: 0 1px 2px rgba(0,0,0,0.15);
@@ -258,7 +321,6 @@
     <div class="orbe-bottom"></div>
 
     <div class="login-wrapper">
-
         <div class="brand-header">
             <img src="img/logo_pm.svg" alt="Logo Palabra Miel Mixco" class="logo">
             <h1 class="brand-name">Palabra Miel <span>Mixco</span></h1>
@@ -276,13 +338,30 @@
             <form id="loginForm" autocomplete="off">
                 <div class="field-group">
                     <label for="cui" class="field-label">CUI de usuario</label>
-                    <input type="text" id="cui" class="field-input" placeholder="0000000000000" maxlength="13" required>
+                    <input type="text" id="cui" class="field-input" placeholder="0000000000000" maxlength="13" autocomplete="off" required>
+                    <div id="cui-error" class="capslock-warning" style="color:var(--error); display:none; margin-top:0.3rem;">CUI debe tener 13 dígitos numéricos</div>
                 </div>
-                <div class="field-group">
+
+                <div class="field-group password-group">
                     <label for="contrasena" class="field-label">Contraseña</label>
-                    <input type="password" id="contrasena" class="field-input" placeholder="••••••••" required>
+                    <input type="password" id="contrasena" class="field-input" placeholder="••••••••" autocomplete="off" required>
+                    <button type="button" id="togglePassword" class="toggle-password" tabindex="-1">
+                        <span class="material-symbols-outlined">visibility_off</span>
+                    </button>
+                    <div id="capslock-warning" class="capslock-warning">
+                        <span class="material-symbols-outlined">keyboard_capslock</span> Bloq Mayús activado
+                    </div>
                 </div>
-                <button type="submit" id="btn-login" class="btn-login">Ingresar al sistema</button>
+
+                <div class="remember-group">
+                    <label>
+                        <input type="checkbox" id="rememberCui"> Recordar CUI
+                    </label>
+                </div>
+
+                <button type="submit" id="btn-login" class="btn-login">
+                    Ingresar al sistema
+                </button>
             </form>
         </div>
 
@@ -292,20 +371,156 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/login.js"></script>
+
     <script>
-        const form = document.getElementById('loginForm');
-        const btn  = document.getElementById('btn-login');
-        form.addEventListener('submit', () => {
-            btn.disabled = true;
-            btn.innerHTML = '<span class="btn-spinner"></span>Verificando...';
-        });
-        const observer = new MutationObserver(() => {
-            if (document.getElementById('error-msg').classList.contains('visible')) {
-                btn.disabled = false;
-                btn.innerHTML = 'Ingresar al sistema';
+        (function() {
+            // Elementos
+            const cuiInput = document.getElementById('cui');
+            const passwordInput = document.getElementById('contrasena');
+            const toggleBtn = document.getElementById('togglePassword');
+            const capslockWarning = document.getElementById('capslock-warning');
+            const rememberCheck = document.getElementById('rememberCui');
+            const loginForm = document.getElementById('loginForm');
+            const btnLogin = document.getElementById('btn-login');
+            const errorMsgDiv = document.getElementById('error-msg');
+
+            // --- Enfoque automático al cargar ---
+            cuiInput.focus();
+
+            // --- Recordar CUI (cargar desde localStorage) ---
+            const storedCui = localStorage.getItem('recordedCui');
+            if (storedCui) {
+                cuiInput.value = storedCui;
+                rememberCheck.checked = true;
             }
-        });
-        observer.observe(document.getElementById('error-msg'), { attributes: true });
+
+            // --- Validación de CUI en tiempo real (13 dígitos numéricos) ---
+            function validateCui() {
+                let cuiValue = cuiInput.value.trim();
+                let isValid = /^\d{13}$/.test(cuiValue);
+                const cuiError = document.getElementById('cui-error');
+                if (cuiValue.length > 0 && !isValid) {
+                    cuiError.style.display = 'block';
+                } else {
+                    cuiError.style.display = 'none';
+                }
+                return isValid;
+            }
+
+            cuiInput.addEventListener('input', validateCui);
+
+            // --- Mostrar/ocultar contraseña ---
+            let isPasswordVisible = false;
+            toggleBtn.addEventListener('click', function() {
+                isPasswordVisible = !isPasswordVisible;
+                passwordInput.type = isPasswordVisible ? 'text' : 'password';
+                const iconSpan = toggleBtn.querySelector('.material-symbols-outlined');
+                iconSpan.textContent = isPasswordVisible ? 'visibility' : 'visibility_off';
+            });
+
+            // --- Detectar Caps Lock en el campo contraseña ---
+            passwordInput.addEventListener('keyup', function(e) {
+                if (e.getModifierState && e.getModifierState('CapsLock')) {
+                    capslockWarning.classList.add('visible');
+                } else {
+                    capslockWarning.classList.remove('visible');
+                }
+            });
+            // También al perder el foco, para limpiar si está oculto
+            passwordInput.addEventListener('blur', function() {
+                capslockWarning.classList.remove('visible');
+            });
+
+            // --- Guardar CUI si el checkbox está marcado, al enviar el formulario ---
+            function saveCuiIfNeeded() {
+                if (rememberCheck.checked) {
+                    localStorage.setItem('recordedCui', cuiInput.value.trim());
+                } else {
+                    localStorage.removeItem('recordedCui');
+                }
+            }
+
+            // --- Validación antes de enviar (adicional) ---
+            function isValidForm() {
+                let cuiValid = /^\d{13}$/.test(cuiInput.value.trim());
+                let passValid = passwordInput.value.trim().length > 0;
+                if (!cuiValid) {
+                    mostrarError('El CUI debe contener exactamente 13 dígitos numéricos.');
+                    return false;
+                }
+                if (!passValid) {
+                    mostrarError('Debe ingresar la contraseña.');
+                    return false;
+                }
+                return true;
+            }
+
+            function mostrarError(texto) {
+                errorMsgDiv.textContent = texto;
+                errorMsgDiv.classList.add('visible');
+                setTimeout(() => {
+                    errorMsgDiv.classList.remove('visible');
+                }, 5000);
+            }
+
+            // --- Interceptar envío para guardar CUI y validar ---
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (!isValidForm()) return;
+
+                saveCuiIfNeeded();
+
+                // Deshabilitar botón y mostrar spinner (el login.js también lo hace, pero lo hacemos aquí también)
+                btnLogin.disabled = true;
+                btnLogin.innerHTML = '<span class="btn-spinner"></span>Verificando...';
+
+                // Llamar al login real (reutilizando la función original de login.js)
+                // Pero el login.js ya tiene su propio listener. Para evitar duplicar peticiones,
+                // simplemente disparamos el submit original del formulario sin el preventDefault? No,
+                // porque ya lo prevenimos. La solución más limpia es ejecutar la misma lógica de API.post que está en login.js.
+                // Como login.js ya está cargado, podemos invocar la función que él tiene asociada al submit.
+                // Pero para no romper, lo mejor es llamar manualmente a la función de autenticación.
+                // Observemos que en login.js ya hay un listener que hace fetch. Si prevenimos el default, ese listener no se ejecuta.
+                // Por lo tanto, debemos replicar la llamada aquí.
+                // En lugar de duplicar, podemos eliminar el listener de login.js y centralizar aquí. Pero eso afectaría la estructura.
+                // Solución: remover el listener original de login.js y usar este. Pero login.js está precargado.
+                // Lo más práctico: mantener el listener original en login.js y no duplicar; es decir, en este script no prevenimos el submit? No, porque necesitamos validar y guardar.
+                // Entonces: eliminamos el evento submit que añade login.js? No es buena idea.
+                // Mejor: en este script, después de guardar, llamamos explícitamente a la función que realiza el login (la que está en login.js).
+                // Pero la función en login.js es anónima y no está expuesta globalmente.
+                // Por simplicidad, voy a mover la lógica de autenticación aquí, reemplazando la dependencia de login.js.
+                // Pero el usuario ya tiene login.js, y no quiero romperlo. Alternativa: permitir que el evento continue, pero entonces las validaciones de CUI no se harían.
+                // Para no complicar, voy a integrar la llamada API directamente, y el archivo login.js quedará como respaldo (aunque no se use porque prevenimos el submit).
+                // Es más limpio: eliminar el script login.js de este HTML y poner toda la lógica aquí. Pero el usuario tiene otros archivos que dependen de auth.js y api.js. La función de login puede ir aquí.
+                // Procedo: haré la petición directamente, ignorando el login.js (no lo elimino, pero su evento no se activará porque prevenimos el default y no lo llamamos).
+                // Así no hay conflictos.
+                realizarLogin();
+            });
+
+            async function realizarLogin() {
+                const cui = cuiInput.value.trim();
+                const contrasena = passwordInput.value;
+
+                try {
+                    const response = await API.post('/login', { cui, contrasena });
+                    if (response.ok) {
+                        const data = await response.json();
+                        Auth.guardarSesion(data.access_token, data.nombre_completo, data.rango, data.modulos, cui);
+                        window.location.href = 'libreria_dashboard.html';
+                    } else {
+                        const data = await response.json();
+                        mostrarError(data.detail || 'CUI o contraseña incorrectos.');
+                        btnLogin.disabled = false;
+                        btnLogin.innerHTML = 'Ingresar al sistema';
+                    }
+                } catch (error) {
+                    console.error('[Login] Error de conexión:', error);
+                    mostrarError('No se pudo conectar con el servidor. Verifica tu red.');
+                    btnLogin.disabled = false;
+                    btnLogin.innerHTML = 'Ingresar al sistema';
+                }
+            }
+        })();
     </script>
 </body>
 </html>
