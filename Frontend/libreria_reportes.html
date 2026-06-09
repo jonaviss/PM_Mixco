@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes Librería | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary":                  "#755b00",
+                        "primary-container":        "#C9A227",
+                        "on-primary":               "#ffffff",
+                        "surface":                  "#F8FAFC",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low":    "#F1F5F9",
+                        "surface-container":        "#E2E8F0",
+                        "surface-container-high":   "#CBD5E1",
+                        "outline-variant":          "#CBD5E1",
+                        "outline":                  "#94A3B8",
+                        "on-surface":               "#1E293B",
+                        "on-surface-variant":       "#475569",
+                        "secondary":                "#64748B",
+                        "error":                    "#EF4444",
+                    },
+                    fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
+                    spacing: { "sidebar": "260px" }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-on-surface">
+
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside id="sidebar" class="fixed left-0 top-0 h-full w-sidebar bg-surface-container-lowest border-r border-outline-variant flex flex-col z-40">
+    <div class="px-5 py-5 border-b border-outline-variant">
+        <h1 class="text-lg font-bold text-primary leading-none">Palabra Miel Mixco</h1>
+        <p class="text-xs text-secondary mt-1 font-mono uppercase tracking-wider">Módulo Librería</p>
+    </div>
+    <nav class="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
+        <a href="libreria_dashboard.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">dashboard</span>Dashboard</a>
+        <a href="libreria_inventario.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">inventory_2</span>Inventario</a>
+        <a href="libreria_ventas.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">point_of_sale</span>Ventas</a>
+        <a href="libreria_cobros.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">payments</span>Cobros</a>
+        <a href="libreria_clientes.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">group</span>Clientes</a>
+        <a href="libreria_reportes.html" class="nav-item active"><span class="material-symbols-outlined text-[20px]">analytics</span>Reportes</a>
+    </nav>
+    <div class="px-2 py-3 border-t border-outline-variant space-y-0.5">
+        <a href="#" class="nav-item"><span class="material-symbols-outlined text-[20px]">settings</span>Configuración</a>
+        <a href="index.html" id="btnCerrarSesion" class="nav-item danger"><span class="material-symbols-outlined text-[20px]">logout</span>Cerrar Sesión</a>
+    </div>
+</aside>
+
+<!-- CONTENIDO PRINCIPAL -->
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary"><span class="material-symbols-outlined">menu</span></button>
+            <div>
+                <h2 class="text-base font-bold text-on-surface leading-none">Reportes de Librería</h2>
+                <p class="text-xs text-secondary mt-0.5">Análisis de ventas, créditos y productos</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block">
+                <p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p>
+                <p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p>
+            </div>
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm">
+                <span id="avatar-inicial">?</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 space-y-6">
+
+        <!-- Filtros de reporte -->
+        <section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-1">Tipo de Reporte</label>
+                    <select id="tipo-reporte" class="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                        <option value="ventas">Ventas por periodo</option>
+                        <option value="deudores">Deudores (créditos pendientes)</option>
+                        <option value="productos">Productos más vendidos</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-1">Fecha Inicio</label>
+                    <input type="date" id="fecha-inicio" class="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-1">Fecha Fin</label>
+                    <input type="date" id="fecha-fin" class="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="generarReporte()" class="w-full bg-primary-container text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition flex items-center justify-center gap-2 text-sm">
+                        <span class="material-symbols-outlined text-[18px]">bar_chart</span>
+                        Generar Reporte
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Área de resultados (contenedor dinámico) -->
+        <div id="resultado-reporte" class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+            <div class="px-5 py-4 border-b border-outline-variant bg-surface-container-low/30">
+                <h3 class="text-sm font-bold text-on-surface">Resultados</h3>
+            </div>
+            <div class="p-8 text-center text-secondary">
+                <span class="material-symbols-outlined text-[48px] text-outline-variant block mb-3">insights</span>
+                <p class="text-base font-bold">Selecciona un tipo de reporte y rango de fechas</p>
+                <p class="text-sm mt-1">Los reportes estarán disponibles próximamente con datos reales.</p>
+            </div>
+        </div>
+
+        <!-- Tabla de ejemplo para vista previa de datos (placeholder) -->
+        <div class="hidden" id="tabla-preview">
+            <!-- Se puede llenar dinámicamente con JS cuando el backend esté listo -->
+        </div>
+
+    </main>
+
+    <footer class="border-t border-outline-variant px-6 py-3 text-center">
+        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Módulo Librería &copy; 2026</p>
+    </footer>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+/**
+ * @file libreria_reportes.js (inline)
+ * @description Lógica de reportes del módulo de librería.
+ * Actualmente en fase de diseño; los datos se conectarán posteriormente.
+ */
+
+function mostrarUsuario() {
+    const nombre = localStorage.getItem('usuario') || 'Usuario';
+    const rango = localStorage.getItem('rango') || '';
+    document.getElementById('nombre-usuario').textContent = nombre;
+    document.getElementById('rango-usuario').textContent = rango;
+    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
+}
+
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('hidden');
+}
+
+function generarReporte() {
+    const tipo = document.getElementById('tipo-reporte').value;
+    const fechaInicio = document.getElementById('fecha-inicio').value;
+    const fechaFin = document.getElementById('fecha-fin').value;
+    
+    // Validación básica
+    if (!fechaInicio || !fechaFin) {
+        alert('Por favor selecciona ambas fechas para generar el reporte.');
+        return;
+    }
+    
+    if (new Date(fechaInicio) > new Date(fechaFin)) {
+        alert('La fecha de inicio no puede ser mayor a la fecha fin.');
+        return;
+    }
+    
+    // Mostrar mensaje de carga
+    const areaResultado = document.getElementById('resultado-reporte');
+    areaResultado.innerHTML = `
+        <div class="px-5 py-4 border-b border-outline-variant bg-surface-container-low/30">
+            <h3 class="text-sm font-bold text-on-surface">Resultados</h3>
+        </div>
+        <div class="p-8 text-center text-secondary">
+            <span class="material-symbols-outlined text-[32px] animate-spin block mb-3">hourglass_empty</span>
+            <p class="text-sm">Cargando reporte...</p>
+        </div>
+    `;
+    
+    // Simular carga (cuando el backend esté listo, reemplazar con API.get)
+    setTimeout(() => {
+        let contenido = '';
+        if (tipo === 'ventas') {
+            contenido = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-surface-container-low/50">
+                            <tr>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase">Fecha</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase text-right">Total Ventas</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase text-right">Cantidad Transacciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-variant">
+                            <tr class="table-row"><td class="px-5 py-3">${fechaInicio}</td><td class="px-5 py-3 text-right font-mono">Q0.00</td><td class="px-5 py-3 text-right">0</td></tr>
+                            <tr class="table-row"><td class="px-5 py-3">${fechaFin}</td><td class="px-5 py-3 text-right font-mono">Q0.00</td><td class="px-5 py-3 text-right">0</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="px-5 py-3 text-right text-xs text-secondary border-t border-outline-variant bg-surface-container-low/30">
+                    * Funcionalidad en desarrollo. Próximamente con datos reales.
+                </div>
+            `;
+        } else if (tipo === 'deudores') {
+            contenido = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-surface-container-low/50">
+                            <tr>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase">Cliente</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase">CUI</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase text-right">Deuda Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-variant">
+                            <tr class="table-row"><td class="px-5 py-3">—</td><td class="px-5 py-3">—</td><td class="px-5 py-3 text-right font-mono">—</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="px-5 py-3 text-right text-xs text-secondary border-t border-outline-variant bg-surface-container-low/30">
+                    * Funcionalidad en desarrollo. Próximamente con datos reales.
+                </div>
+            `;
+        } else {
+            contenido = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-surface-container-low/50">
+                            <tr>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase">Producto</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase text-right">Cantidad Vendida</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase text-right">Total Recaudado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-variant">
+                            <tr class="table-row"><td class="px-5 py-3">—</td><td class="px-5 py-3 text-right">0</td><td class="px-5 py-3 text-right font-mono">Q0.00</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="px-5 py-3 text-right text-xs text-secondary border-t border-outline-variant bg-surface-container-low/30">
+                    * Funcionalidad en desarrollo. Próximamente con datos reales.
+                </div>
+            `;
+        }
+        areaResultado.innerHTML = `
+            <div class="px-5 py-4 border-b border-outline-variant bg-surface-container-low/30">
+                <h3 class="text-sm font-bold text-on-surface">Resultados</h3>
+            </div>
+            ${contenido}
+        `;
+    }, 800);
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = 'index.html'; return; }
+    mostrarUsuario();
+    document.getElementById('btnCerrarSesion').addEventListener('click', (e) => { e.preventDefault(); localStorage.clear(); window.location.href = 'index.html'; });
+    
+    // Establecer fechas por defecto: últimos 30 días
+    const hoy = new Date();
+    const hace30Dias = new Date();
+    hace30Dias.setDate(hoy.getDate() - 30);
+    document.getElementById('fecha-fin').value = hoy.toISOString().split('T')[0];
+    document.getElementById('fecha-inicio').value = hace30Dias.toISOString().split('T')[0];
+});
+</script>
+</body>
+</html>
