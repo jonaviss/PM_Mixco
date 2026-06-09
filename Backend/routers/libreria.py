@@ -4,11 +4,13 @@ Maneja inventario, ventas (contado y crédito), abonos simples y distribuidos.
 """
 
 import os
+import base64
 import httpx
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Depends, Query
 from database import supabase
 from schemas import ProductoLibreriaCreate, VentaLibreriaCreate, PagoLibreriaCreate, AbonoDistribuidoCreate
 from routers.dependencies import obtener_usuario_actual
+from routers.pdf_libreria import generar_pdf_comprobante
 from typing import Dict, Any, Optional
 
 router = APIRouter()
@@ -18,56 +20,76 @@ router = APIRouter()
 
 async def despachar_correo_libreria(datos: dict):
     """
-    Construye la plantilla HTML y la envía mediante Resend.
+    Genera un PDF de comprobante y lo envía adjunto por correo mediante Resend.
 
     Args:
-        datos: Diccionario con id_transaccion, tipo_notificacion,
-               detalle_producto, cantidad y monto
+        datos: Diccionario con toda la información de la transacción incluyendo
+               venta, productos, pagos, hermano y deuda_hermano
     """
     api_key = os.getenv("RESEND_API_KEY")
     if not api_key:
         print("[ALERTA] RESEND_API_KEY no configurada. Correo abortado.")
         return
 
-    id_referencia = datos["id_transaccion"][:8]
-    url_validacion = f"https://pm-mixco-erp.com/validar-transaccion/{datos['id_transaccion']}"
-    qr_img_url = f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={url_validacion}"
+    tipo = datos.get("tipo_notificacion", "venta_contado")
 
-    if datos["tipo_notificacion"] == "venta_credito":
-        titulo_recibo = "Notificación de Cargo a Crédito"
-        concepto_monto = "Monto de Deuda Adquirida"
-        color_destaque = "#d97706"
-    elif datos["tipo_notificacion"] == "venta_contado":
+    if tipo == "venta_credito":
+        titulo_recibo = "Notificacion de Cargo a Credito"
+    elif tipo == "venta_contado":
         titulo_recibo = "Comprobante de Compra en Efectivo"
-        concepto_monto = "Total Pagado Neto"
-        color_destaque = "#1e40af"
     else:
         titulo_recibo = "Comprobante de Abono Recibido"
-        concepto_monto = "Monto del Abono Liquidado"
-        color_destaque = "#059669"
 
-    html_content = f'''
-    <div style="font-family: Arial, sans-serif; max-width: 400px; margin: auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
-        <h2 style="color: #1e3a8a; text-align: center;">PALABRA MIEL MIXCO</h2>
-        <p style="text-align: center; color: #6b7280; font-weight: bold;">{titulo_recibo}</p>
-        <hr style="border: none; border-top: 1px dashed #d1d5db; margin: 20px 0;">
-        <p><strong>Detalle:</strong> {datos['detalle_producto']}</p>
-        <p><strong>Cantidad:</strong> {datos['cantidad']} unidad(es)</p>
-        <p><strong>{concepto_monto}:</strong> <span style="color: {color_destaque}; font-weight: bold;">Q{datos['monto']:.2f}</span></p>
-        <p style="color: #6b7280;"><strong>No. Operación:</strong> {id_referencia}</p>
-        <div style="text-align: center; margin-top: 20px;">
-            <img src="{qr_img_url}" alt="QR" style="border-radius: 6px; border: 1px solid #e5e7eb; padding: 6px;">
+    monto = datos.get("monto", 0)
+    hermano = datos.get("hermano", {})
+    nombre_hermano = hermano.get("nombre_completo", "Hermano")
+
+    # Generar PDF adjunto
+    try:
+        pdf_bytes = generar_pdf_comprobante(datos)
+        pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
+        adjunto = [{
+            "filename": f"comprobante_{datos.get('id_transaccion', 'tx')[:8]}.pdf",
+            "content": pdf_base64,
+            "type": "application/pdf"
+        }]
+    except Exception as e:
+        print(f"[ERROR] Falla al generar PDF: {e}")
+        adjunto = []
+
+    # HTML del correo (simple, el detalle está en el PDF)
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 24px;
+                border: 1px solid #e8e4d9; border-radius: 12px; background-color: #fafaf8;">
+        <h2 style="color: #755b00; text-align: center; margin-bottom: 4px;">PALABRA MIEL MIXCO</h2>
+        <p style="text-align: center; color: #7a7565; font-size: 13px; margin-top: 0;">{titulo_recibo}</p>
+        <hr style="border: none; border-top: 2px solid #C9A227; margin: 16px 0;">
+        <p style="font-size: 14px; color: #1c1c1a;">Estimado(a) <strong>{nombre_hermano}</strong>,</p>
+        <p style="font-size: 14px; color: #4d4635; margin-top: 8px;">
+            Se ha registrado una transacción en el módulo de Librería por un monto de
+            <strong style="color: #755b00;">Q{monto:.2f}</strong>.
+        </p>
+        <p style="font-size: 14px; color: #4d4635; margin-top: 8px;">
+            Adjunto encontrará el comprobante en formato PDF con el detalle completo
+            de la transacción y el estado de su cuenta.
+        </p>
+        <div style="background: #f0edea; border-radius: 8px; padding: 12px; margin-top: 16px;
+                    text-align: center; border: 1px solid #d1c5af;">
+            <p style="font-size: 11px; color: #7a7565; margin: 0;">
+                PM Mixco ERP v2.0.0 — Módulo Librería — Documento generado automáticamente
+            </p>
         </div>
     </div>
-    '''
+    """
 
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
 
     payload_correo = {
         "from": "Libreria PM Mixco <onboarding@resend.dev>",
         "to": ["jonathanvisoni@gmail.com"],
-        "subject": f"{titulo_recibo} - Q{datos['monto']:.2f} - PM Mixco",
-        "html": html_content
+        "subject": f"{titulo_recibo} — Q{monto:.2f} — PM Mixco",
+        "html": html_content,
+        "attachments": adjunto
     }
 
     async with httpx.AsyncClient() as client:
@@ -188,13 +210,54 @@ def registrar_venta(
             .eq("id", payload.producto_id) \
             .execute()
 
+        # Obtener datos del comprador para el comprobante
+        res_comprador = supabase.table("usuarios") \
+            .select("cui, nombre_completo") \
+            .eq("cui", payload.comprador_cui) \
+            .execute()
+        comprador = res_comprador.data[0] if res_comprador.data else {"cui": payload.comprador_cui, "nombre_completo": "—"}
+
+        # Calcular deuda total del hermano
+        res_deuda = supabase.table("libreria_ventas") \
+            .select("total_venta, total_pagado") \
+            .eq("comprador_cui", payload.comprador_cui) \
+            .in_("estado_pago", ["pendiente", "parcial"]) \
+            .execute()
+        deuda_data = res_deuda.data or []
+        deuda_total = sum(
+            float(d["total_venta"]) - float(d["total_pagado"])
+            for d in deuda_data
+            if float(d["total_venta"]) - float(d["total_pagado"]) > 0
+        )
+
+        # Obtener nombre del operador
+        res_op = supabase.table("usuarios").select("nombre_completo").eq("cui", usuario_actual["sub"]).execute()
+        nombre_op = res_op.data[0]["nombre_completo"] if res_op.data else usuario_actual["sub"]
+
         tipo_notif = "venta_contado" if es_contado else "venta_credito"
         background_tasks.add_task(despachar_correo_libreria, {
             "id_transaccion": venta_id,
             "tipo_notificacion": tipo_notif,
-            "detalle_producto": producto["nombre"],
-            "cantidad": payload.cantidad,
-            "monto": total_venta
+            "monto": total_venta,
+            "venta": {
+                "id": venta_id,
+                "comprador_cui": payload.comprador_cui,
+                "total_venta": total_venta,
+                "total_pagado": monto_ingresado,
+                "saldo_pendiente": total_venta - monto_ingresado,
+                "estado_pago": estado_inicial,
+                "operador": nombre_op
+            },
+            "productos": [{
+                "nombre": producto["nombre"],
+                "tipo_producto": producto.get("tipo_producto", "—"),
+                "cantidad": payload.cantidad,
+                "precio_unitario": precio_unitario,
+                "subtotal": total_venta
+            }],
+            "pagos": [],
+            "hermano": comprador,
+            "deuda_hermano": {"total": deuda_total, "cantidad": len(deuda_data)}
         })
 
         return {"mensaje": "Transacción completada exitosamente", "venta_id": venta_id}
@@ -351,12 +414,47 @@ async def distribuir_abono(
             monto_restante -= abono_aplicar
 
         if ventas_pagadas:
+            # Obtener datos del comprador para el comprobante
+            res_comprador = supabase.table("usuarios") \
+                .select("cui, nombre_completo") \
+                .eq("cui", payload.comprador_cui) \
+                .execute()
+            comprador = res_comprador.data[0] if res_comprador.data else {"cui": payload.comprador_cui, "nombre_completo": "—"}
+
+            # Calcular deuda restante del hermano
+            res_deuda = supabase.table("libreria_ventas") \
+                .select("total_venta, total_pagado") \
+                .eq("comprador_cui", payload.comprador_cui) \
+                .in_("estado_pago", ["pendiente", "parcial"]) \
+                .execute()
+            deuda_data = res_deuda.data or []
+            deuda_total = sum(
+                float(d["total_venta"]) - float(d["total_pagado"])
+                for d in deuda_data
+                if float(d["total_venta"]) - float(d["total_pagado"]) > 0
+            )
+
+            # Obtener nombre del operador
+            res_op = supabase.table("usuarios").select("nombre_completo").eq("cui", usuario_actual["sub"]).execute()
+            nombre_op = res_op.data[0]["nombre_completo"] if res_op.data else usuario_actual["sub"]
+
             background_tasks.add_task(despachar_correo_libreria, {
                 "id_transaccion": ventas_pagadas[0]["venta_id"],
                 "tipo_notificacion": "abono_parcial",
-                "detalle_producto": f"Abono distribuido en {len(ventas_pagadas)} venta(s)",
-                "cantidad": 1,
-                "monto": payload.monto_abonado
+                "monto": float(payload.monto_abonado),
+                "venta": {
+                    "id": ventas_pagadas[0]["venta_id"],
+                    "comprador_cui": payload.comprador_cui,
+                    "total_venta": float(payload.monto_abonado),
+                    "total_pagado": float(payload.monto_abonado),
+                    "saldo_pendiente": deuda_total,
+                    "estado_pago": ventas_pagadas[0]["estado"],
+                    "operador": nombre_op
+                },
+                "productos": [],
+                "pagos": [{"monto_abonado": float(payload.monto_abonado), "fecha_pago": None, "operador": nombre_op}],
+                "hermano": comprador,
+                "deuda_hermano": {"total": deuda_total, "cantidad": len(deuda_data)}
             })
 
         return {
@@ -520,6 +618,21 @@ async def obtener_detalle_venta(
             if res_op_venta.data:
                 nombre_operador_venta = res_op_venta.data[0]["nombre_completo"]
 
+        # 6. Calcular deuda total del hermano
+        comprador_cui = venta["comprador_cui"]
+        res_deuda = supabase.table("libreria_ventas") \
+            .select("total_venta, total_pagado") \
+            .eq("comprador_cui", comprador_cui) \
+            .in_("estado_pago", ["pendiente", "parcial"]) \
+            .execute()
+
+        deuda_data = res_deuda.data or []
+        deuda_total = sum(
+            float(d["total_venta"]) - float(d["total_pagado"])
+            for d in deuda_data
+            if float(d["total_venta"]) - float(d["total_pagado"]) > 0
+        )
+
         return {
             "venta": {
                 "id": venta["id"],
@@ -533,6 +646,10 @@ async def obtener_detalle_venta(
             },
             "productos": productos,
             "pagos": pagos_enriquecidos,
+            "deuda_hermano": {
+                "total": deuda_total,
+                "cantidad": len(deuda_data)
+            },
             "ok": True
         }
 

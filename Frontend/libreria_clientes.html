@@ -53,6 +53,7 @@
         <a href="libreria_ventas.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">point_of_sale</span>Ventas</a>
         <a href="libreria_cobros.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">payments</span>Cobros</a>
         <a href="libreria_clientes.html" class="nav-item active"><span class="material-symbols-outlined text-[20px]">group</span>Clientes</a>
+        <a href="libreria_reportes.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">analytics</span>Reportes</a>
     </nav>
     <div class="px-2 py-3 border-t border-outline-variant space-y-0.5">
         <a href="#" class="nav-item"><span class="material-symbols-outlined text-[20px]">settings</span>Configuración</a>
@@ -194,6 +195,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/libreria_shared.js"></script>
 <script>
 let cacheClientes = [];
 let historialCompleto = [];
@@ -378,170 +380,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 </script>
 
-<!-- MODAL: DETALLE DE VENTA -->
-<div id="modal-detalle" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
-    <div class="bg-surface-container-lowest rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-
-        <div class="bg-primary px-5 py-4 flex justify-between items-center flex-shrink-0">
-            <div>
-                <h3 class="text-base font-bold text-white">Detalle de Transacción</h3>
-                <p id="modal-venta-id" class="text-xs font-mono text-white/70 mt-0.5"></p>
-            </div>
-            <button onclick="cerrarDetalleVenta()" class="text-white/70 hover:text-white transition">
-                <span class="material-symbols-outlined">close</span>
-            </button>
-        </div>
-
-        <div class="overflow-y-auto flex-1 p-5 space-y-5">
-
-            <!-- Resumen de la venta -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div class="bg-surface-container-low rounded-lg p-3">
-                    <p class="text-xs font-mono text-secondary uppercase tracking-wider mb-1">Total Venta</p>
-                    <p id="modal-total-venta" class="text-base font-bold text-on-surface font-mono">—</p>
-                </div>
-                <div class="bg-surface-container-low rounded-lg p-3">
-                    <p class="text-xs font-mono text-secondary uppercase tracking-wider mb-1">Total Pagado</p>
-                    <p id="modal-total-pagado" class="text-base font-bold text-on-surface font-mono">—</p>
-                </div>
-                <div class="bg-surface-container-low rounded-lg p-3">
-                    <p class="text-xs font-mono text-secondary uppercase tracking-wider mb-1">Saldo Pendiente</p>
-                    <p id="modal-saldo" class="text-base font-bold font-mono">—</p>
-                </div>
-                <div class="bg-surface-container-low rounded-lg p-3">
-                    <p class="text-xs font-mono text-secondary uppercase tracking-wider mb-1">Registrado por</p>
-                    <p id="modal-operador" class="text-sm font-bold text-on-surface">—</p>
-                </div>
-            </div>
-
-            <!-- Productos -->
-            <div>
-                <h4 class="text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-2">Productos Comprados</h4>
-                <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
-                    <table class="w-full text-left">
-                        <thead class="bg-surface-container-low/50">
-                            <tr>
-                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase">Producto</th>
-                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase text-center">Cant.</th>
-                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase text-right">Precio Unit.</th>
-                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase text-right">Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody id="modal-productos" class="divide-y divide-outline-variant text-sm"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Pagos -->
-            <div>
-                <h4 class="text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-2">Pagos Registrados</h4>
-                <div id="modal-pagos-container" class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
-                    <table class="w-full text-left">
-                        <thead class="bg-surface-container-low/50">
-                            <tr>
-                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase">Fecha / Hora</th>
-                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase">Cobrado por</th>
-                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase text-right">Monto</th>
-                            </tr>
-                        </thead>
-                        <tbody id="modal-pagos" class="divide-y divide-outline-variant text-sm"></tbody>
-                    </table>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex-shrink-0">
-            <button onclick="cerrarDetalleVenta()" class="px-5 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">
-                Cerrar
-            </button>
-        </div>
-    </div>
-</div>
-<script>
-/**
- * Abre el modal con el detalle completo de una venta.
- * @param {string} ventaId - UUID de la venta
- */
-async function abrirDetalleVenta(ventaId) {
-    document.getElementById('modal-detalle').classList.remove('hidden');
-    document.getElementById('modal-detalle').classList.add('flex');
-    document.getElementById('modal-venta-id').textContent = `ID: ${ventaId}`;
-    document.getElementById('modal-productos').innerHTML = '<tr><td colspan="4" class="text-center py-4 text-secondary text-sm">Cargando...</td></tr>';
-    document.getElementById('modal-pagos').innerHTML = '<tr><td colspan="3" class="text-center py-4 text-secondary text-sm">Cargando...</td></tr>';
-
-    try {
-        const res = await API.get(`/libreria/ventas/${ventaId}/detalle`, true);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        const v = data.venta;
-        document.getElementById('modal-total-venta').textContent = formatearMoneda(v.total_venta);
-        document.getElementById('modal-total-pagado').textContent = formatearMoneda(v.total_pagado);
-
-        const saldoEl = document.getElementById('modal-saldo');
-        saldoEl.textContent = formatearMoneda(v.saldo_pendiente);
-        saldoEl.className = `text-base font-bold font-mono ${v.saldo_pendiente > 0 ? 'text-error' : 'text-green-600'}`;
-
-        document.getElementById('modal-operador').textContent = v.operador || '—';
-
-        // Renderizar productos
-        const tbodyProductos = document.getElementById('modal-productos');
-        if (data.productos.length === 0) {
-            tbodyProductos.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-secondary text-sm">Sin detalle de productos.</td></tr>';
-        } else {
-            tbodyProductos.innerHTML = '';
-            data.productos.forEach(p => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-surface-container-low transition-colors';
-                tr.innerHTML = `
-                    <td class="px-4 py-2.5">
-                        <p class="font-bold text-on-surface text-sm">${p.nombre}</p>
-                        <p class="text-xs text-secondary font-mono">${p.tipo_producto}</p>
-                    </td>
-                    <td class="px-4 py-2.5 text-center font-mono text-sm">${p.cantidad}</td>
-                    <td class="px-4 py-2.5 text-right font-mono text-sm">${formatearMoneda(p.precio_unitario)}</td>
-                    <td class="px-4 py-2.5 text-right font-mono font-bold text-sm">${formatearMoneda(p.subtotal)}</td>
-                `;
-                tbodyProductos.appendChild(tr);
-            });
-        }
-
-        // Renderizar pagos
-        const tbodyPagos = document.getElementById('modal-pagos');
-        if (data.pagos.length === 0) {
-            tbodyPagos.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-secondary text-sm">Sin pagos registrados.</td></tr>';
-        } else {
-            tbodyPagos.innerHTML = '';
-            data.pagos.forEach(p => {
-                const fechaPago = p.fecha_pago ? new Date(p.fecha_pago).toLocaleString('es-GT', {
-                    timeZone: 'America/Guatemala', day: '2-digit', month: '2-digit',
-                    year: 'numeric', hour: '2-digit', minute: '2-digit'
-                }) : '—';
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-surface-container-low transition-colors';
-                tr.innerHTML = `
-                    <td class="px-4 py-2.5 text-sm">${fechaPago}</td>
-                    <td class="px-4 py-2.5 text-sm text-secondary">${p.operador}</td>
-                    <td class="px-4 py-2.5 text-right font-mono font-bold text-sm text-green-700">${formatearMoneda(p.monto_abonado)}</td>
-                `;
-                tbodyPagos.appendChild(tr);
-            });
-        }
-
-    } catch (err) {
-        console.error('[Detalle] Error:', err);
-        document.getElementById('modal-productos').innerHTML = '<tr><td colspan="4" class="text-center py-4 text-error text-sm">Error al cargar el detalle.</td></tr>';
-    }
-}
-
-/**
- * Cierra el modal de detalle de venta.
- */
-function cerrarDetalleVenta() {
-    document.getElementById('modal-detalle').classList.add('hidden');
-    document.getElementById('modal-detalle').classList.remove('flex');
-}
-</script>
 </body>
 </html>

@@ -61,6 +61,7 @@
         <a href="libreria_ventas.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">point_of_sale</span>Ventas</a>
         <a href="libreria_cobros.html" class="nav-item active"><span class="material-symbols-outlined text-[20px]">payments</span>Cobros</a>
         <a href="libreria_clientes.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">group</span>Clientes</a>
+        <a href="libreria_reportes.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">analytics</span>Reportes</a>
     </nav>
     <div class="px-2 py-3 border-t border-outline-variant space-y-0.5">
         <a href="#" class="nav-item"><span class="material-symbols-outlined text-[20px]">settings</span>Configuración</a>
@@ -136,6 +137,7 @@
                                 <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Pagado</th>
                                 <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Pendiente</th>
                                 <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Detalle</th>
                             </tr>
                         </thead>
                         <tbody id="tabla-deudas" class="divide-y divide-outline-variant text-sm"></tbody>
@@ -231,6 +233,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/libreria_shared.js"></script>
 <script>
 let cacheClientes = [];
 let ventasPendientes = [];
@@ -358,6 +361,11 @@ function renderizarDeudas() {
             <td class="px-5 py-3 text-sm font-mono text-right">${formatearMoneda(v.total_pagado)}</td>
             <td class="px-5 py-3 text-sm font-mono text-right font-bold text-error">${formatearMoneda(pendiente)}</td>
             <td class="px-5 py-3 text-center">${badgeEstado}</td>
+            <td class="px-5 py-3 text-center">
+                <button onclick="abrirDetalleVenta('${v.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Ver detalle">
+                    <span class="material-symbols-outlined text-[16px]">receipt_long</span>
+                </button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
