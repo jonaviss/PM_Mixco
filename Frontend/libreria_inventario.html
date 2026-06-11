@@ -52,29 +52,15 @@
         <p class="text-xs text-secondary mt-1 font-mono uppercase tracking-wider">Módulo Librería</p>
     </div>
     <nav class="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        <a href="libreria_dashboard.html" class="nav-item">
-            <span class="material-symbols-outlined text-[20px]">dashboard</span>Dashboard
-        </a>
-        <a href="libreria_inventario.html" class="nav-item active">
-            <span class="material-symbols-outlined text-[20px]">inventory_2</span>Inventario
-        </a>
-        <a href="libreria_ventas.html" class="nav-item">
-            <span class="material-symbols-outlined text-[20px]">point_of_sale</span>Ventas
-        </a>
-        <a href="libreria_cobros.html" class="nav-item">
-            <span class="material-symbols-outlined text-[20px]">payments</span>Cobros
-        </a>
-        <a href="libreria_clientes.html" class="nav-item">
-            <span class="material-symbols-outlined text-[20px]">group</span>Clientes
-        </a>
+        <a href="libreria_dashboard.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">dashboard</span>Dashboard</a>
+        <a href="libreria_inventario.html" class="nav-item active"><span class="material-symbols-outlined text-[20px]">inventory_2</span>Inventario</a>
+        <a href="libreria_ventas.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">point_of_sale</span>Ventas</a>
+        <a href="libreria_cobros.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">payments</span>Cobros</a>
+        <a href="libreria_clientes.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">group</span>Clientes</a>
     </nav>
     <div class="px-2 py-3 border-t border-outline-variant space-y-0.5">
-        <a href="#" class="nav-item">
-            <span class="material-symbols-outlined text-[20px]">settings</span>Configuración
-        </a>
-        <a href="index.html" id="btnCerrarSesion" class="nav-item danger">
-            <span class="material-symbols-outlined text-[20px]">logout</span>Cerrar Sesión
-        </a>
+        <a href="#" class="nav-item"><span class="material-symbols-outlined text-[20px]">settings</span>Configuración</a>
+        <a href="index.html" id="btnCerrarSesion" class="nav-item danger"><span class="material-symbols-outlined text-[20px]">logout</span>Cerrar Sesión</a>
     </div>
 </aside>
 
@@ -83,9 +69,7 @@
 
     <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
         <div class="flex items-center gap-3">
-            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary">
-                <span class="material-symbols-outlined">menu</span>
-            </button>
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary"><span class="material-symbols-outlined">menu</span></button>
             <div>
                 <h2 class="text-base font-bold text-on-surface leading-none">Inventario</h2>
                 <p class="text-xs text-secondary mt-0.5">Librería · Productos y existencias</p>
@@ -133,7 +117,7 @@
         <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
 
             <!-- Filtros y buscador -->
-            <div class="p-4 border-b border-outline-variant flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-surface-container-low/30">
+            <div class="p-4 border-b border-outline-variant flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-surface-container-low/30 flex-wrap">
                 <div class="flex gap-2 flex-wrap">
                     <button onclick="filtrarCategoria('todos')" class="filter-btn active px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors" data-cat="todos">Todos</button>
                     <button onclick="filtrarCategoria('Biblia')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Biblia">Biblias</button>
@@ -141,9 +125,15 @@
                     <button onclick="filtrarCategoria('Material')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Material">Material</button>
                     <button onclick="filtrarCategoria('Accesorio')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Accesorio">Accesorios</button>
                 </div>
-                <div class="relative w-full sm:w-64">
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
-                    <input type="text" id="buscador" placeholder="Buscar producto..." class="w-full pl-9 pr-4 py-2 text-sm bg-surface-container-lowest border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    <div class="relative w-full sm:w-64">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+                        <input type="text" id="buscador" placeholder="Buscar producto..." class="w-full pl-9 pr-4 py-2 text-sm bg-surface-container-lowest border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                    </div>
+                    <label class="flex items-center gap-2 text-sm text-secondary whitespace-nowrap">
+                        <input type="checkbox" id="mostrar-inactivos" class="rounded border-outline-variant">
+                        Mostrar desactivados
+                    </label>
                 </div>
             </div>
 
@@ -229,15 +219,37 @@
     </div>
 </div>
 
+<!-- MODAL DE CONFIRMACIÓN PARA DESACTIVAR/REACTIVAR -->
+<div id="modal-confirmacion" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center" id="modal-confirmacion-header">
+            <h3 class="text-base font-bold text-on-surface">Confirmar acción</h3>
+            <button onclick="cerrarModalConfirmacion()" class="text-secondary hover:text-error transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="p-5">
+            <p id="confirmacion-mensaje" class="text-sm text-on-surface mb-5">¿Está seguro de realizar esta acción?</p>
+            <div class="flex justify-end gap-3">
+                <button onclick="cerrarModalConfirmacion()" class="px-4 py-2 text-sm font-bold text-secondary border border-outline-variant rounded-lg hover:bg-surface-container transition">Cancelar</button>
+                <button id="confirmacion-aceptar" class="px-4 py-2 text-sm font-bold text-white rounded-lg transition">Aceptar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script>
-// Variables globales
+// --- VARIABLES GLOBALES ---
 let todosLosProductos = [];
 let categoriaActiva = 'todos';
 let busquedaActiva = '';
 let paginaActual = 1;
 const POR_PAGINA = 15;
+
+// Variables para el modal de confirmación
+let confirmacionCallback = null;
 
 function formatearMoneda(valor) {
     return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -255,22 +267,25 @@ function mostrarUsuario() {
 }
 
 async function cargarProductos() {
+    const incluirInactivos = document.getElementById('mostrar-inactivos').checked;
+    const url = `/libreria/productos?incluir_inactivos=${incluirInactivos}`;
     try {
-        const res = await API.get('/libreria/productos', true);
+        const res = await API.get(url, true);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         todosLosProductos = await res.json();
         calcularStats();
         renderizarTabla();
     } catch (err) {
-        console.error('[Inventario] Error al cargar productos:', err);
-        document.getElementById('tabla-productos').innerHTML = `<tr><td colspan="7" class="text-center py-10 text-error font-bold">Error al cargar el inventario. Recargue la página.</td></tr>`;
+        console.error('[Inventario] Error:', err);
+        document.getElementById('tabla-productos').innerHTML = `<tr><td colspan="7" class="text-center py-10 text-error">Error al cargar inventario.</td></tr>`;
     }
 }
 
 function calcularStats() {
-    const total = todosLosProductos.length;
-    const bajoStock = todosLosProductos.filter(p => p.stock < 5).length;
-    const valorTotal = todosLosProductos.reduce((acc, p) => acc + (p.precio * p.stock), 0);
+    const activos = todosLosProductos.filter(p => p.estado === true);
+    const total = activos.length;
+    const bajoStock = activos.filter(p => p.stock < 5 && p.stock > 0).length;
+    const valorTotal = activos.reduce((acc, p) => acc + (p.precio * p.stock), 0);
     document.getElementById('stat-total').textContent = total;
     document.getElementById('stat-bajo-stock').textContent = bajoStock;
     document.getElementById('stat-valor').textContent = formatearMoneda(valorTotal);
@@ -293,32 +308,53 @@ function renderizarTabla() {
     document.getElementById('btn-siguiente').disabled = paginaActual >= totalPaginas;
     const tbody = document.getElementById('tabla-productos');
     if (pagina.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-secondary">No se encontraron productos con ese criterio.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-secondary">No se encontraron productos.</td></tr>`;
         return;
     }
     tbody.innerHTML = '';
     pagina.forEach(p => {
         const idCorto = p.id.substring(0, 8) + '...';
-        const claseStock = p.stock === 0 ? 'text-error font-bold' : p.stock < 5 ? 'text-amber-600 font-bold' : 'text-on-surface font-bold';
-        let badgeStock = '';
-        if (p.stock === 0) badgeStock = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Agotado</span>';
-        else if (p.stock < 5) badgeStock = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Bajo Stock</span>';
-        else badgeStock = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">En Stock</span>';
+        const stockClass = p.stock === 0 ? 'text-error font-bold' : p.stock < 5 ? 'text-amber-600 font-bold' : 'text-on-surface font-bold';
+        let estadoBadge = '';
+        if (p.estado === false) {
+            estadoBadge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-700">Inactivo</span>';
+        } else if (p.stock === 0) {
+            estadoBadge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Agotado</span>';
+        } else if (p.stock < 5) {
+            estadoBadge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Bajo Stock</span>';
+        } else {
+            estadoBadge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">En Stock</span>';
+        }
+
+        let botones = `
+            <button onclick="editarProducto('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Editar">
+                <span class="material-symbols-outlined text-[16px]">edit</span>
+            </button>
+        `;
+        if (p.estado) {
+            botones += `
+                <button onclick="confirmarDesactivar('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-error hover:bg-red-50 transition ml-1" title="Desactivar">
+                    <span class="material-symbols-outlined text-[16px]">delete_forever</span>
+                </button>
+            `;
+        } else {
+            botones += `
+                <button onclick="confirmarReactivar('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-green-600 hover:bg-green-50 transition ml-1" title="Reactivar">
+                    <span class="material-symbols-outlined text-[16px]">restore_from_trash</span>
+                </button>
+            `;
+        }
 
         const tr = document.createElement('tr');
         tr.className = 'table-row transition-colors';
         tr.innerHTML = `
-            <td class="px-5 py-3 font-mono text-xs text-secondary" title="${p.id}">${idCorto}</td>
+            <td class="px-5 py-3 font-mono text-xs text-secondary">${idCorto}</td>
             <td class="px-5 py-3 font-bold text-on-surface">${p.nombre}</td>
             <td class="px-5 py-3"><span class="px-2 py-0.5 bg-surface-container text-secondary rounded text-xs font-mono">${p.tipo_producto}</span></td>
-            <td class="px-5 py-3 text-right font-mono ${claseStock}">${p.stock}</td>
+            <td class="px-5 py-3 text-right font-mono ${stockClass}">${p.stock}</td>
             <td class="px-5 py-3 text-right font-mono font-bold">${formatearMoneda(p.precio)}</td>
-            <td class="px-5 py-3 text-center">${badgeStock}</td>
-            <td class="px-5 py-3 text-center">
-                <button onclick="editarProducto('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Editar">
-                    <span class="material-symbols-outlined text-[16px]">edit</span>
-                </button>
-            </td>
+            <td class="px-5 py-3 text-center">${estadoBadge}</td>
+            <td class="px-5 py-3 text-center">${botones}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -388,12 +424,11 @@ async function guardarProducto() {
     const precio = parseFloat(document.getElementById('prod-precio').value);
     const stock = parseInt(document.getElementById('prod-stock').value);
     if (!nombre) { mostrarMsgModal('El nombre del producto es obligatorio.', 'error'); return; }
-    if (isNaN(precio) || precio <= 0) { mostrarMsgModal('Ingresa un precio válido mayor a Q0.00.', 'error'); return; }
-    if (isNaN(stock) || stock < 0) { mostrarMsgModal('Ingresa un stock válido mayor o igual a 0.', 'error'); return; }
+    if (isNaN(precio) || precio <= 0) { mostrarMsgModal('Precio inválido.', 'error'); return; }
+    if (isNaN(stock) || stock < 0) { mostrarMsgModal('Stock inválido.', 'error'); return; }
 
     btn.disabled = true;
     btn.textContent = 'Guardando...';
-
     const payload = {
         tipo_producto: document.getElementById('prod-tipo').value,
         nombre,
@@ -402,14 +437,11 @@ async function guardarProducto() {
         stock,
         estado: true
     };
-
     try {
         let res;
         if (id) {
-            // Actualizar (PUT)
             res = await API.put(`/libreria/productos/${id}`, payload, true);
         } else {
-            // Crear (POST)
             res = await API.post('/libreria/productos', payload, true);
         }
         const data = await res.json();
@@ -417,14 +449,90 @@ async function guardarProducto() {
             cerrarModal();
             await cargarProductos();
         } else {
-            const detalle = Array.isArray(data.detail) ? data.detail.map(e => e.msg).join(', ') : (data.detail || 'Error al guardar el producto.');
+            const detalle = API.mensajeError(data);
             mostrarMsgModal(detalle, 'error');
         }
     } catch (err) {
-        mostrarMsgModal('Error de conexión con el servidor.', 'error');
+        mostrarMsgModal('Error de conexión.', 'error');
     } finally {
         btn.disabled = false;
         btn.textContent = 'Guardar';
+    }
+}
+
+// --- Funciones para el modal de confirmación ---
+function mostrarModalConfirmacion(mensaje, accionCallback, tipoAccion) {
+    const modal = document.getElementById('modal-confirmacion');
+    const mensajeEl = document.getElementById('confirmacion-mensaje');
+    const btnAceptar = document.getElementById('confirmacion-aceptar');
+    const header = document.getElementById('modal-confirmacion-header');
+
+    mensajeEl.textContent = mensaje;
+
+    // Estilo según el tipo de acción
+    if (tipoAccion === 'desactivar') {
+        btnAceptar.className = 'px-4 py-2 text-sm font-bold text-white bg-error rounded-lg hover:opacity-90 transition';
+        header.querySelector('h3').textContent = 'Desactivar producto';
+    } else if (tipoAccion === 'reactivar') {
+        btnAceptar.className = 'px-4 py-2 text-sm font-bold text-white bg-green-600 rounded-lg hover:opacity-90 transition';
+        header.querySelector('h3').textContent = 'Reactivar producto';
+    } else {
+        btnAceptar.className = 'px-4 py-2 text-sm font-bold text-white bg-primary-container rounded-lg hover:opacity-90 transition';
+        header.querySelector('h3').textContent = 'Confirmar acción';
+    }
+
+    // Remover eventos anteriores y agregar el nuevo
+    const newBtn = btnAceptar.cloneNode(true);
+    btnAceptar.parentNode.replaceChild(newBtn, btnAceptar);
+    newBtn.addEventListener('click', () => {
+        cerrarModalConfirmacion();
+        if (accionCallback) accionCallback();
+    });
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function cerrarModalConfirmacion() {
+    const modal = document.getElementById('modal-confirmacion');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    confirmacionCallback = null;
+}
+
+function confirmarDesactivar(id) {
+    const producto = todosLosProductos.find(p => p.id === id);
+    if (!producto) return;
+    const nombre = producto.nombre;
+    mostrarModalConfirmacion(
+        `¿Está seguro que desea desactivar el producto "${nombre}"? Dejará de aparecer en el catálogo.`,
+        () => toggleEstadoProducto(id, false),
+        'desactivar'
+    );
+}
+
+function confirmarReactivar(id) {
+    const producto = todosLosProductos.find(p => p.id === id);
+    if (!producto) return;
+    const nombre = producto.nombre;
+    mostrarModalConfirmacion(
+        `¿Está seguro que desea reactivar el producto "${nombre}"? Volverá a estar disponible en el catálogo.`,
+        () => toggleEstadoProducto(id, true),
+        'reactivar'
+    );
+}
+
+async function toggleEstadoProducto(id, nuevoEstado) {
+    try {
+        const res = await API.put(`/libreria/productos/${id}/toggle-estado`, {}, true);
+        const data = await res.json();
+        if (res.ok) {
+            await cargarProductos();
+        } else {
+            alert(`Error: ${data.detail || 'No se pudo cambiar el estado.'}`);
+        }
+    } catch (err) {
+        alert('Error de conexión.');
     }
 }
 
@@ -438,6 +546,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!token) { window.location.href = 'index.html'; return; }
     mostrarUsuario();
     document.getElementById('btnCerrarSesion').addEventListener('click', (e) => { e.preventDefault(); localStorage.clear(); window.location.href = 'index.html'; });
+    const cbInactivos = document.getElementById('mostrar-inactivos');
+    cbInactivos.addEventListener('change', () => {
+        paginaActual = 1;
+        cargarProductos();
+    });
     let debounce;
     document.getElementById('buscador').addEventListener('input', (e) => {
         clearTimeout(debounce);

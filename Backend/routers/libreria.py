@@ -6,7 +6,7 @@ Maneja inventario, ventas (contado y crédito), abonos simples y distribuidos.
 import os
 import base64
 import httpx
-from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Depends, Query
+from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Depends, Query, Request
 from database import supabase
 from schemas import ProductoLibreriaCreate, VentaLibreriaCreate, PagoLibreriaCreate, AbonoDistribuidoCreate, ProductoLibreriaUpdate
 from routers.dependencies import obtener_usuario_actual
@@ -102,11 +102,18 @@ async def despachar_correo_libreria(datos: dict):
 
 @router.get("/productos")
 async def listar_productos(
+    incluir_inactivos: bool = False,
     usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
 ):
-    """Retorna la lista de productos activos en inventario."""
+    """
+    Retorna la lista de productos activos en inventario.
+    Si incluir_inactivos=True, retorna todos (activos e inactivos).
+    """
     try:
-        res = supabase.table("inventario_libreria").select("*").eq("estado", True).execute()
+        query = supabase.table("inventario_libreria").select("*")
+        if not incluir_inactivos:
+            query = query.eq("estado", True)
+        res = query.execute()
         return res.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -167,7 +174,7 @@ def actualizar_producto(
         )
 
     try:
-        # Verificar que el producto existe y está activo
+        # Verificar que el producto existe y está activo (no se puede editar un inactivo)
         res_exist = supabase.table("inventario_libreria").select("id").eq("id", producto_id).eq("estado", True).execute()
         if not res_exist.data:
             raise HTTPException(status_code=404, detail="Producto no encontrado o inactivo.")
@@ -184,6 +191,44 @@ def actualizar_producto(
 
         # Retornar el producto actualizado
         return {"mensaje": "Producto actualizado", "data": res_update.data[0]}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/productos/{producto_id}/toggle-estado")
+async def toggle_estado_producto(
+    producto_id: str,
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    """
+    Cambia el estado del producto de true a false o viceversa.
+    Requiere rango: encargado, administrador o super_admin.
+    """
+    if usuario_actual.get("rango") not in ["encargado", "administrador", "super_admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tiene permisos para modificar productos."
+        )
+
+    try:
+        # Obtener estado actual
+        res = supabase.table("inventario_libreria").select("estado").eq("id", producto_id).execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Producto no encontrado.")
+
+        estado_actual = res.data[0]["estado"]
+        nuevo_estado = not estado_actual
+
+        # Actualizar
+        update_res = supabase.table("inventario_libreria").update({"estado": nuevo_estado}).eq("id", producto_id).execute()
+        if not update_res.data:
+            raise HTTPException(status_code=500, detail="Error al cambiar el estado del producto.")
+
+        mensaje = "Producto reactivado" if nuevo_estado else "Producto desactivado"
+        return {"mensaje": mensaje, "estado": nuevo_estado, "data": update_res.data[0]}
 
     except HTTPException:
         raise
