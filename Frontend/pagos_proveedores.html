@@ -84,7 +84,7 @@
     </main>
 </div>
 
-<!-- MODAL DETALLE DE COMPRA (productos y pagos con operador) -->
+<!-- MODAL ÚNICO: DETALLE DE COMPRA + REGISTRO DE PAGO (saldo dentro del formulario) -->
 <div id="modal-detalle-compra" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <div class="bg-primary px-5 py-4 flex justify-between items-center flex-shrink-0">
@@ -95,6 +95,7 @@
             <button onclick="cerrarModalDetalle()" class="text-white/70 hover:text-white transition-colors"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="overflow-y-auto flex-1 p-5 space-y-5">
+
             <!-- Productos -->
             <div>
                 <h4 class="text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-2">Productos</h4>
@@ -112,7 +113,8 @@
                     </table>
                 </div>
             </div>
-            <!-- Pagos -->
+
+            <!-- Pagos previos -->
             <div>
                 <h4 class="text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-2">Pagos Registrados</h4>
                 <div class="border border-outline-variant rounded-xl overflow-hidden">
@@ -129,33 +131,31 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Formulario de pago (solo si hay saldo pendiente) con saldo visible -->
+            <div id="formulario-pago" class="hidden border-t border-outline-variant pt-4 mt-2">
+                <h4 class="text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-3">Registrar Nuevo Pago</h4>
+                <!-- Tarjeta de saldo dentro del formulario -->
+                <div class="bg-surface-container p-3 rounded-lg space-y-2 text-sm mb-4">
+                    <div class="flex justify-between"><span class="font-bold">Total Compra:</span><span id="info-total-compra" class="font-mono">Q0.00</span></div>
+                    <div class="flex justify-between"><span class="font-bold">Total Pagado:</span><span id="info-total-pagado" class="font-mono">Q0.00</span></div>
+                    <div class="flex justify-between"><span class="font-bold text-error">Saldo Pendiente:</span><span id="info-saldo" class="font-mono font-bold text-error">Q0.00</span></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Monto (Q) *</label><input type="number" id="pago-monto" step="0.01" class="w-full border rounded-lg px-3 py-2" oninput="validarMontoUnificado()"></div>
+                    <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Fecha Pago *</label><input type="date" id="pago-fecha" class="w-full border rounded-lg px-3 py-2"></div>
+                    <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Método Pago</label><select id="pago-metodo" class="w-full border rounded-lg px-3 py-2"><option value="1">Efectivo</option><option value="2">Transferencia</option><option value="3">Cheque</option></select></div>
+                    <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Referencia</label><input type="text" id="pago-referencia" class="w-full border rounded-lg px-3 py-2" placeholder="Opcional"></div>
+                </div>
+                <div id="monto-error-unificado" class="text-xs text-error hidden mt-2">El monto no puede exceder el saldo pendiente.</div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button onclick="cerrarModalDetalle()" class="px-4 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cancelar</button>
+                    <button id="btn-registrar-pago-unificado" onclick="registrarPagoUnificado()" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg">Registrar Pago</button>
+                </div>
+            </div>
         </div>
         <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-end flex-shrink-0">
             <button onclick="cerrarModalDetalle()" class="px-4 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cerrar</button>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL PAGO (mejorado: muestra saldo pendiente) -->
-<div id="modal-pago" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div class="bg-primary px-5 py-4 flex justify-between"><h3 class="text-base font-bold text-white">Registrar Pago</h3><button onclick="cerrarModalPago()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button></div>
-        <div class="p-5 space-y-4">
-            <input type="hidden" id="pago-compra-id">
-            <div class="bg-surface-container p-3 rounded-lg space-y-2 text-sm">
-                <div class="flex justify-between"><span class="font-bold">Total Compra:</span><span id="info-total-compra" class="font-mono">Q0.00</span></div>
-                <div class="flex justify-between"><span class="font-bold">Total Pagado:</span><span id="info-total-pagado" class="font-mono">Q0.00</span></div>
-                <div class="flex justify-between"><span class="font-bold text-error">Saldo Pendiente:</span><span id="info-saldo" class="font-mono font-bold text-error">Q0.00</span></div>
-            </div>
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Monto a Pagar (Q)</label><input type="number" id="pago-monto" step="0.01" class="w-full border rounded-lg px-3 py-2" oninput="validarMonto()"></div>
-            <div id="monto-error" class="text-xs text-error hidden">El monto no puede exceder el saldo pendiente.</div>
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Fecha Pago</label><input type="date" id="pago-fecha" class="w-full border rounded-lg px-3 py-2"></div>
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Método Pago</label><select id="pago-metodo" class="w-full border rounded-lg px-3 py-2"><option value="1">Efectivo</option><option value="2">Transferencia</option><option value="3">Cheque</option></select></div>
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Referencia</label><input type="text" id="pago-referencia" class="w-full border rounded-lg px-3 py-2" placeholder="Opcional"></div>
-        </div>
-        <div class="bg-surface-container-low px-5 py-4 border-t flex justify-end gap-3">
-            <button onclick="cerrarModalPago()" class="px-4 py-2 text-sm font-bold text-secondary">Cancelar</button>
-            <button id="btn-registrar-pago" onclick="registrarPago()" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg">Registrar Pago</button>
         </div>
     </div>
 </div>
@@ -230,7 +230,7 @@
     function renderizarResumen() {
         const tbody = document.getElementById('resumen-deuda');
         if (resumenDeuda.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-secondary">No hay datos de compras. </td><tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-secondary">No hay datos de compras. </td></tr>';
             return;
         }
         tbody.innerHTML = '';
@@ -250,7 +250,7 @@
     function renderizarCompras(){ 
         const tbody = document.getElementById('tabla-compras'); 
         if(compras.length === 0){ 
-            tbody.innerHTML='<tr><td colspan="8" class="text-center py-6">No hay compras<\/td><\/tr>'; 
+            tbody.innerHTML='</tr><td colspan="8" class="text-center py-6">No hay compras<\/td><\/tr>'; 
             return; 
         } 
         tbody.innerHTML = ''; 
@@ -268,10 +268,9 @@
                 <td class="px-5 py-3 text-right font-mono font-bold ${saldo > 0 ? 'text-error' : 'text-green-600'}">${formatearMoneda(saldo)}<\/td>
                 <td class="px-5 py-3 text-center">${badge}<\/td>
                 <td class="px-5 py-3">
-                    <button onclick="verDetalleCompra('${c.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition mr-1" title="Ver detalle">
+                    <button onclick="verDetalleCompra('${c.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Ver detalle / Pagar">
                         <span class="material-symbols-outlined text-[16px]">receipt_long</span>
                     <\/button>
-                    ${saldo > 0 ? `<button onclick="abrirModalPago('${c.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Registrar pago"><span class="material-symbols-outlined text-[16px]">payments<\/span><\/button>` : ''}
                  <\/td>
             `;
             tbody.appendChild(tr); 
@@ -286,13 +285,24 @@
             const compra = data.compra;
             const detalles = data.detalles || [];
             const pagos = data.pagos || [];
-
-            document.getElementById('modal-compra-factura').textContent = `Factura: ${compra.factura || '—'} | Proveedor: ${compra.proveedores?.nombre || '-'}`;
+            compraActual = {
+                id: compra.id,
+                total: parseFloat(compra.total_compra),
+                pagado: parseFloat(compra.total_pagado || 0),
+                saldo: parseFloat(compra.total_compra) - parseFloat(compra.total_pagado || 0),
+                factura: compra.factura,
+                proveedor: compra.proveedores?.nombre || '-'
+            };
+            document.getElementById('modal-compra-factura').textContent = `Factura: ${compraActual.factura || '—'} | Proveedor: ${compraActual.proveedor}`;
+            // Actualizar tarjeta de saldo dentro del formulario
+            document.getElementById('info-total-compra').textContent = formatearMoneda(compraActual.total);
+            document.getElementById('info-total-pagado').textContent = formatearMoneda(compraActual.pagado);
+            document.getElementById('info-saldo').textContent = formatearMoneda(compraActual.saldo);
 
             // Productos
             const tbodyProductos = document.getElementById('modal-productos');
             if (detalles.length === 0) {
-                tbodyProductos.innerHTML = '<td><td colspan="4" class="text-center py-4 text-secondary">Sin productos registrados<\/td><\/tr>';
+                tbodyProductos.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-secondary">Sin productos registrados<\/td><\/tr>';
             } else {
                 tbodyProductos.innerHTML = '';
                 detalles.forEach(d => {
@@ -308,7 +318,7 @@
                 });
             }
 
-            // Pagos con operador
+            // Pagos
             const tbodyPagos = document.getElementById('modal-pagos');
             if (pagos.length === 0) {
                 tbodyPagos.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-secondary">Sin pagos registrados<\/td><\/tr>';
@@ -329,6 +339,20 @@
                 });
             }
 
+            // Mostrar/ocultar formulario de pago según saldo
+            const formPago = document.getElementById('formulario-pago');
+            if (compraActual.saldo > 0) {
+                formPago.classList.remove('hidden');
+                document.getElementById('pago-monto').value = '';
+                document.getElementById('pago-fecha').valueAsDate = new Date();
+                document.getElementById('pago-metodo').value = '1';
+                document.getElementById('pago-referencia').value = '';
+                document.getElementById('monto-error-unificado').classList.add('hidden');
+                document.getElementById('btn-registrar-pago-unificado').disabled = false;
+            } else {
+                formPago.classList.add('hidden');
+            }
+
             const modal = document.getElementById('modal-detalle-compra');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -342,44 +366,15 @@
         const modal = document.getElementById('modal-detalle-compra');
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        compraActual = null;
     }
 
-    async function abrirModalPago(compraId) {
-        try {
-            const res = await API.get(`/libreria/compras/${compraId}`, true);
-            if (!res.ok) throw new Error('Error al obtener datos de la compra');
-            const data = await res.json();
-            const compra = data.compra;
-            compraActual = {
-                id: compra.id,
-                total: parseFloat(compra.total_compra),
-                pagado: parseFloat(compra.total_pagado || 0),
-                saldo: parseFloat(compra.total_compra) - parseFloat(compra.total_pagado || 0)
-            };
-            document.getElementById('info-total-compra').textContent = formatearMoneda(compraActual.total);
-            document.getElementById('info-total-pagado').textContent = formatearMoneda(compraActual.pagado);
-            document.getElementById('info-saldo').textContent = formatearMoneda(compraActual.saldo);
-            document.getElementById('pago-compra-id').value = compraId;
-            document.getElementById('pago-monto').value = '';
-            document.getElementById('pago-fecha').valueAsDate = new Date();
-            document.getElementById('pago-referencia').value = '';
-            document.getElementById('monto-error').classList.add('hidden');
-            document.getElementById('btn-registrar-pago').disabled = false;
-            const modal = document.getElementById('modal-pago');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        } catch (err) {
-            console.error('[Modal Pago] Error cargando compra:', err);
-            alert('No se pudo cargar la información de la compra.');
-        }
-    }
-
-    function validarMonto() {
+    function validarMontoUnificado() {
         const montoInput = document.getElementById('pago-monto');
         const monto = parseFloat(montoInput.value);
         const saldo = compraActual ? compraActual.saldo : 0;
-        const errorDiv = document.getElementById('monto-error');
-        const btn = document.getElementById('btn-registrar-pago');
+        const errorDiv = document.getElementById('monto-error-unificado');
+        const btn = document.getElementById('btn-registrar-pago-unificado');
         if (isNaN(monto) || monto <= 0) {
             errorDiv.classList.add('hidden');
             btn.disabled = false;
@@ -394,34 +389,30 @@
         }
     }
 
-    function cerrarModalPago(){ 
-        document.getElementById('modal-pago').classList.add('hidden'); 
-        compraActual = null;
-    }
-
-    async function registrarPago(){ 
-        const compra_id = document.getElementById('pago-compra-id').value; 
-        const monto = parseFloat(document.getElementById('pago-monto').value); 
-        const fecha_pago = document.getElementById('pago-fecha').value; 
-        const metodo_pago_id = parseInt(document.getElementById('pago-metodo').value); 
-        const referencia = document.getElementById('pago-referencia').value; 
-        if(isNaN(monto) || monto <= 0){ alert('Monto inválido'); return; } 
-        if (compraActual && monto > compraActual.saldo) { alert('El monto no puede superar el saldo pendiente.'); return; }
-        const btn = document.getElementById('btn-registrar-pago');
+    async function registrarPagoUnificado() {
+        if (!compraActual) return;
+        const compra_id = compraActual.id;
+        const monto = parseFloat(document.getElementById('pago-monto').value);
+        const fecha_pago = document.getElementById('pago-fecha').value;
+        const metodo_pago_id = parseInt(document.getElementById('pago-metodo').value);
+        const referencia = document.getElementById('pago-referencia').value;
+        if (isNaN(monto) || monto <= 0) { alert('Monto inválido'); return; }
+        if (monto > compraActual.saldo) { alert('El monto no puede superar el saldo pendiente.'); return; }
+        const btn = document.getElementById('btn-registrar-pago-unificado');
         btn.disabled = true;
         btn.textContent = 'Registrando...';
-        try{ 
-            const res = await API.post('/libreria/compras/pagos_proveedores', { compra_id, monto, fecha_pago, metodo_pago_id, referencia }, true); 
-            if(res.ok){ 
-                alert('Pago registrado'); 
-                cerrarModalPago(); 
-                cargarCompras(); 
-            } else { 
-                const err = await res.json(); 
-                alert('Error: ' + err.detail); 
-            } 
-        } catch(e){ 
-            alert('Error de conexión'); 
+        try {
+            const res = await API.post('/libreria/compras/pagos_proveedores', { compra_id, monto, fecha_pago, metodo_pago_id, referencia }, true);
+            if (res.ok) {
+                alert('Pago registrado');
+                await verDetalleCompra(compra_id);
+                await cargarCompras();
+            } else {
+                const err = await res.json();
+                alert('Error: ' + err.detail);
+            }
+        } catch (e) {
+            alert('Error de conexión');
         } finally {
             btn.disabled = false;
             btn.textContent = 'Registrar Pago';
