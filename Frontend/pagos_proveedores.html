@@ -84,7 +84,7 @@
     </main>
 </div>
 
-<!-- MODAL DETALLE DE COMPRA (productos y pagos) -->
+<!-- MODAL DETALLE DE COMPRA (productos y pagos con operador) -->
 <div id="modal-detalle-compra" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <div class="bg-primary px-5 py-4 flex justify-between items-center flex-shrink-0">
@@ -119,8 +119,9 @@
                     <table class="w-full text-left">
                         <thead class="bg-surface-container-low/50">
                             <tr>
-                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase">Fecha</th>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase">Fecha / Hora</th>
                                 <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase text-right">Monto</th>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase">Operador</th>
                                 <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase">Referencia</th>
                             </tr>
                         </thead>
@@ -229,7 +230,7 @@
     function renderizarResumen() {
         const tbody = document.getElementById('resumen-deuda');
         if (resumenDeuda.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-secondary">No hay datos de compras. </td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-secondary">No hay datos de compras. </td><tr>';
             return;
         }
         tbody.innerHTML = '';
@@ -288,10 +289,10 @@
 
             document.getElementById('modal-compra-factura').textContent = `Factura: ${compra.factura || '—'} | Proveedor: ${compra.proveedores?.nombre || '-'}`;
 
-            // Renderizar productos
+            // Productos
             const tbodyProductos = document.getElementById('modal-productos');
             if (detalles.length === 0) {
-                tbodyProductos.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-secondary">Sin productos registrados<\/td><\/tr>';
+                tbodyProductos.innerHTML = '<td><td colspan="4" class="text-center py-4 text-secondary">Sin productos registrados<\/td><\/tr>';
             } else {
                 tbodyProductos.innerHTML = '';
                 detalles.forEach(d => {
@@ -307,20 +308,21 @@
                 });
             }
 
-            // Renderizar pagos
+            // Pagos con operador
             const tbodyPagos = document.getElementById('modal-pagos');
             if (pagos.length === 0) {
-                tbodyPagos.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-secondary">Sin pagos registrados<\/td><\/tr>';
+                tbodyPagos.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-secondary">Sin pagos registrados<\/td><\/tr>';
             } else {
                 tbodyPagos.innerHTML = '';
                 pagos.forEach(p => {
                     const fechaObj = new Date(p.fecha_pago);
-                    const fechaStr = fechaObj.toLocaleDateString() + ' ' + fechaObj.toLocaleTimeString();
+                    const fechaHora = fechaObj.toLocaleDateString() + ' ' + fechaObj.toLocaleTimeString();
                     const tr = document.createElement('tr');
                     tr.className = 'hover:bg-surface-container-low transition-colors';
                     tr.innerHTML = `
-                        <td class="px-4 py-2">${fechaStr}<\/td>
+                        <td class="px-4 py-2">${fechaHora}<\/td>
                         <td class="px-4 py-2 text-right font-mono font-bold text-green-700">${formatearMoneda(p.monto)}<\/td>
+                        <td class="px-4 py-2">${p.operador_nombre || p.operador_cui || '—'}<\/td>
                         <td class="px-4 py-2">${p.referencia || '—'}<\/td>
                     `;
                     tbodyPagos.appendChild(tr);

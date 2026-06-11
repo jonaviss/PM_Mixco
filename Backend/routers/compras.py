@@ -1,6 +1,6 @@
 """
 Módulo de gestión de compras, proveedores y pagos con control de inventario FIFO.
-Permite costo unitario 0 (para donaciones).
+Permite costo unitario 0 (para donaciones) y registra operador en pagos.
 """
 
 from fastapi import APIRouter, HTTPException, Depends, status
@@ -188,8 +188,26 @@ async def obtener_compra(compra_id: str, usuario_actual: Dict = Depends(obtener_
             raise HTTPException(404, "Compra no encontrada")
         compra = res_compra.data[0]
         res_detalles = supabase.table("compras_detalle").select("*, inventario_libreria(nombre)").eq("compra_id", compra_id).execute()
-        res_pagos = supabase.table("pagos_proveedores").select("*").eq("compra_id", compra_id).execute()
-        return {"compra": compra, "detalles": res_detalles.data, "pagos": res_pagos.data}
+        # Obtener pagos con operador
+        res_pagos = supabase.table("pagos_proveedores").select("*, digitado_por").eq("compra_id", compra_id).execute()
+        pagos = res_pagos.data or []
+        # Obtener nombres de operadores
+        cuis = list(set(p.get("digitado_por") for p in pagos if p.get("digitado_por")))
+        nombres = {}
+        if cuis:
+            res_usuarios = supabase.table("usuarios").select("cui, nombre_completo").in_("cui", cuis).execute()
+            nombres = {u["cui"]: u["nombre_completo"] for u in (res_usuarios.data or [])}
+        pagos_con_nombre = []
+        for p in pagos:
+            pagos_con_nombre.append({
+                "id": p["id"],
+                "monto": p["monto"],
+                "fecha_pago": p["fecha_pago"],
+                "referencia": p.get("referencia"),
+                "operador_cui": p.get("digitado_por"),
+                "operador_nombre": nombres.get(p.get("digitado_por"), p.get("digitado_por") or "—")
+            })
+        return {"compra": compra, "detalles": res_detalles.data, "pagos": pagos_con_nombre}
     except Exception as e:
         raise HTTPException(500, str(e))
 
@@ -222,7 +240,8 @@ async def registrar_pago_proveedor(payload: PagoProveedorCreate, usuario_actual:
             "monto": payload.monto,
             "fecha_pago": payload.fecha_pago.isoformat(),
             "metodo_pago_id": payload.metodo_pago_id,
-            "referencia": payload.referencia
+            "referencia": payload.referencia,
+            "digitado_por": usuario_actual["sub"]   # Guardar CUI del operador
         }
         res_pago = supabase.table("pagos_proveedores").insert(pago_data).execute()
         pago_id = res_pago.data[0]["id"]
