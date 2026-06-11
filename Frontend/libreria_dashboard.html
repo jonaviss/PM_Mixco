@@ -39,27 +39,8 @@
 
 <div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
-<!-- SIDEBAR -->
-<aside id="sidebar" class="fixed left-0 top-0 h-full w-sidebar bg-surface-container-lowest border-r border-outline-variant flex flex-col z-40">
-    <div class="px-5 py-5 border-b border-outline-variant">
-        <h1 class="text-lg font-bold text-primary leading-none">Palabra Miel Mixco</h1>
-        <p class="text-xs text-secondary mt-1 font-mono uppercase tracking-wider">Módulo Librería</p>
-    </div>
-    <nav class="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        <a href="libreria_dashboard.html" class="nav-item active"><span class="material-symbols-outlined text-[20px]">dashboard</span>Dashboard</a>
-        <a href="libreria_inventario.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">inventory_2</span>Inventario</a>
-        <a href="libreria_ventas.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">point_of_sale</span>Ventas</a>
-        <a href="libreria_cobros.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">payments</span>Cobros</a>
-        <a href="libreria_clientes.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">group</span>Clientes</a>
-    </nav>
-    <div class="px-2 py-3 border-t border-outline-variant space-y-0.5">
-        <a href="#" class="nav-item"><span class="material-symbols-outlined text-[20px]">settings</span>Configuración</a>
-        <a href="index.html" id="btnCerrarSesion" class="nav-item danger"><span class="material-symbols-outlined text-[20px]">logout</span>Cerrar Sesión</a>
-    </div>
-</aside>
+<!-- El sidebar se inyecta dinámicamente mediante layout.js -->
 
-<!-- CONTENIDO PRINCIPAL -->
-<!-- QUITO la clase bg-white para que herede el fondo del body -->
 <div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
 
     <!-- TOPBAR -->
@@ -186,10 +167,12 @@
                         </tr>
                     </thead>
                     <tbody id="tabla-actividad" class="divide-y divide-outline-variant text-sm">
-                        <tr><td colspan="6" class="text-center py-10 text-secondary">
-                            <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">hourglass_empty</span>
-                            Cargando actividad...
-                        </td></tr>
+                        <tr>
+                            <td colspan="6" class="text-center py-10 text-secondary">
+                                <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">hourglass_empty</span>
+                                Cargando actividad...
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -217,8 +200,9 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/layout.js"></script>
 <script>
-// (El script se mantiene exactamente igual, sin cambios)
+// (El script original del dashboard se mantiene exactamente igual, solo se ajusta toggleSidebar para que use el nuevo sidebar dinámico)
 let paginaActual = 1;
 const POR_PAGINA = 10;
 let rangoUsuario = '';
@@ -396,9 +380,16 @@ async function recargarDashboard() {
     await Promise.all([cargarKPIs(), cargarActividad()]);
 }
 
+// Función toggleSidebar modificada para funcionar con el sidebar dinámico (id="sidebar-dinamico")
 function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('open');
-    document.getElementById('overlay').classList.toggle('hidden');
+    const sidebar = document.getElementById('sidebar-dinamico');
+    if (sidebar) {
+        sidebar.classList.toggle('open');
+    }
+    const overlay = document.getElementById('overlay');
+    if (overlay) {
+        overlay.classList.toggle('hidden');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

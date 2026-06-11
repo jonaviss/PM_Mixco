@@ -39,27 +39,8 @@
 
 <div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
-<!-- SIDEBAR -->
-<aside id="sidebar" class="fixed left-0 top-0 h-full w-sidebar bg-surface-container-lowest border-r border-outline-variant flex flex-col z-40">
-    <div class="px-5 py-5 border-b border-outline-variant">
-        <h1 class="text-lg font-bold text-primary leading-none">Palabra Miel Mixco</h1>
-        <p class="text-xs text-secondary mt-1 font-mono uppercase tracking-wider">Módulo Librería</p>
-    </div>
-    <nav class="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        <a href="libreria_dashboard.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">dashboard</span>Dashboard</a>
-        <a href="libreria_inventario.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">inventory_2</span>Inventario</a>
-        <a href="libreria_ventas.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">point_of_sale</span>Ventas</a>
-        <a href="libreria_cobros.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">payments</span>Cobros</a>
-        <a href="libreria_clientes.html" class="nav-item active"><span class="material-symbols-outlined text-[20px]">group</span>Clientes</a>
-        <a href="libreria_reportes.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">analytics</span>Reportes</a>
-    </nav>
-    <div class="px-2 py-3 border-t border-outline-variant space-y-0.5">
-        <a href="#" class="nav-item"><span class="material-symbols-outlined text-[20px]">settings</span>Configuración</a>
-        <a href="index.html" id="btnCerrarSesion" class="nav-item danger"><span class="material-symbols-outlined text-[20px]">logout</span>Cerrar Sesión</a>
-    </div>
-</aside>
+<!-- El sidebar se inyecta dinámicamente mediante layout.js -->
 
-<!-- CONTENIDO PRINCIPAL -->
 <div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
 
     <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
@@ -194,6 +175,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/libreria_shared.js"></script>
+<script src="js/layout.js"></script>
 <script>
 let cacheClientes = [];
 let historialCompleto = [];
@@ -342,25 +324,27 @@ function renderizarHistorial(ventas) {
         const tr = document.createElement('tr');
         tr.className = 'table-row transition-colors';
         tr.innerHTML = `
-            <td class="px-5 py-3 font-mono text-xs text-secondary">${v.id.substring(0,8)}...</td>
-            <td class="px-5 py-3 text-sm">${fechaHora}</td>
-            <td class="px-5 py-3 text-sm text-secondary">${v.nombre_operador || '—'}</td>
-            <td class="px-5 py-3 text-sm font-mono font-bold text-right">${formatearMoneda(v.total_venta)}</td>
-            <td class="px-5 py-3 text-sm font-mono text-right">${formatearMoneda(v.total_pagado)}</td>
-            <td class="px-5 py-3 text-center">${badge}</td>
+            <td class="px-5 py-3 font-mono text-xs text-secondary">${v.id.substring(0,8)}...<\/td>
+            <td class="px-5 py-3 text-sm">${fechaHora}<\/td>
+            <td class="px-5 py-3 text-sm text-secondary">${v.nombre_operador || '—'}<\/td>
+            <td class="px-5 py-3 text-sm font-mono font-bold text-right">${formatearMoneda(v.total_venta)}<\/td>
+            <td class="px-5 py-3 text-sm font-mono text-right">${formatearMoneda(v.total_pagado)}<\/td>
+            <td class="px-5 py-3 text-center">${badge}<\/td>
             <td class="px-5 py-3 text-center">
                 <button onclick="abrirDetalleVenta('${v.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white hover:border-primary-container transition">
                     <span class="material-symbols-outlined text-[16px]">receipt_long</span>
-                </button>
-            </td>
+                <\/button>
+            <\/td>
         `;
         tbody.appendChild(tr);
     });
 }
 
 function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('open');
-    document.getElementById('overlay').classList.toggle('hidden');
+    const sidebar = document.getElementById('sidebar-dinamico');
+    if (sidebar) sidebar.classList.toggle('open');
+    const overlay = document.getElementById('overlay');
+    if (overlay) overlay.classList.toggle('hidden');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proveedores | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#755b00",
+                        "primary-container": "#C9A227",
+                        "on-primary": "#ffffff",
+                        "surface": "#F8FAFC",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#F1F5F9",
+                        "surface-container": "#E2E8F0",
+                        "surface-container-high": "#CBD5E1",
+                        "outline-variant": "#CBD5E1",
+                        "outline": "#94A3B8",
+                        "on-surface": "#1E293B",
+                        "on-surface-variant": "#475569",
+                        "secondary": "#64748B",
+                        "error": "#EF4444"
+                    },
+                    fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
+                    spacing: { "sidebar": "260px" }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-on-surface">
+
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- El sidebar se inyecta dinámicamente mediante layout.js -->
+
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary"><span class="material-symbols-outlined">menu</span></button>
+        <h2 class="text-base font-bold text-on-surface leading-none">Proveedores</h2>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block"><p id="nombre-usuario" class="text-sm font-bold text-on-surface"></p><p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p></div>
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm"><span id="avatar-inicial">?</span></div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 space-y-6">
+        <div class="flex justify-between items-center flex-wrap gap-3">
+            <h3 class="text-xs font-mono font-bold text-secondary uppercase tracking-widest">Listado de Proveedores</h3>
+            <div class="flex gap-2">
+                <button onclick="cambiarFiltro('activos')" id="btn-activos" class="px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-primary-container text-white hover:opacity-90 transition">Activos</button>
+                <button onclick="cambiarFiltro('inactivos')" id="btn-inactivos" class="px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition">Inactivos</button>
+                <button onclick="cambiarFiltro('todos')" id="btn-todos" class="px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition">Todos</button>
+                <button onclick="abrirModalProveedor()" class="bg-primary-container text-white text-sm font-bold px-4 py-2 rounded-lg hover:opacity-90">+ Nuevo Proveedor</button>
+            </div>
+        </div>
+        <div class="bg-white border border-outline-variant rounded-xl overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-surface-container-low/50">
+                    <tr>
+                        <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase">Nombre</th>
+                        <th class="px-5 py-3">Contacto</th>
+                        <th class="px-5 py-3">Teléfono</th>
+                        <th class="px-5 py-3">Email</th>
+                        <th class="px-5 py-3">Estado</th>
+                        <th class="px-5 py-3 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-proveedores" class="divide-y divide-outline-variant">
+                    <tr><td colspan="6" class="text-center py-6">Cargando...<\/td><\/tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<!-- MODAL: NUEVO / EDITAR PROVEEDOR -->
+<div id="modal-proveedor" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-primary px-5 py-4 flex justify-between"><h3 id="modal-proveedor-titulo" class="text-base font-bold text-white">Nuevo Proveedor</h3><button onclick="cerrarModalProveedor()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button></div>
+        <div class="p-5 space-y-4">
+            <input type="hidden" id="proveedor-id">
+            <div><label class="block text-xs font-bold text-secondary uppercase">Nombre</label><input type="text" id="proveedor-nombre" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase">Contacto</label><input type="text" id="proveedor-contacto" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase">Teléfono</label><input type="text" id="proveedor-telefono" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase">Email</label><input type="email" id="proveedor-email" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase">Dirección</label><input type="text" id="proveedor-direccion" class="w-full border rounded-lg px-3 py-2"></div>
+        </div>
+        <div class="bg-surface-container-low px-5 py-4 border-t flex justify-end gap-3"><button onclick="cerrarModalProveedor()" class="px-4 py-2 text-sm font-bold text-secondary">Cancelar</button><button onclick="guardarProveedor()" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg">Guardar</button></div>
+    </div>
+</div>
+
+<!-- MODAL DE CONFIRMACIÓN PARA DESACTIVAR/REACTIVAR -->
+<div id="modal-confirmacion" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center" id="modal-confirmacion-header">
+            <h3 class="text-base font-bold text-on-surface">Confirmar acción</h3>
+            <button onclick="cerrarModalConfirmacion()" class="text-secondary hover:text-error transition-colors"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-5">
+            <p id="confirmacion-mensaje" class="text-sm text-on-surface mb-5">¿Está seguro de realizar esta acción?</p>
+            <div class="flex justify-end gap-3">
+                <button onclick="cerrarModalConfirmacion()" class="px-4 py-2 text-sm font-bold text-secondary border border-outline-variant rounded-lg hover:bg-surface-container transition">Cancelar</button>
+                <button id="confirmacion-aceptar" class="px-4 py-2 text-sm font-bold text-white rounded-lg transition">Aceptar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/layout.js"></script>
+<script>
+    let proveedores = [];
+    let filtroActual = "activos"; // 'activos', 'inactivos', 'todos'
+    let confirmacionCallback = null;
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar-dinamico');
+        if (sidebar) sidebar.classList.toggle('open');
+        const overlay = document.getElementById('overlay');
+        if (overlay) overlay.classList.toggle('hidden');
+    }
+
+    function mostrarUsuario(){ 
+        const n=localStorage.getItem('usuario')||'Usuario'; 
+        document.getElementById('nombre-usuario').textContent=n; 
+        document.getElementById('rango-usuario').textContent=localStorage.getItem('rango')||''; 
+        document.getElementById('avatar-inicial').textContent=n.charAt(0).toUpperCase(); 
+    }
+
+    async function cargarProveedores() { 
+        try { 
+            const res = await API.get(`/libreria/compras/proveedores?estado=${filtroActual}`, true); 
+            if(res.ok) { 
+                proveedores = await res.json(); 
+                renderizarProveedores(); 
+            } else { 
+                console.error('Error al cargar proveedores:', res.status); 
+                document.getElementById('tabla-proveedores').innerHTML='<tr><td colspan="6" class="text-center py-6 text-error">Error al cargar proveedores<\/td><\/tr>'; 
+            }
+        } catch(e){ 
+            console.error(e); 
+            document.getElementById('tabla-proveedores').innerHTML='<tr><td colspan="6" class="text-center py-6 text-error">Error de conexión<\/td><\/tr>'; 
+        }
+    }
+
+    function renderizarProveedores() { 
+        const tbody = document.getElementById('tabla-proveedores'); 
+        if(proveedores.length===0){ 
+            tbody.innerHTML='<tr><td colspan="6" class="text-center py-6 text-secondary">No hay proveedores<\/td><\/tr>'; 
+            return; 
+        } 
+        tbody.innerHTML=''; 
+        proveedores.forEach(p => { 
+            const estadoBadge = p.activo 
+                ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Activo</span>' 
+                : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-700">Inactivo</span>';
+            
+            let botones = '';
+            if (p.activo) {
+                botones = `
+                    <button onclick="editarProveedor('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Editar">
+                        <span class="material-symbols-outlined text-[16px]">edit</span>
+                    </button>
+                    <button onclick="confirmarDesactivar('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-error hover:bg-red-50 transition ml-1" title="Desactivar">
+                        <span class="material-symbols-outlined text-[16px]">delete_forever</span>
+                    </button>
+                `;
+            } else {
+                botones = `
+                    <button onclick="editarProveedor('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Editar">
+                        <span class="material-symbols-outlined text-[16px]">edit</span>
+                    </button>
+                    <button onclick="confirmarReactivar('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-green-600 hover:bg-green-50 transition ml-1" title="Reactivar">
+                        <span class="material-symbols-outlined text-[16px]">restore_from_trash</span>
+                    </button>
+                `;
+            }
+            const tr = document.createElement('tr'); 
+            tr.className = 'table-row transition-colors';
+            tr.innerHTML = `
+                <td class="px-5 py-3 font-bold">${p.nombre}<\/td>
+                <td class="px-5 py-3">${p.contacto||'—'}<\/td>
+                <td class="px-5 py-3">${p.telefono||'—'}<\/td>
+                <td class="px-5 py-3">${p.email||'—'}<\/td>
+                <td class="px-5 py-3 text-center">${estadoBadge}<\/td>
+                <td class="px-5 py-3 text-center">${botones}<\/td>
+            `; 
+            tbody.appendChild(tr); 
+        }); 
+    }
+
+    function cambiarFiltro(estado) {
+        filtroActual = estado;
+        // Actualizar estilos de botones
+        document.getElementById('btn-activos').className = estado === 'activos' 
+            ? 'px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-primary-container text-white hover:opacity-90 transition'
+            : 'px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition';
+        document.getElementById('btn-inactivos').className = estado === 'inactivos' 
+            ? 'px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-primary-container text-white hover:opacity-90 transition'
+            : 'px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition';
+        document.getElementById('btn-todos').className = estado === 'todos' 
+            ? 'px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-primary-container text-white hover:opacity-90 transition'
+            : 'px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition';
+        cargarProveedores();
+    }
+
+    function abrirModalProveedor(){ 
+        document.getElementById('proveedor-id').value=''; 
+        document.getElementById('proveedor-nombre').value=''; 
+        document.getElementById('proveedor-contacto').value=''; 
+        document.getElementById('proveedor-telefono').value=''; 
+        document.getElementById('proveedor-email').value=''; 
+        document.getElementById('proveedor-direccion').value=''; 
+        document.getElementById('modal-proveedor-titulo').textContent = 'Nuevo Proveedor';
+        document.getElementById('modal-proveedor').classList.remove('hidden'); 
+        document.getElementById('modal-proveedor').classList.add('flex'); 
+    }
+
+    function cerrarModalProveedor(){ 
+        document.getElementById('modal-proveedor').classList.add('hidden'); 
+    }
+
+    async function editarProveedor(id){ 
+        const p = proveedores.find(p => p.id === id); 
+        if(!p) return; 
+        document.getElementById('proveedor-id').value = p.id; 
+        document.getElementById('proveedor-nombre').value = p.nombre; 
+        document.getElementById('proveedor-contacto').value = p.contacto||''; 
+        document.getElementById('proveedor-telefono').value = p.telefono||''; 
+        document.getElementById('proveedor-email').value = p.email||''; 
+        document.getElementById('proveedor-direccion').value = p.direccion||''; 
+        document.getElementById('modal-proveedor-titulo').textContent = 'Editar Proveedor';
+        document.getElementById('modal-proveedor').classList.remove('hidden'); 
+        document.getElementById('modal-proveedor').classList.add('flex'); 
+    }
+
+    async function guardarProveedor(){ 
+        const id = document.getElementById('proveedor-id').value; 
+        const payload = { 
+            nombre: document.getElementById('proveedor-nombre').value, 
+            contacto: document.getElementById('proveedor-contacto').value, 
+            telefono: document.getElementById('proveedor-telefono').value, 
+            email: document.getElementById('proveedor-email').value, 
+            direccion: document.getElementById('proveedor-direccion').value 
+        }; 
+        if(!payload.nombre){ alert('El nombre es obligatorio'); return; }
+        try{ 
+            let res; 
+            if(id) res = await API.put(`/libreria/compras/proveedores/${id}`, payload, true); 
+            else res = await API.post('/libreria/compras/proveedores', payload, true); 
+            if(res.ok){ 
+                cerrarModalProveedor(); 
+                cargarProveedores(); 
+            } else { 
+                const err = await res.json(); 
+                alert('Error: ' + (err.detail || 'No se pudo guardar')); 
+            } 
+        } catch(e){ 
+            alert('Error de conexión: ' + e.message); 
+        } 
+    }
+
+    // --- Funciones para desactivar/reactivar con modal de confirmación ---
+    function mostrarModalConfirmacion(mensaje, accionCallback, tipoAccion) {
+        const modal = document.getElementById('modal-confirmacion');
+        const mensajeEl = document.getElementById('confirmacion-mensaje');
+        const btnAceptar = document.getElementById('confirmacion-aceptar');
+        const header = document.getElementById('modal-confirmacion-header');
+        mensajeEl.textContent = mensaje;
+        if (tipoAccion === 'desactivar') {
+            btnAceptar.className = 'px-4 py-2 text-sm font-bold text-white bg-error rounded-lg hover:opacity-90 transition';
+            header.querySelector('h3').textContent = 'Desactivar proveedor';
+        } else {
+            btnAceptar.className = 'px-4 py-2 text-sm font-bold text-white bg-green-600 rounded-lg hover:opacity-90 transition';
+            header.querySelector('h3').textContent = 'Reactivar proveedor';
+        }
+        const newBtn = btnAceptar.cloneNode(true);
+        btnAceptar.parentNode.replaceChild(newBtn, btnAceptar);
+        newBtn.addEventListener('click', () => {
+            cerrarModalConfirmacion();
+            if (accionCallback) accionCallback();
+        });
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function cerrarModalConfirmacion() {
+        const modal = document.getElementById('modal-confirmacion');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        confirmacionCallback = null;
+    }
+
+    function confirmarDesactivar(id) {
+        const proveedor = proveedores.find(p => p.id === id);
+        if (!proveedor) return;
+        mostrarModalConfirmacion(
+            `¿Está seguro que desea desactivar el proveedor "${proveedor.nombre}"? Los proveedores inactivos no aparecerán en los listados de compras.`,
+            () => toggleEstadoProveedor(id, false),
+            'desactivar'
+        );
+    }
+
+    function confirmarReactivar(id) {
+        const proveedor = proveedores.find(p => p.id === id);
+        if (!proveedor) return;
+        mostrarModalConfirmacion(
+            `¿Está seguro que desea reactivar el proveedor "${proveedor.nombre}"? Volverá a estar disponible para nuevas compras.`,
+            () => toggleEstadoProveedor(id, true),
+            'reactivar'
+        );
+    }
+
+    async function toggleEstadoProveedor(id, nuevoEstado) {
+        try {
+            const payload = { activo: nuevoEstado };
+            const res = await API.put(`/libreria/compras/proveedores/${id}`, payload, true);
+            if (res.ok) {
+                cargarProveedores();
+            } else {
+                const err = await res.json();
+                alert('Error: ' + (err.detail || 'No se pudo cambiar el estado.'));
+            }
+        } catch (err) {
+            alert('Error de conexión.');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', ()=>{ 
+        if(!localStorage.getItem('token')) window.location.href='index.html'; 
+        mostrarUsuario(); 
+        cargarProveedores(); 
+    });
+</script>
+
+</body>
+</html>

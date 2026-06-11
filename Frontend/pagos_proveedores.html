@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagos a Proveedores | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script>
+        tailwind.config = { theme: { extend: { colors: { "primary": "#755b00", "primary-container": "#C9A227", "on-primary": "#ffffff", "surface": "#F8FAFC", "surface-container-lowest": "#ffffff", "surface-container-low": "#F1F5F9", "surface-container": "#E2E8F0", "surface-container-high": "#CBD5E1", "outline-variant": "#CBD5E1", "outline": "#94A3B8", "on-surface": "#1E293B", "on-surface-variant": "#475569", "secondary": "#64748B", "error": "#EF4444" }, fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] }, spacing: { "sidebar": "260px" } } } }
+    </script>
+</head>
+<body class="text-on-surface">
+
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- El sidebar se inyecta dinámicamente mediante layout.js -->
+
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary"><span class="material-symbols-outlined">menu</span></button>
+        <h2 class="text-base font-bold text-on-surface leading-none">Pagos a Proveedores</h2>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block"><p id="nombre-usuario" class="text-sm font-bold text-on-surface"></p><p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p></div>
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm"><span id="avatar-inicial">?</span></div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 space-y-6">
+
+        <!-- Resumen de deuda por proveedor -->
+        <div class="bg-white border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+            <div class="px-5 py-3 border-b border-outline-variant bg-surface-container-low/30">
+                <h3 class="text-sm font-bold text-on-surface">Resumen de Deuda por Proveedor</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-surface-container-low/50">
+                        <tr>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase">Proveedor</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase text-right">Total Comprado</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase text-right">Total Pagado</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase text-right">Saldo Pendiente</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resumen-deuda" class="divide-y divide-outline-variant">
+                        <tr><td colspan="4" class="text-center py-6 text-secondary">Cargando...<\/td><\/tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Filtros y lista de compras -->
+        <div class="bg-white border border-outline-variant rounded-xl p-5 shadow-sm">
+            <div class="flex gap-4 flex-wrap">
+                <div class="flex-1 min-w-[150px]"><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Proveedor</label><select id="filtro-proveedor" class="w-full border rounded-lg px-3 py-2"><option value="">Todos</option></select></div>
+                <div class="flex-1 min-w-[150px]"><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Estado</label><select id="filtro-estado" class="w-full border rounded-lg px-3 py-2"><option value="">Todos</option><option value="pendiente">Pendiente</option><option value="parcial">Parcial</option><option value="pagado">Pagado</option></select></div>
+                <div class="flex items-end"><button onclick="cargarCompras()" class="bg-primary-container text-white font-bold px-4 py-2 rounded-lg">Filtrar</button></div>
+            </div>
+        </div>
+
+        <div class="bg-white border border-outline-variant rounded-xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-surface-container-low/50">
+                        <tr>
+                            <th class="px-5 py-3">Proveedor</th>
+                            <th class="px-5 py-3">Fecha Compra</th>
+                            <th class="px-5 py-3">Factura</th>
+                            <th class="px-5 py-3 text-right">Total</th>
+                            <th class="px-5 py-3 text-right">Pagado</th>
+                            <th class="px-5 py-3 text-right">Saldo</th>
+                            <th class="px-5 py-3">Estado</th>
+                            <th class="px-5 py-3">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-compras"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- MODAL DETALLE DE COMPRA (productos y pagos) -->
+<div id="modal-detalle-compra" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div class="bg-primary px-5 py-4 flex justify-between items-center flex-shrink-0">
+            <div>
+                <h3 class="text-base font-bold text-white">Detalle de Compra</h3>
+                <p id="modal-compra-factura" class="text-xs text-white/70 mt-0.5">Factura: —</p>
+            </div>
+            <button onclick="cerrarModalDetalle()" class="text-white/70 hover:text-white transition-colors"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="overflow-y-auto flex-1 p-5 space-y-5">
+            <!-- Productos -->
+            <div>
+                <h4 class="text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-2">Productos</h4>
+                <div class="border border-outline-variant rounded-xl overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-surface-container-low/50">
+                            <tr>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase">Producto</th>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase text-center">Cantidad</th>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase text-right">Costo Unitario</th>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-productos" class="divide-y divide-outline-variant text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Pagos -->
+            <div>
+                <h4 class="text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-2">Pagos Registrados</h4>
+                <div class="border border-outline-variant rounded-xl overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-surface-container-low/50">
+                            <tr>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase">Fecha</th>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase text-right">Monto</th>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase">Referencia</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-pagos" class="divide-y divide-outline-variant text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-end flex-shrink-0">
+            <button onclick="cerrarModalDetalle()" class="px-4 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PAGO (mejorado: muestra saldo pendiente) -->
+<div id="modal-pago" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-primary px-5 py-4 flex justify-between"><h3 class="text-base font-bold text-white">Registrar Pago</h3><button onclick="cerrarModalPago()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button></div>
+        <div class="p-5 space-y-4">
+            <input type="hidden" id="pago-compra-id">
+            <div class="bg-surface-container p-3 rounded-lg space-y-2 text-sm">
+                <div class="flex justify-between"><span class="font-bold">Total Compra:</span><span id="info-total-compra" class="font-mono">Q0.00</span></div>
+                <div class="flex justify-between"><span class="font-bold">Total Pagado:</span><span id="info-total-pagado" class="font-mono">Q0.00</span></div>
+                <div class="flex justify-between"><span class="font-bold text-error">Saldo Pendiente:</span><span id="info-saldo" class="font-mono font-bold text-error">Q0.00</span></div>
+            </div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Monto a Pagar (Q)</label><input type="number" id="pago-monto" step="0.01" class="w-full border rounded-lg px-3 py-2" oninput="validarMonto()"></div>
+            <div id="monto-error" class="text-xs text-error hidden">El monto no puede exceder el saldo pendiente.</div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Fecha Pago</label><input type="date" id="pago-fecha" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Método Pago</label><select id="pago-metodo" class="w-full border rounded-lg px-3 py-2"><option value="1">Efectivo</option><option value="2">Transferencia</option><option value="3">Cheque</option></select></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Referencia</label><input type="text" id="pago-referencia" class="w-full border rounded-lg px-3 py-2" placeholder="Opcional"></div>
+        </div>
+        <div class="bg-surface-container-low px-5 py-4 border-t flex justify-end gap-3">
+            <button onclick="cerrarModalPago()" class="px-4 py-2 text-sm font-bold text-secondary">Cancelar</button>
+            <button id="btn-registrar-pago" onclick="registrarPago()" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg">Registrar Pago</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/layout.js"></script>
+<script>
+    let compras = [];
+    let proveedores = [];
+    let resumenDeuda = [];
+    let compraActual = null;
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar-dinamico');
+        if (sidebar) sidebar.classList.toggle('open');
+        const overlay = document.getElementById('overlay');
+        if (overlay) overlay.classList.toggle('hidden');
+    }
+
+    function mostrarUsuario(){ const n=localStorage.getItem('usuario')||'Usuario'; document.getElementById('nombre-usuario').textContent=n; document.getElementById('rango-usuario').textContent=localStorage.getItem('rango')||''; document.getElementById('avatar-inicial').textContent=n.charAt(0).toUpperCase(); }
+
+    async function cargarProveedores(){ 
+        try{ 
+            const res = await API.get('/libreria/compras/proveedores?estado=activos', true); 
+            if(res.ok) { 
+                proveedores = await res.json(); 
+                const sel = document.getElementById('filtro-proveedor'); 
+                sel.innerHTML = '<option value="">Todos</option>'; 
+                proveedores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; }); 
+            } 
+        } catch(e){ console.error(e); } 
+    }
+
+    async function cargarCompras(){ 
+        const proveedor_id = document.getElementById('filtro-proveedor').value; 
+        const estado = document.getElementById('filtro-estado').value; 
+        let url = '/libreria/compras?'; 
+        if(proveedor_id) url += `proveedor_id=${proveedor_id}&`; 
+        if(estado) url += `estado=${estado}`; 
+        try{ 
+            const res = await API.get(url, true); 
+            if(res.ok) { 
+                compras = await res.json(); 
+                renderizarCompras(); 
+                calcularResumenDeuda(); 
+            } 
+        } catch(e){ console.error(e); } 
+    }
+
+    function calcularResumenDeuda() {
+        const mapa = new Map();
+        compras.forEach(c => {
+            const proveedor = c.proveedores;
+            if (!proveedor) return;
+            const id = proveedor.id || proveedor.proveedor_id;
+            const nombre = proveedor.nombre;
+            if (!mapa.has(id)) {
+                mapa.set(id, { nombre, total_comprado: 0, total_pagado: 0 });
+            }
+            const item = mapa.get(id);
+            item.total_comprado += parseFloat(c.total_compra);
+            item.total_pagado += parseFloat(c.total_pagado || 0);
+        });
+        resumenDeuda = Array.from(mapa.values()).map(item => ({
+            ...item,
+            saldo: item.total_comprado - item.total_pagado
+        }));
+        renderizarResumen();
+    }
+
+    function renderizarResumen() {
+        const tbody = document.getElementById('resumen-deuda');
+        if (resumenDeuda.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-secondary">No hay datos de compras. </td></tr>';
+            return;
+        }
+        tbody.innerHTML = '';
+        resumenDeuda.forEach(r => {
+            const tr = document.createElement('tr');
+            tr.className = 'table-row transition-colors';
+            tr.innerHTML = `
+                <td class="px-5 py-3 font-medium">${r.nombre}</td>
+                <td class="px-5 py-3 text-right font-mono">${formatearMoneda(r.total_comprado)}</td>
+                <td class="px-5 py-3 text-right font-mono">${formatearMoneda(r.total_pagado)}</td>
+                <td class="px-5 py-3 text-right font-mono font-bold ${r.saldo > 0 ? 'text-error' : 'text-green-600'}">${formatearMoneda(r.saldo)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderizarCompras(){ 
+        const tbody = document.getElementById('tabla-compras'); 
+        if(compras.length === 0){ 
+            tbody.innerHTML='<tr><td colspan="8" class="text-center py-6">No hay compras<\/td><\/tr>'; 
+            return; 
+        } 
+        tbody.innerHTML = ''; 
+        compras.forEach(c => { 
+            const saldo = c.total_compra - c.total_pagado; 
+            const badge = c.estado === 'pagado' ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Pagado</span>' : (c.estado === 'parcial' ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>' : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>'); 
+            const tr = document.createElement('tr'); 
+            tr.className = 'table-row transition-colors';
+            tr.innerHTML = `
+                <td class="px-5 py-3">${c.proveedores?.nombre || '-'}<\/td>
+                <td class="px-5 py-3">${new Date(c.fecha_compra).toLocaleDateString()}<\/td>
+                <td class="px-5 py-3">${c.factura || '—'}<\/td>
+                <td class="px-5 py-3 text-right font-mono">${formatearMoneda(c.total_compra)}<\/td>
+                <td class="px-5 py-3 text-right font-mono">${formatearMoneda(c.total_pagado)}<\/td>
+                <td class="px-5 py-3 text-right font-mono font-bold ${saldo > 0 ? 'text-error' : 'text-green-600'}">${formatearMoneda(saldo)}<\/td>
+                <td class="px-5 py-3 text-center">${badge}<\/td>
+                <td class="px-5 py-3">
+                    <button onclick="verDetalleCompra('${c.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition mr-1" title="Ver detalle">
+                        <span class="material-symbols-outlined text-[16px]">receipt_long</span>
+                    <\/button>
+                    ${saldo > 0 ? `<button onclick="abrirModalPago('${c.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Registrar pago"><span class="material-symbols-outlined text-[16px]">payments<\/span><\/button>` : ''}
+                 <\/td>
+            `;
+            tbody.appendChild(tr); 
+        }); 
+    }
+
+    async function verDetalleCompra(compraId) {
+        try {
+            const res = await API.get(`/libreria/compras/${compraId}`, true);
+            if (!res.ok) throw new Error('Error al obtener detalle');
+            const data = await res.json();
+            const compra = data.compra;
+            const detalles = data.detalles || [];
+            const pagos = data.pagos || [];
+
+            document.getElementById('modal-compra-factura').textContent = `Factura: ${compra.factura || '—'} | Proveedor: ${compra.proveedores?.nombre || '-'}`;
+
+            // Renderizar productos
+            const tbodyProductos = document.getElementById('modal-productos');
+            if (detalles.length === 0) {
+                tbodyProductos.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-secondary">Sin productos registrados<\/td><\/tr>';
+            } else {
+                tbodyProductos.innerHTML = '';
+                detalles.forEach(d => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-surface-container-low transition-colors';
+                    tr.innerHTML = `
+                        <td class="px-4 py-2">${d.inventario_libreria?.nombre || 'Producto no disponible'}<\/td>
+                        <td class="px-4 py-2 text-center font-mono">${d.cantidad}<\/td>
+                        <td class="px-4 py-2 text-right font-mono">${formatearMoneda(d.costo_unitario)}<\/td>
+                        <td class="px-4 py-2 text-right font-mono">${formatearMoneda(d.subtotal)}<\/td>
+                    `;
+                    tbodyProductos.appendChild(tr);
+                });
+            }
+
+            // Renderizar pagos
+            const tbodyPagos = document.getElementById('modal-pagos');
+            if (pagos.length === 0) {
+                tbodyPagos.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-secondary">Sin pagos registrados<\/td><\/tr>';
+            } else {
+                tbodyPagos.innerHTML = '';
+                pagos.forEach(p => {
+                    const fechaObj = new Date(p.fecha_pago);
+                    const fechaStr = fechaObj.toLocaleDateString() + ' ' + fechaObj.toLocaleTimeString();
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-surface-container-low transition-colors';
+                    tr.innerHTML = `
+                        <td class="px-4 py-2">${fechaStr}<\/td>
+                        <td class="px-4 py-2 text-right font-mono font-bold text-green-700">${formatearMoneda(p.monto)}<\/td>
+                        <td class="px-4 py-2">${p.referencia || '—'}<\/td>
+                    `;
+                    tbodyPagos.appendChild(tr);
+                });
+            }
+
+            const modal = document.getElementById('modal-detalle-compra');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        } catch (err) {
+            console.error('[Detalle Compra] Error:', err);
+            alert('No se pudo cargar el detalle de la compra.');
+        }
+    }
+
+    function cerrarModalDetalle() {
+        const modal = document.getElementById('modal-detalle-compra');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    async function abrirModalPago(compraId) {
+        try {
+            const res = await API.get(`/libreria/compras/${compraId}`, true);
+            if (!res.ok) throw new Error('Error al obtener datos de la compra');
+            const data = await res.json();
+            const compra = data.compra;
+            compraActual = {
+                id: compra.id,
+                total: parseFloat(compra.total_compra),
+                pagado: parseFloat(compra.total_pagado || 0),
+                saldo: parseFloat(compra.total_compra) - parseFloat(compra.total_pagado || 0)
+            };
+            document.getElementById('info-total-compra').textContent = formatearMoneda(compraActual.total);
+            document.getElementById('info-total-pagado').textContent = formatearMoneda(compraActual.pagado);
+            document.getElementById('info-saldo').textContent = formatearMoneda(compraActual.saldo);
+            document.getElementById('pago-compra-id').value = compraId;
+            document.getElementById('pago-monto').value = '';
+            document.getElementById('pago-fecha').valueAsDate = new Date();
+            document.getElementById('pago-referencia').value = '';
+            document.getElementById('monto-error').classList.add('hidden');
+            document.getElementById('btn-registrar-pago').disabled = false;
+            const modal = document.getElementById('modal-pago');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        } catch (err) {
+            console.error('[Modal Pago] Error cargando compra:', err);
+            alert('No se pudo cargar la información de la compra.');
+        }
+    }
+
+    function validarMonto() {
+        const montoInput = document.getElementById('pago-monto');
+        const monto = parseFloat(montoInput.value);
+        const saldo = compraActual ? compraActual.saldo : 0;
+        const errorDiv = document.getElementById('monto-error');
+        const btn = document.getElementById('btn-registrar-pago');
+        if (isNaN(monto) || monto <= 0) {
+            errorDiv.classList.add('hidden');
+            btn.disabled = false;
+            return;
+        }
+        if (monto > saldo) {
+            errorDiv.classList.remove('hidden');
+            btn.disabled = true;
+        } else {
+            errorDiv.classList.add('hidden');
+            btn.disabled = false;
+        }
+    }
+
+    function cerrarModalPago(){ 
+        document.getElementById('modal-pago').classList.add('hidden'); 
+        compraActual = null;
+    }
+
+    async function registrarPago(){ 
+        const compra_id = document.getElementById('pago-compra-id').value; 
+        const monto = parseFloat(document.getElementById('pago-monto').value); 
+        const fecha_pago = document.getElementById('pago-fecha').value; 
+        const metodo_pago_id = parseInt(document.getElementById('pago-metodo').value); 
+        const referencia = document.getElementById('pago-referencia').value; 
+        if(isNaN(monto) || monto <= 0){ alert('Monto inválido'); return; } 
+        if (compraActual && monto > compraActual.saldo) { alert('El monto no puede superar el saldo pendiente.'); return; }
+        const btn = document.getElementById('btn-registrar-pago');
+        btn.disabled = true;
+        btn.textContent = 'Registrando...';
+        try{ 
+            const res = await API.post('/libreria/compras/pagos_proveedores', { compra_id, monto, fecha_pago, metodo_pago_id, referencia }, true); 
+            if(res.ok){ 
+                alert('Pago registrado'); 
+                cerrarModalPago(); 
+                cargarCompras(); 
+            } else { 
+                const err = await res.json(); 
+                alert('Error: ' + err.detail); 
+            } 
+        } catch(e){ 
+            alert('Error de conexión'); 
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Registrar Pago';
+        }
+    }
+
+    function formatearMoneda(val){ return 'Q'+parseFloat(val||0).toLocaleString('es-GT',{minimumFractionDigits:2}); }
+
+    document.addEventListener('DOMContentLoaded', async () => { 
+        if(!localStorage.getItem('token')) window.location.href='index.html'; 
+        mostrarUsuario(); 
+        await cargarProveedores(); 
+        await cargarCompras(); 
+    });
+</script>
+
+</body>
+</html>

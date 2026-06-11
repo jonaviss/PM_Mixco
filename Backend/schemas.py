@@ -24,12 +24,9 @@ class ProductoLibreriaCreate(BaseModel):
     stock: int = Field(..., ge=0)
     estado: bool = True
     atributos_especificos: Dict[str, Any] = Field(default_factory=dict)
+    proveedor_id: Optional[str] = None  # Nuevo campo
 
 class ProductoLibreriaUpdate(BaseModel):
-    """
-    Esquema para actualizar un producto de librería.
-    Todos los campos son opcionales para permitir actualización parcial.
-    """
     tipo_producto: Optional[str] = Field(None, description="Categoría del producto")
     nombre: Optional[str] = Field(None, description="Nombre del producto")
     descripcion: Optional[str] = Field(None, description="Descripción opcional")
@@ -37,6 +34,7 @@ class ProductoLibreriaUpdate(BaseModel):
     stock: Optional[int] = Field(None, ge=0, description="Cantidad en inventario")
     estado: Optional[bool] = Field(None, description="Activo o inactivo")
     atributos_especificos: Optional[Dict[str, Any]] = Field(None, description="Atributos adicionales")
+    proveedor_id: Optional[str] = None  # Nuevo campo
 
 class VentaLibreriaCreate(BaseModel):
     producto_id: str
@@ -51,9 +49,6 @@ class PagoLibreriaCreate(BaseModel):
     digitado_por: str
 
 class AbonoDistribuidoCreate(BaseModel):
-    """
-    Schema para distribuir un abono entre múltiples ventas pendientes de un cliente.
-    """
     comprador_cui: str = Field(..., description="CUI del cliente con deuda")
     monto_abonado: float = Field(..., gt=0, description="Monto total a distribuir")
     metodo_pago_id: int = Field(default=1, description="ID del método de pago")

@@ -7,6 +7,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import auth, libreria, dashboard_libreria
+from routers import compras
 
 app = FastAPI(title="PM Mixco ERP API", version="2.0.0")
 
@@ -26,7 +27,7 @@ app.add_middleware(
 app.include_router(auth.router, tags=["Autenticación"])
 app.include_router(libreria.router, prefix="/libreria", tags=["Librería"])
 app.include_router(dashboard_libreria.router, prefix="/libreria/dashboard", tags=["Dashboard Librería"])
-
+app.include_router(compras.router, prefix="/libreria/compras", tags=["Compras"])
 
 @app.get("/health")
 def health_check():

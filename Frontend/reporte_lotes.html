@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lotes Pendientes | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#755b00",
+                        "primary-container": "#C9A227",
+                        "on-primary": "#ffffff",
+                        "surface": "#F8FAFC",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#F1F5F9",
+                        "surface-container": "#E2E8F0",
+                        "surface-container-high": "#CBD5E1",
+                        "outline-variant": "#CBD5E1",
+                        "outline": "#94A3B8",
+                        "on-surface": "#1E293B",
+                        "on-surface-variant": "#475569",
+                        "secondary": "#64748B",
+                        "error": "#EF4444"
+                    },
+                    fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
+                    spacing: { "sidebar": "260px" }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-on-surface">
+
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- El sidebar se inyecta dinámicamente mediante layout.js -->
+
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary"><span class="material-symbols-outlined">menu</span></button>
+        <h2 class="text-base font-bold text-on-surface leading-none">Lotes Pendientes</h2>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block"><p id="nombre-usuario" class="text-sm font-bold text-on-surface"></p><p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p></div>
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm"><span id="avatar-inicial">?</span></div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 space-y-6">
+        <div class="bg-white border border-outline-variant rounded-xl overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-surface-container-low/50">
+                    <tr>
+                        <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Producto</th>
+                        <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Cantidad Inicial</th>
+                        <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Cantidad Restante</th>
+                        <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Costo Unitario</th>
+                        <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha Compra</th>
+                        <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Proveedor</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-lotes" class="divide-y divide-outline-variant text-sm">
+                    <tr><td colspan="6" class="text-center py-10 text-secondary">Cargando lotes pendientes...<\/td><\/tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="border-t border-outline-variant px-6 py-3 text-center">
+        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 — Módulo Librería &copy; 2026</p>
+    </footer>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/layout.js"></script>
+<script>
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar-dinamico');
+        if (sidebar) sidebar.classList.toggle('open');
+        const overlay = document.getElementById('overlay');
+        if (overlay) overlay.classList.toggle('hidden');
+    }
+
+    async function cargarLotes() {
+        const tbody = document.getElementById('tabla-lotes');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-secondary">Cargando...</td></tr>';
+        try {
+            const res = await API.get('/libreria/compras/lotes/pendientes', true);
+            if (res.ok) {
+                const lotes = await res.json();
+                if (lotes.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-secondary">No hay lotes pendientes.<\/td><\/tr>';
+                    return;
+                }
+                tbody.innerHTML = '';
+                lotes.forEach(l => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'table-row transition-colors';
+                    tr.innerHTML = `
+                        <td class="px-5 py-3 font-medium">${l.inventario_libreria?.nombre || '-'}<\/td>
+                        <td class="px-5 py-3 text-center font-mono">${l.cantidad_inicial}<\/td>
+                        <td class="px-5 py-3 text-center font-mono font-bold">${l.cantidad_restante}<\/td>
+                        <td class="px-5 py-3 text-right font-mono">Q${parseFloat(l.costo_unitario).toLocaleString('es-GT', {minimumFractionDigits: 2})}<\/td>
+                        <td class="px-5 py-3 text-center">${new Date(l.fecha_compra).toLocaleDateString('es-GT')}<\/td>
+                        <td class="px-5 py-3">${l.compras?.proveedores?.nombre || '-'}<\/td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-error">Error al cargar los lotes.<\/td><\/tr>';
+            }
+        } catch (err) {
+            console.error('[Lotes] Error:', err);
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-error">Error de conexión.<\/td><\/tr>';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!localStorage.getItem('token')) {
+            window.location.href = 'index.html';
+            return;
+        }
+        mostrarUsuario();
+        cargarLotes();
+    });
+
+    function mostrarUsuario() {
+        const nombre = localStorage.getItem('usuario') || 'Usuario';
+        const rango = localStorage.getItem('rango') || '';
+        document.getElementById('nombre-usuario').textContent = nombre;
+        document.getElementById('rango-usuario').textContent = rango;
+        document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
+    }
+</script>
+
+</body>
+</html>

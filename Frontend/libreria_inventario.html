@@ -45,41 +45,22 @@
 
 <div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
-<!-- SIDEBAR -->
-<aside id="sidebar" class="fixed left-0 top-0 h-full w-sidebar bg-surface-container-lowest border-r border-outline-variant flex flex-col z-40">
-    <div class="px-5 py-5 border-b border-outline-variant">
-        <h1 class="text-lg font-bold text-primary leading-none">Palabra Miel Mixco</h1>
-        <p class="text-xs text-secondary mt-1 font-mono uppercase tracking-wider">Módulo Librería</p>
-    </div>
-    <nav class="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        <a href="libreria_dashboard.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">dashboard</span>Dashboard</a>
-        <a href="libreria_inventario.html" class="nav-item active"><span class="material-symbols-outlined text-[20px]">inventory_2</span>Inventario</a>
-        <a href="libreria_ventas.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">point_of_sale</span>Ventas</a>
-        <a href="libreria_cobros.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">payments</span>Cobros</a>
-        <a href="libreria_clientes.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">group</span>Clientes</a>
-    </nav>
-    <div class="px-2 py-3 border-t border-outline-variant space-y-0.5">
-        <a href="#" class="nav-item"><span class="material-symbols-outlined text-[20px]">settings</span>Configuración</a>
-        <a href="index.html" id="btnCerrarSesion" class="nav-item danger"><span class="material-symbols-outlined text-[20px]">logout</span>Cerrar Sesión</a>
-    </div>
-</aside>
+<!-- El sidebar se inyecta dinámicamente mediante layout.js -->
 
-<!-- CONTENIDO PRINCIPAL -->
 <div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
 
     <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
         <div class="flex items-center gap-3">
-            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary"><span class="material-symbols-outlined">menu</span></button>
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
             <div>
                 <h2 class="text-base font-bold text-on-surface leading-none">Inventario</h2>
                 <p class="text-xs text-secondary mt-0.5">Librería · Productos y existencias</p>
             </div>
         </div>
         <div class="flex items-center gap-3">
-            <button onclick="abrirModal()" class="flex items-center gap-2 bg-primary-container text-white text-sm font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity shadow-sm">
-                <span class="material-symbols-outlined text-[18px]">add</span>
-                <span class="hidden sm:inline">Nuevo Producto</span>
-            </button>
+            <!-- Botón Nuevo Producto eliminado -->
             <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
                 <div class="text-right hidden sm:block">
                     <p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p>
@@ -145,6 +126,7 @@
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">ID</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Producto</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Categoría</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Proveedor</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Stock</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Precio</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
@@ -152,7 +134,7 @@
                         </tr>
                     </thead>
                     <tbody id="tabla-productos" class="divide-y divide-outline-variant text-sm">
-                        <tr><td colspan="7" class="text-center py-10 text-secondary">Cargando productos...</td></tr>
+                        <tr><td colspan="8" class="text-center py-10 text-secondary">Cargando productos...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -161,24 +143,28 @@
             <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center">
                 <p id="info-paginacion" class="text-xs font-mono text-secondary">— productos</p>
                 <div class="flex gap-2 items-center">
-                    <button id="btn-anterior" onclick="cambiarPagina(-1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
+                    <button id="btn-anterior" onclick="cambiarPagina(-1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary">
+                        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                    </button>
                     <span id="pagina-label" class="text-xs font-mono text-secondary px-2">Pág. 1</span>
-                    <button id="btn-siguiente" onclick="cambiarPagina(1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+                    <button id="btn-siguiente" onclick="cambiarPagina(1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary">
+                        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                    </button>
                 </div>
             </div>
         </div>
     </main>
 
     <footer class="border-t border-outline-variant px-6 py-3 text-center">
-        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 — Módulo Librería © 2026</p>
+        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 — Módulo Librería &copy; 2026</p>
     </footer>
 </div>
 
-<!-- MODAL: NUEVO / EDITAR PRODUCTO -->
+<!-- MODAL: EDITAR PRODUCTO (ya no hay modal de creación) -->
 <div id="modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
     <div class="bg-surface-container-lowest rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
         <div class="bg-primary px-5 py-4 flex justify-between items-center">
-            <h3 id="modal-titulo" class="text-base font-bold text-white">Nuevo Producto</h3>
+            <h3 id="modal-titulo" class="text-base font-bold text-white">Editar Producto</h3>
             <button onclick="cerrarModal()" class="text-white/70 hover:text-white transition-colors"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="p-5">
@@ -202,6 +188,12 @@
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Descripción</label>
                     <input type="text" id="prod-desc" placeholder="Detalles adicionales..." class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary-container transition">
                 </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Proveedor</label>
+                    <select id="prod-proveedor" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                        <option value="">Seleccione un proveedor</option>
+                    </select>
+                </div>
                 <div>
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Precio (Q) <span class="text-error">*</span></label>
                     <input type="number" id="prod-precio" step="0.01" min="0.01" placeholder="0.00" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low font-mono">
@@ -224,9 +216,7 @@
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
         <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center" id="modal-confirmacion-header">
             <h3 class="text-base font-bold text-on-surface">Confirmar acción</h3>
-            <button onclick="cerrarModalConfirmacion()" class="text-secondary hover:text-error transition-colors">
-                <span class="material-symbols-outlined">close</span>
-            </button>
+            <button onclick="cerrarModalConfirmacion()" class="text-secondary hover:text-error transition-colors"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="p-5">
             <p id="confirmacion-mensaje" class="text-sm text-on-surface mb-5">¿Está seguro de realizar esta acción?</p>
@@ -240,6 +230,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/layout.js"></script>
 <script>
 // --- VARIABLES GLOBALES ---
 let todosLosProductos = [];
@@ -247,9 +238,8 @@ let categoriaActiva = 'todos';
 let busquedaActiva = '';
 let paginaActual = 1;
 const POR_PAGINA = 15;
-
-// Variables para el modal de confirmación
 let confirmacionCallback = null;
+let listaProveedores = [];
 
 function formatearMoneda(valor) {
     return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -266,6 +256,22 @@ function mostrarUsuario() {
     if (elAvatar) elAvatar.textContent = nombre.charAt(0).toUpperCase();
 }
 
+async function cargarProveedoresParaSelect() {
+    try {
+        const res = await API.get('/libreria/compras/proveedores?estado=activos', true);
+        if (res.ok) {
+            listaProveedores = await res.json();
+            const select = document.getElementById('prod-proveedor');
+            select.innerHTML = '<option value="">Seleccione un proveedor</option>';
+            listaProveedores.forEach(p => {
+                select.innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
+            });
+        }
+    } catch (err) {
+        console.error('[Inventario] Error cargando proveedores:', err);
+    }
+}
+
 async function cargarProductos() {
     const incluirInactivos = document.getElementById('mostrar-inactivos').checked;
     const url = `/libreria/productos?incluir_inactivos=${incluirInactivos}`;
@@ -277,7 +283,7 @@ async function cargarProductos() {
         renderizarTabla();
     } catch (err) {
         console.error('[Inventario] Error:', err);
-        document.getElementById('tabla-productos').innerHTML = `<tr><td colspan="7" class="text-center py-10 text-error">Error al cargar inventario.</td></tr>`;
+        document.getElementById('tabla-productos').innerHTML = `<tr><td colspan="8" class="text-center py-10 text-error">Error al cargar inventario.</td></tr>`;
     }
 }
 
@@ -308,7 +314,7 @@ function renderizarTabla() {
     document.getElementById('btn-siguiente').disabled = paginaActual >= totalPaginas;
     const tbody = document.getElementById('tabla-productos');
     if (pagina.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-secondary">No se encontraron productos.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-secondary">No se encontraron productos.</td></tr>`;
         return;
     }
     tbody.innerHTML = '';
@@ -325,32 +331,20 @@ function renderizarTabla() {
         } else {
             estadoBadge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">En Stock</span>';
         }
-
-        let botones = `
-            <button onclick="editarProducto('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Editar">
-                <span class="material-symbols-outlined text-[16px]">edit</span>
-            </button>
-        `;
+        let botones = `<button onclick="editarProducto('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Editar"><span class="material-symbols-outlined text-[16px]">edit</span></button>`;
         if (p.estado) {
-            botones += `
-                <button onclick="confirmarDesactivar('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-error hover:bg-red-50 transition ml-1" title="Desactivar">
-                    <span class="material-symbols-outlined text-[16px]">delete_forever</span>
-                </button>
-            `;
+            botones += `<button onclick="confirmarDesactivar('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-error hover:bg-red-50 transition ml-1" title="Desactivar"><span class="material-symbols-outlined text-[16px]">delete_forever</span></button>`;
         } else {
-            botones += `
-                <button onclick="confirmarReactivar('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-green-600 hover:bg-green-50 transition ml-1" title="Reactivar">
-                    <span class="material-symbols-outlined text-[16px]">restore_from_trash</span>
-                </button>
-            `;
+            botones += `<button onclick="confirmarReactivar('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-green-600 hover:bg-green-50 transition ml-1" title="Reactivar"><span class="material-symbols-outlined text-[16px]">restore_from_trash</span></button>`;
         }
-
+        const proveedorNombre = p.proveedores?.nombre || (p.proveedor_id ? (listaProveedores.find(pr => pr.id === p.proveedor_id)?.nombre || '—') : '—');
         const tr = document.createElement('tr');
         tr.className = 'table-row transition-colors';
         tr.innerHTML = `
             <td class="px-5 py-3 font-mono text-xs text-secondary">${idCorto}</td>
             <td class="px-5 py-3 font-bold text-on-surface">${p.nombre}</td>
             <td class="px-5 py-3"><span class="px-2 py-0.5 bg-surface-container text-secondary rounded text-xs font-mono">${p.tipo_producto}</span></td>
+            <td class="px-5 py-3">${proveedorNombre}</td>
             <td class="px-5 py-3 text-right font-mono ${stockClass}">${p.stock}</td>
             <td class="px-5 py-3 text-right font-mono font-bold">${formatearMoneda(p.precio)}</td>
             <td class="px-5 py-3 text-center">${estadoBadge}</td>
@@ -377,20 +371,6 @@ function cambiarPagina(direccion) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function abrirModal() {
-    document.getElementById('modal-titulo').textContent = 'Nuevo Producto';
-    document.getElementById('producto-id').value = '';
-    document.getElementById('prod-tipo').value = 'Biblia';
-    document.getElementById('prod-nombre').value = '';
-    document.getElementById('prod-desc').value = '';
-    document.getElementById('prod-precio').value = '';
-    document.getElementById('prod-stock').value = '';
-    document.getElementById('msg-modal').classList.add('hidden');
-    document.getElementById('modal').classList.remove('hidden');
-    document.getElementById('modal').classList.add('flex');
-    document.getElementById('prod-nombre').focus();
-}
-
 function cerrarModal() {
     document.getElementById('modal').classList.add('hidden');
     document.getElementById('modal').classList.remove('flex');
@@ -412,21 +392,26 @@ async function editarProducto(id) {
     document.getElementById('prod-desc').value = producto.descripcion || '';
     document.getElementById('prod-precio').value = producto.precio;
     document.getElementById('prod-stock').value = producto.stock;
+    document.getElementById('prod-proveedor').value = producto.proveedor_id || '';
     document.getElementById('msg-modal').classList.add('hidden');
     document.getElementById('modal').classList.remove('hidden');
     document.getElementById('modal').classList.add('flex');
 }
 
 async function guardarProducto() {
-    const btn = document.getElementById('btn-guardar');
     const id = document.getElementById('producto-id').value;
+    if (!id) {
+        mostrarMsgModal('No se puede crear un producto desde aquí. Utilice el módulo de compras.', 'error');
+        setTimeout(() => cerrarModal(), 2000);
+        return;
+    }
+    const btn = document.getElementById('btn-guardar');
     const nombre = document.getElementById('prod-nombre').value.trim();
     const precio = parseFloat(document.getElementById('prod-precio').value);
     const stock = parseInt(document.getElementById('prod-stock').value);
     if (!nombre) { mostrarMsgModal('El nombre del producto es obligatorio.', 'error'); return; }
     if (isNaN(precio) || precio <= 0) { mostrarMsgModal('Precio inválido.', 'error'); return; }
     if (isNaN(stock) || stock < 0) { mostrarMsgModal('Stock inválido.', 'error'); return; }
-
     btn.disabled = true;
     btn.textContent = 'Guardando...';
     const payload = {
@@ -435,15 +420,11 @@ async function guardarProducto() {
         descripcion: document.getElementById('prod-desc').value.trim() || null,
         precio,
         stock,
-        estado: true
+        estado: true,
+        proveedor_id: document.getElementById('prod-proveedor').value || null
     };
     try {
-        let res;
-        if (id) {
-            res = await API.put(`/libreria/productos/${id}`, payload, true);
-        } else {
-            res = await API.post('/libreria/productos', payload, true);
-        }
+        const res = await API.put(`/libreria/productos/${id}`, payload, true);
         const data = await res.json();
         if (res.ok) {
             cerrarModal();
@@ -460,16 +441,12 @@ async function guardarProducto() {
     }
 }
 
-// --- Funciones para el modal de confirmación ---
 function mostrarModalConfirmacion(mensaje, accionCallback, tipoAccion) {
     const modal = document.getElementById('modal-confirmacion');
     const mensajeEl = document.getElementById('confirmacion-mensaje');
     const btnAceptar = document.getElementById('confirmacion-aceptar');
     const header = document.getElementById('modal-confirmacion-header');
-
     mensajeEl.textContent = mensaje;
-
-    // Estilo según el tipo de acción
     if (tipoAccion === 'desactivar') {
         btnAceptar.className = 'px-4 py-2 text-sm font-bold text-white bg-error rounded-lg hover:opacity-90 transition';
         header.querySelector('h3').textContent = 'Desactivar producto';
@@ -480,15 +457,12 @@ function mostrarModalConfirmacion(mensaje, accionCallback, tipoAccion) {
         btnAceptar.className = 'px-4 py-2 text-sm font-bold text-white bg-primary-container rounded-lg hover:opacity-90 transition';
         header.querySelector('h3').textContent = 'Confirmar acción';
     }
-
-    // Remover eventos anteriores y agregar el nuevo
     const newBtn = btnAceptar.cloneNode(true);
     btnAceptar.parentNode.replaceChild(newBtn, btnAceptar);
     newBtn.addEventListener('click', () => {
         cerrarModalConfirmacion();
         if (accionCallback) accionCallback();
     });
-
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 }
@@ -504,22 +478,14 @@ function confirmarDesactivar(id) {
     const producto = todosLosProductos.find(p => p.id === id);
     if (!producto) return;
     const nombre = producto.nombre;
-    mostrarModalConfirmacion(
-        `¿Está seguro que desea desactivar el producto "${nombre}"? Dejará de aparecer en el catálogo.`,
-        () => toggleEstadoProducto(id, false),
-        'desactivar'
-    );
+    mostrarModalConfirmacion(`¿Está seguro que desea desactivar el producto "${nombre}"? Dejará de aparecer en el catálogo.`, () => toggleEstadoProducto(id, false), 'desactivar');
 }
 
 function confirmarReactivar(id) {
     const producto = todosLosProductos.find(p => p.id === id);
     if (!producto) return;
     const nombre = producto.nombre;
-    mostrarModalConfirmacion(
-        `¿Está seguro que desea reactivar el producto "${nombre}"? Volverá a estar disponible en el catálogo.`,
-        () => toggleEstadoProducto(id, true),
-        'reactivar'
-    );
+    mostrarModalConfirmacion(`¿Está seguro que desea reactivar el producto "${nombre}"? Volverá a estar disponible en el catálogo.`, () => toggleEstadoProducto(id, true), 'reactivar');
 }
 
 async function toggleEstadoProducto(id, nuevoEstado) {
@@ -537,8 +503,10 @@ async function toggleEstadoProducto(id, nuevoEstado) {
 }
 
 function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('open');
-    document.getElementById('overlay').classList.toggle('hidden');
+    const sidebar = document.getElementById('sidebar-dinamico');
+    if (sidebar) sidebar.classList.toggle('open');
+    const overlay = document.getElementById('overlay');
+    if (overlay) overlay.classList.toggle('hidden');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -560,8 +528,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderizarTabla();
         }, 300);
     });
+    await cargarProveedoresParaSelect();
     await cargarProductos();
 });
 </script>
+
 </body>
 </html>
