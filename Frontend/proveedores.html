@@ -117,10 +117,11 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/notify.js"></script>
 <script src="js/layout.js"></script>
 <script>
     let proveedores = [];
-    let filtroActual = "activos"; // 'activos', 'inactivos', 'todos'
+    let filtroActual = "activos";
     let confirmacionCallback = null;
 
     function toggleSidebar() {
@@ -145,18 +146,18 @@
                 renderizarProveedores(); 
             } else { 
                 console.error('Error al cargar proveedores:', res.status); 
-                document.getElementById('tabla-proveedores').innerHTML='<tr><td colspan="6" class="text-center py-6 text-error">Error al cargar proveedores<\/td><\/tr>'; 
+                notify.error('Error al cargar proveedores');
             }
         } catch(e){ 
             console.error(e); 
-            document.getElementById('tabla-proveedores').innerHTML='<tr><td colspan="6" class="text-center py-6 text-error">Error de conexión<\/td><\/tr>'; 
+            notify.error('Error de conexión');
         }
     }
 
     function renderizarProveedores() { 
         const tbody = document.getElementById('tabla-proveedores'); 
         if(proveedores.length===0){ 
-            tbody.innerHTML='<tr><td colspan="6" class="text-center py-6 text-secondary">No hay proveedores<\/td><\/tr>'; 
+            tbody.innerHTML='<td><td colspan="6" class="text-center py-6 text-secondary">No hay proveedores<\/td><\/tr>'; 
             return; 
         } 
         tbody.innerHTML=''; 
@@ -170,19 +171,19 @@
                 botones = `
                     <button onclick="editarProveedor('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Editar">
                         <span class="material-symbols-outlined text-[16px]">edit</span>
-                    </button>
+                    <\/button>
                     <button onclick="confirmarDesactivar('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-error hover:bg-red-50 transition ml-1" title="Desactivar">
                         <span class="material-symbols-outlined text-[16px]">delete_forever</span>
-                    </button>
+                    <\/button>
                 `;
             } else {
                 botones = `
                     <button onclick="editarProveedor('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Editar">
                         <span class="material-symbols-outlined text-[16px]">edit</span>
-                    </button>
+                    <\/button>
                     <button onclick="confirmarReactivar('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-green-600 hover:bg-green-50 transition ml-1" title="Reactivar">
                         <span class="material-symbols-outlined text-[16px]">restore_from_trash</span>
-                    </button>
+                    <\/button>
                 `;
             }
             const tr = document.createElement('tr'); 
@@ -253,7 +254,10 @@
             email: document.getElementById('proveedor-email').value, 
             direccion: document.getElementById('proveedor-direccion').value 
         }; 
-        if(!payload.nombre){ alert('El nombre es obligatorio'); return; }
+        if(!payload.nombre){ 
+            notify.warning('El nombre es obligatorio');
+            return; 
+        }
         try{ 
             let res; 
             if(id) res = await API.put(`/libreria/compras/proveedores/${id}`, payload, true); 
@@ -261,12 +265,13 @@
             if(res.ok){ 
                 cerrarModalProveedor(); 
                 cargarProveedores(); 
+                notify.success(id ? 'Proveedor actualizado' : 'Proveedor creado');
             } else { 
                 const err = await res.json(); 
-                alert('Error: ' + (err.detail || 'No se pudo guardar')); 
+                notify.error('Error: ' + (err.detail || 'No se pudo guardar')); 
             } 
         } catch(e){ 
-            alert('Error de conexión: ' + e.message); 
+            notify.error('Error de conexión: ' + e.message); 
         } 
     }
 
@@ -327,12 +332,13 @@
             const res = await API.put(`/libreria/compras/proveedores/${id}`, payload, true);
             if (res.ok) {
                 cargarProveedores();
+                notify.success(nuevoEstado ? 'Proveedor reactivado' : 'Proveedor desactivado');
             } else {
                 const err = await res.json();
-                alert('Error: ' + (err.detail || 'No se pudo cambiar el estado.'));
+                notify.error('Error: ' + (err.detail || 'No se pudo cambiar el estado.'));
             }
         } catch (err) {
-            alert('Error de conexión.');
+            notify.error('Error de conexión.');
         }
     }
 

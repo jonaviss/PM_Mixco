@@ -107,7 +107,7 @@
                                 <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase text-center">Cantidad</th>
                                 <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase text-right">Costo Unitario</th>
                                 <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase text-right">Subtotal</th>
-                            </tr>
+                            </td>
                         </thead>
                         <tbody id="modal-productos" class="divide-y divide-outline-variant text-sm"></tbody>
                     </table>
@@ -162,6 +162,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/notify.js"></script>
 <script src="js/layout.js"></script>
 <script>
     let compras = [];
@@ -187,7 +188,7 @@
                 sel.innerHTML = '<option value="">Todos</option>'; 
                 proveedores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; }); 
             } 
-        } catch(e){ console.error(e); } 
+        } catch(e){ console.error(e); notify.error('Error al cargar proveedores'); } 
     }
 
     async function cargarCompras(){ 
@@ -203,7 +204,7 @@
                 renderizarCompras(); 
                 calcularResumenDeuda(); 
             } 
-        } catch(e){ console.error(e); } 
+        } catch(e){ console.error(e); notify.error('Error al cargar compras'); } 
     }
 
     function calcularResumenDeuda() {
@@ -250,7 +251,7 @@
     function renderizarCompras(){ 
         const tbody = document.getElementById('tabla-compras'); 
         if(compras.length === 0){ 
-            tbody.innerHTML='</tr><td colspan="8" class="text-center py-6">No hay compras<\/td><\/tr>'; 
+            tbody.innerHTML='<tr><td colspan="8" class="text-center py-6">No hay compras<\/td><\/tr>'; 
             return; 
         } 
         tbody.innerHTML = ''; 
@@ -294,7 +295,6 @@
                 proveedor: compra.proveedores?.nombre || '-'
             };
             document.getElementById('modal-compra-factura').textContent = `Factura: ${compraActual.factura || '—'} | Proveedor: ${compraActual.proveedor}`;
-            // Actualizar tarjeta de saldo dentro del formulario
             document.getElementById('info-total-compra').textContent = formatearMoneda(compraActual.total);
             document.getElementById('info-total-pagado').textContent = formatearMoneda(compraActual.pagado);
             document.getElementById('info-saldo').textContent = formatearMoneda(compraActual.saldo);
@@ -302,7 +302,7 @@
             // Productos
             const tbodyProductos = document.getElementById('modal-productos');
             if (detalles.length === 0) {
-                tbodyProductos.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-secondary">Sin productos registrados<\/td><\/tr>';
+                tbodyProductos.innerHTML = '<td><td colspan="4" class="text-center py-4 text-secondary">Sin productos registrados<\/td><\/tr>';
             } else {
                 tbodyProductos.innerHTML = '';
                 detalles.forEach(d => {
@@ -358,7 +358,7 @@
             modal.classList.add('flex');
         } catch (err) {
             console.error('[Detalle Compra] Error:', err);
-            alert('No se pudo cargar el detalle de la compra.');
+            notify.error('No se pudo cargar el detalle de la compra.');
         }
     }
 
@@ -396,23 +396,23 @@
         const fecha_pago = document.getElementById('pago-fecha').value;
         const metodo_pago_id = parseInt(document.getElementById('pago-metodo').value);
         const referencia = document.getElementById('pago-referencia').value;
-        if (isNaN(monto) || monto <= 0) { alert('Monto inválido'); return; }
-        if (monto > compraActual.saldo) { alert('El monto no puede superar el saldo pendiente.'); return; }
+        if (isNaN(monto) || monto <= 0) { notify.error('Monto inválido'); return; }
+        if (monto > compraActual.saldo) { notify.error('El monto no puede superar el saldo pendiente.'); return; }
         const btn = document.getElementById('btn-registrar-pago-unificado');
         btn.disabled = true;
         btn.textContent = 'Registrando...';
         try {
             const res = await API.post('/libreria/compras/pagos_proveedores', { compra_id, monto, fecha_pago, metodo_pago_id, referencia }, true);
             if (res.ok) {
-                alert('Pago registrado');
+                notify.success('Pago registrado correctamente');
                 await verDetalleCompra(compra_id);
                 await cargarCompras();
             } else {
                 const err = await res.json();
-                alert('Error: ' + err.detail);
+                notify.error('Error: ' + err.detail);
             }
         } catch (e) {
-            alert('Error de conexión');
+            notify.error('Error de conexión');
         } finally {
             btn.disabled = false;
             btn.textContent = 'Registrar Pago';

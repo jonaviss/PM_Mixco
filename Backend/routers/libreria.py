@@ -109,24 +109,17 @@ async def listar_productos(
     incluir_inactivos: bool = False,
     usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
 ):
-    """
-    Retorna la lista de productos.
-    Incluye los datos del proveedor (nombre) si existe.
-    """
     try:
         query = supabase.table("inventario_libreria").select("*, proveedores(nombre, id)")
         if not incluir_inactivos:
             query = query.eq("estado", True)
         res = query.execute()
-        # La respuesta incluirá un campo 'proveedores' con nombre e id
         return res.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/clientes")
-async def listar_clientes(
-    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
-):
+async def listar_clientes(usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
     try:
         res = supabase.table("usuarios").select("cui, nombre_completo, correo, created_at").execute()
         return res.data
@@ -134,10 +127,7 @@ async def listar_clientes(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/productos", status_code=status.HTTP_201_CREATED)
-def registrar_producto(
-    payload: ProductoLibreriaCreate,
-    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
-):
+def registrar_producto(payload: ProductoLibreriaCreate, usuario_actual=Depends(obtener_usuario_actual)):
     if usuario_actual.get("rango") not in ["encargado", "administrador", "super_admin"]:
         raise HTTPException(403, "No tiene permisos para registrar productos.")
     try:
@@ -148,11 +138,7 @@ def registrar_producto(
         raise HTTPException(500, str(e))
 
 @router.put("/productos/{producto_id}")
-def actualizar_producto(
-    producto_id: str,
-    payload: ProductoLibreriaUpdate,
-    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
-):
+def actualizar_producto(producto_id: str, payload: ProductoLibreriaUpdate, usuario_actual=Depends(obtener_usuario_actual)):
     if usuario_actual.get("rango") not in ["encargado", "administrador", "super_admin"]:
         raise HTTPException(403, "No tiene permisos para modificar productos.")
     try:
@@ -168,10 +154,7 @@ def actualizar_producto(
         raise HTTPException(500, str(e))
 
 @router.put("/productos/{producto_id}/toggle-estado")
-async def toggle_estado_producto(
-    producto_id: str,
-    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
-):
+async def toggle_estado_producto(producto_id: str, usuario_actual=Depends(obtener_usuario_actual)):
     if usuario_actual.get("rango") not in ["encargado", "administrador", "super_admin"]:
         raise HTTPException(403, "No tiene permisos para modificar productos.")
     try:
@@ -185,9 +168,9 @@ async def toggle_estado_producto(
     except Exception as e:
         raise HTTPException(500, str(e))
 
-# ======================== VENTAS CON FIFO ========================
+# ======================== VENTAS CON FIFO (CORREGIDO) ========================
 @router.post("/ventas", status_code=status.HTTP_201_CREATED)
-def registrar_venta(
+async def registrar_venta(  # Convertido a async
     payload: VentaLibreriaCreate,
     background_tasks: BackgroundTasks,
     usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
@@ -209,7 +192,8 @@ def registrar_venta(
         estado_inicial = "pagado" if es_contado else "pendiente"
         monto_ingresado = total_venta if es_contado else 0.0
 
-        costo_total_venta = consumir_lote_fifo(payload.producto_id, payload.cantidad)
+        # CORRECCIÓN: AWAIT a la función async
+        costo_total_venta = await consumir_lote_fifo(payload.producto_id, payload.cantidad)
         costo_unitario_venta = costo_total_venta / payload.cantidad if payload.cantidad > 0 else 0
 
         res_venta = supabase.table("libreria_ventas").insert({
@@ -238,11 +222,13 @@ def registrar_venta(
                 "digitado_por": usuario_actual["sub"]
             }).execute()
 
+        # Actualizar stock (restar)
         supabase.table("inventario_libreria") \
             .update({"stock": stock_actual - payload.cantidad}) \
             .eq("id", payload.producto_id) \
             .execute()
 
+        # Obtener datos para correo (igual que antes)
         res_comprador = supabase.table("usuarios") \
             .select("cui, nombre_completo") \
             .eq("cui", payload.comprador_cui) \
@@ -289,20 +275,13 @@ def registrar_venta(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ======================== GESTIÓN DE ABONOS ========================
 @router.post("/pagos")
-async def registrar_abono(
-    payload: PagoLibreriaCreate,
-    background_tasks: BackgroundTasks,
-    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
-):
+async def registrar_abono(payload: PagoLibreriaCreate, background_tasks: BackgroundTasks, usuario_actual=Depends(obtener_usuario_actual)):
     try:
-        res_venta = supabase.table("libreria_ventas") \
-            .select("id, total_venta, total_pagado, estado_pago") \
-            .eq("id", payload.venta_id) \
-            .execute()
+        res_venta = supabase.table("libreria_ventas").select("id, total_venta, total_pagado, estado_pago").eq("id", payload.venta_id).execute()
         if not res_venta.data:
             raise HTTPException(404, "Registro de venta no localizado.")
         venta = res_venta.data[0]
@@ -315,21 +294,11 @@ async def registrar_abono(
             "digitado_por": usuario_actual["sub"]
         }).execute()
         pago_id = res_pago.data[0]["id"]
-        res_pagos = supabase.table("libreria_pagos") \
-            .select("monto_abonado") \
-            .eq("venta_id", payload.venta_id) \
-            .execute()
+        res_pagos = supabase.table("libreria_pagos").select("monto_abonado").eq("venta_id", payload.venta_id).execute()
         total_acumulado = sum(float(p["monto_abonado"]) for p in res_pagos.data)
         estado_nuevo = "pagado" if total_acumulado >= float(venta["total_venta"]) else "parcial"
-        supabase.table("libreria_ventas").update({
-            "total_pagado": total_acumulado,
-            "estado_pago": estado_nuevo
-        }).eq("id", payload.venta_id).execute()
-        res_detalle = supabase.table("libreria_ventas_detalle") \
-            .select("producto_id, inventario_libreria(nombre)") \
-            .eq("venta_id", payload.venta_id) \
-            .limit(1) \
-            .execute()
+        supabase.table("libreria_ventas").update({"total_pagado": total_acumulado, "estado_pago": estado_nuevo}).eq("id", payload.venta_id).execute()
+        res_detalle = supabase.table("libreria_ventas_detalle").select("producto_id, inventario_libreria(nombre)").eq("venta_id", payload.venta_id).limit(1).execute()
         nombre_prod = "Abono a Cuenta Credito"
         if res_detalle.data and res_detalle.data[0].get("inventario_libreria"):
             nombre_prod = res_detalle.data[0]["inventario_libreria"]["nombre"]
@@ -347,18 +316,9 @@ async def registrar_abono(
         raise HTTPException(500, detail=str(e))
 
 @router.post("/pagos/distribuir", status_code=status.HTTP_201_CREATED)
-async def distribuir_abono(
-    payload: AbonoDistribuidoCreate,
-    background_tasks: BackgroundTasks,
-    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
-):
+async def distribuir_abono(payload: AbonoDistribuidoCreate, background_tasks: BackgroundTasks, usuario_actual=Depends(obtener_usuario_actual)):
     try:
-        res_ventas = supabase.table("libreria_ventas") \
-            .select("id, total_venta, total_pagado, estado_pago, created_at") \
-            .eq("comprador_cui", payload.comprador_cui) \
-            .in_("estado_pago", ["pendiente", "parcial"]) \
-            .order("created_at", desc=False) \
-            .execute()
+        res_ventas = supabase.table("libreria_ventas").select("id, total_venta, total_pagado, estado_pago, created_at").eq("comprador_cui", payload.comprador_cui).in_("estado_pago", ["pendiente", "parcial"]).order("created_at", desc=False).execute()
         ventas = res_ventas.data or []
         if not ventas:
             raise HTTPException(404, "Este cliente no tiene ventas pendientes de pago.")
@@ -384,27 +344,13 @@ async def distribuir_abono(
             }).execute()
             nuevo_pagado = total_pagado + abono_aplicar
             nuevo_estado = "pagado" if nuevo_pagado >= total_venta else "parcial"
-            supabase.table("libreria_ventas").update({
-                "total_pagado": nuevo_pagado,
-                "estado_pago": nuevo_estado
-            }).eq("id", venta["id"]).execute()
-            ventas_pagadas.append({
-                "venta_id": venta["id"],
-                "abono_aplicado": abono_aplicar,
-                "estado": nuevo_estado
-            })
+            supabase.table("libreria_ventas").update({"total_pagado": nuevo_pagado, "estado_pago": nuevo_estado}).eq("id", venta["id"]).execute()
+            ventas_pagadas.append({"venta_id": venta["id"], "abono_aplicado": abono_aplicar, "estado": nuevo_estado})
             monto_restante -= abono_aplicar
         if ventas_pagadas:
-            res_comprador = supabase.table("usuarios") \
-                .select("cui, nombre_completo") \
-                .eq("cui", payload.comprador_cui) \
-                .execute()
+            res_comprador = supabase.table("usuarios").select("cui, nombre_completo").eq("cui", payload.comprador_cui).execute()
             comprador = res_comprador.data[0] if res_comprador.data else {"cui": payload.comprador_cui, "nombre_completo": "—"}
-            res_deuda = supabase.table("libreria_ventas") \
-                .select("total_venta, total_pagado") \
-                .eq("comprador_cui", payload.comprador_cui) \
-                .in_("estado_pago", ["pendiente", "parcial"]) \
-                .execute()
+            res_deuda = supabase.table("libreria_ventas").select("total_venta, total_pagado").eq("comprador_cui", payload.comprador_cui).in_("estado_pago", ["pendiente", "parcial"]).execute()
             deuda_data = res_deuda.data or []
             deuda_total = sum(float(d["total_venta"]) - float(d["total_pagado"]) for d in deuda_data if float(d["total_venta"]) - float(d["total_pagado"]) > 0)
             res_op = supabase.table("usuarios").select("nombre_completo").eq("cui", usuario_actual["sub"]).execute()
@@ -427,12 +373,7 @@ async def distribuir_abono(
                 "hermano": comprador,
                 "deuda_hermano": {"total": deuda_total, "cantidad": len(deuda_data)}
             })
-        return {
-            "mensaje": f"Abono de Q{payload.monto_abonado:.2f} distribuido correctamente.",
-            "ventas_actualizadas": ventas_pagadas,
-            "saldo_restante": round(monto_restante, 2),
-            "ok": True
-        }
+        return {"mensaje": f"Abono de Q{payload.monto_abonado:.2f} distribuido correctamente.", "ventas_actualizadas": ventas_pagadas, "saldo_restante": round(monto_restante, 2), "ok": True}
     except HTTPException:
         raise
     except Exception as e:
@@ -440,65 +381,37 @@ async def distribuir_abono(
 
 # ======================== ENDPOINTS DE COBROS Y CLIENTES ========================
 @router.get("/cobros/pendientes")
-async def obtener_pendientes(
-    cui: str,
-    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
-):
+async def obtener_pendientes(cui: str, usuario_actual=Depends(obtener_usuario_actual)):
     try:
-        res = supabase.table("libreria_ventas") \
-            .select("id, total_venta, total_pagado, estado_pago, created_at") \
-            .eq("comprador_cui", cui) \
-            .in_("estado_pago", ["pendiente", "parcial"]) \
-            .order("created_at", desc=False) \
-            .execute()
+        res = supabase.table("libreria_ventas").select("id, total_venta, total_pagado, estado_pago, created_at").eq("comprador_cui", cui).in_("estado_pago", ["pendiente", "parcial"]).order("created_at", desc=False).execute()
         return {"ventas": res.data or [], "ok": True}
     except Exception as e:
         raise HTTPException(500, detail=str(e))
 
 @router.get("/clientes/{cui}/historial")
-async def obtener_historial_cliente(
-    cui: str,
-    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
-):
+async def obtener_historial_cliente(cui: str, usuario_actual=Depends(obtener_usuario_actual)):
     try:
-        res = supabase.table("libreria_ventas") \
-            .select("id, total_venta, total_pagado, estado_pago, created_at, digitado_por") \
-            .eq("comprador_cui", cui) \
-            .order("created_at", desc=True) \
-            .execute()
+        res = supabase.table("libreria_ventas").select("id, total_venta, total_pagado, estado_pago, created_at, digitado_por").eq("comprador_cui", cui).order("created_at", desc=True).execute()
         ventas = res.data or []
         cuis_operadores = list(set(v["digitado_por"] for v in ventas if v.get("digitado_por")))
         nombres_operadores = {}
         if cuis_operadores:
-            res_usuarios = supabase.table("usuarios") \
-                .select("cui, nombre_completo") \
-                .in_("cui", cuis_operadores) \
-                .execute()
+            res_usuarios = supabase.table("usuarios").select("cui, nombre_completo").in_("cui", cuis_operadores).execute()
             nombres_operadores = {u["cui"]: u["nombre_completo"] for u in (res_usuarios.data or [])}
         for v in ventas:
-            cui_op = v.get("digitado_por")
-            v["nombre_operador"] = nombres_operadores.get(cui_op) if cui_op else None
+            v["nombre_operador"] = nombres_operadores.get(v.get("digitado_por"))
         return {"ventas": ventas, "ok": True}
     except Exception as e:
         raise HTTPException(500, detail=str(e))
 
 @router.get("/ventas/{venta_id}/detalle")
-async def obtener_detalle_venta(
-    venta_id: str,
-    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
-):
+async def obtener_detalle_venta(venta_id: str, usuario_actual=Depends(obtener_usuario_actual)):
     try:
-        res_venta = supabase.table("libreria_ventas") \
-            .select("id, comprador_cui, total_venta, total_pagado, estado_pago, created_at, digitado_por") \
-            .eq("id", venta_id) \
-            .execute()
+        res_venta = supabase.table("libreria_ventas").select("id, comprador_cui, total_venta, total_pagado, estado_pago, created_at, digitado_por").eq("id", venta_id).execute()
         if not res_venta.data:
             raise HTTPException(404, "Venta no encontrada.")
         venta = res_venta.data[0]
-        res_detalle = supabase.table("libreria_ventas_detalle") \
-            .select("cantidad, precio_unitario, subtotal, costo_unitario, inventario_libreria(nombre, tipo_producto)") \
-            .eq("venta_id", venta_id) \
-            .execute()
+        res_detalle = supabase.table("libreria_ventas_detalle").select("cantidad, precio_unitario, subtotal, costo_unitario, inventario_libreria(nombre, tipo_producto)").eq("venta_id", venta_id).execute()
         productos = []
         for d in (res_detalle.data or []):
             producto_info = d.get("inventario_libreria") or {}
@@ -510,19 +423,12 @@ async def obtener_detalle_venta(
                 "subtotal": float(d["subtotal"]),
                 "costo_unitario": float(d["costo_unitario"]) if d.get("costo_unitario") else None
             })
-        res_pagos = supabase.table("libreria_pagos") \
-            .select("id, monto_abonado, fecha_pago, digitado_por") \
-            .eq("venta_id", venta_id) \
-            .order("fecha_pago", desc=False) \
-            .execute()
+        res_pagos = supabase.table("libreria_pagos").select("id, monto_abonado, fecha_pago, digitado_por").eq("venta_id", venta_id).order("fecha_pago", desc=False).execute()
         pagos = res_pagos.data or []
         cuis_pagos = list(set(p["digitado_por"] for p in pagos if p.get("digitado_por")))
         nombres_pagos = {}
         if cuis_pagos:
-            res_op = supabase.table("usuarios") \
-                .select("cui, nombre_completo") \
-                .in_("cui", cuis_pagos) \
-                .execute()
+            res_op = supabase.table("usuarios").select("cui, nombre_completo").in_("cui", cuis_pagos).execute()
             nombres_pagos = {u["cui"]: u["nombre_completo"] for u in (res_op.data or [])}
         pagos_enriquecidos = []
         for p in pagos:
@@ -535,18 +441,11 @@ async def obtener_detalle_venta(
         cui_venta = venta.get("digitado_por")
         nombre_operador_venta = "—"
         if cui_venta:
-            res_op_venta = supabase.table("usuarios") \
-                .select("nombre_completo") \
-                .eq("cui", cui_venta) \
-                .execute()
+            res_op_venta = supabase.table("usuarios").select("nombre_completo").eq("cui", cui_venta).execute()
             if res_op_venta.data:
                 nombre_operador_venta = res_op_venta.data[0]["nombre_completo"]
         comprador_cui = venta["comprador_cui"]
-        res_deuda = supabase.table("libreria_ventas") \
-            .select("total_venta, total_pagado") \
-            .eq("comprador_cui", comprador_cui) \
-            .in_("estado_pago", ["pendiente", "parcial"]) \
-            .execute()
+        res_deuda = supabase.table("libreria_ventas").select("total_venta, total_pagado").eq("comprador_cui", comprador_cui).in_("estado_pago", ["pendiente", "parcial"]).execute()
         deuda_data = res_deuda.data or []
         deuda_total = sum(float(d["total_venta"]) - float(d["total_pagado"]) for d in deuda_data if float(d["total_venta"]) - float(d["total_pagado"]) > 0)
         return {
@@ -562,10 +461,7 @@ async def obtener_detalle_venta(
             },
             "productos": productos,
             "pagos": pagos_enriquecidos,
-            "deuda_hermano": {
-                "total": deuda_total,
-                "cantidad": len(deuda_data)
-            },
+            "deuda_hermano": {"total": deuda_total, "cantidad": len(deuda_data)},
             "ok": True
         }
     except HTTPException:

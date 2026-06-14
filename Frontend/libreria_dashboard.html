@@ -13,20 +13,20 @@
             theme: {
                 extend: {
                     colors: {
-                        "primary":                  "#755b00",
-                        "primary-container":        "#C9A227",
-                        "on-primary":               "#ffffff",
-                        "surface":                  "#F8FAFC",
+                        "primary": "#755b00",
+                        "primary-container": "#C9A227",
+                        "on-primary": "#ffffff",
+                        "surface": "#F8FAFC",
                         "surface-container-lowest": "#ffffff",
-                        "surface-container-low":    "#F1F5F9",
-                        "surface-container":        "#E2E8F0",
-                        "surface-container-high":   "#CBD5E1",
-                        "outline-variant":          "#CBD5E1",
-                        "outline":                  "#94A3B8",
-                        "on-surface":               "#1E293B",
-                        "on-surface-variant":       "#475569",
-                        "secondary":                "#64748B",
-                        "error":                    "#EF4444",
+                        "surface-container-low": "#F1F5F9",
+                        "surface-container": "#E2E8F0",
+                        "surface-container-high": "#CBD5E1",
+                        "outline-variant": "#CBD5E1",
+                        "outline": "#94A3B8",
+                        "on-surface": "#1E293B",
+                        "on-surface-variant": "#475569",
+                        "secondary": "#64748B",
+                        "error": "#EF4444"
                     },
                     fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
                     spacing: { "sidebar": "260px" }
@@ -167,12 +167,10 @@
                         </tr>
                     </thead>
                     <tbody id="tabla-actividad" class="divide-y divide-outline-variant text-sm">
-                        <tr>
-                            <td colspan="6" class="text-center py-10 text-secondary">
-                                <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">hourglass_empty</span>
-                                Cargando actividad...
-                            </td>
-                        </tr>
+                        <tr><td colspan="6" class="text-center py-10 text-secondary">
+                            <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">hourglass_empty</span>
+                            Cargando actividad...
+                        </td></tr>
                     </tbody>
                 </table>
             </div>
@@ -200,9 +198,10 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/notify.js"></script>
 <script src="js/layout.js"></script>
 <script>
-// (El script original del dashboard se mantiene exactamente igual, solo se ajusta toggleSidebar para que use el nuevo sidebar dinámico)
+// Variables y funciones del dashboard
 let paginaActual = 1;
 const POR_PAGINA = 10;
 let rangoUsuario = '';
@@ -292,6 +291,7 @@ async function cargarKPIs() {
         document.getElementById('barra-progreso').style.width = `${progreso}%`;
     } catch (err) {
         console.error('[Dashboard] Error al cargar KPIs:', err);
+        notify.error('Error al cargar los indicadores');
     }
 }
 
@@ -340,6 +340,7 @@ async function cargarActividad() {
         }
     } catch (err) {
         console.error('[Dashboard] Error al cargar actividad:', err);
+        notify.error('Error al cargar la actividad reciente');
         tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-error font-bold">Error al cargar la actividad.</td></tr>`;
     }
 }
@@ -380,16 +381,11 @@ async function recargarDashboard() {
     await Promise.all([cargarKPIs(), cargarActividad()]);
 }
 
-// Función toggleSidebar modificada para funcionar con el sidebar dinámico (id="sidebar-dinamico")
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar-dinamico');
-    if (sidebar) {
-        sidebar.classList.toggle('open');
-    }
+    if (sidebar) sidebar.classList.toggle('open');
     const overlay = document.getElementById('overlay');
-    if (overlay) {
-        overlay.classList.toggle('hidden');
-    }
+    if (overlay) overlay.classList.toggle('hidden');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

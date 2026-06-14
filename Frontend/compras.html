@@ -34,6 +34,24 @@
             }
         }
     </script>
+    <style>
+        .tabla-productos-container {
+            overflow-x: auto;
+            overflow-y: visible;
+            max-height: none;
+        }
+        .tabla-productos-container table {
+            width: 100%;
+            border-collapse: collapse;
+            display: table;
+        }
+        .tabla-productos-container tbody {
+            display: table-row-group;
+        }
+        .tabla-productos-container tr {
+            display: table-row;
+        }
+    </style>
 </head>
 <body class="text-on-surface">
 
@@ -63,7 +81,7 @@
                 <div class="md:col-span-2"><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Observaciones</label><textarea id="observaciones" rows="2" class="w-full border rounded-lg px-3 py-2"></textarea></div>
             </div>
             <h3 class="text-sm font-bold text-on-surface mb-2">Productos</h3>
-            <div class="overflow-x-auto mb-4">
+            <div class="tabla-productos-container">
                 <table class="w-full text-left">
                     <thead class="bg-surface-container-low/50">
                         <tr>
@@ -107,6 +125,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/notify.js"></script>
 <script src="js/layout.js"></script>
 <script>
     let proveedores = [];
@@ -119,6 +138,13 @@
         if (sidebar) sidebar.classList.toggle('open');
         const overlay = document.getElementById('overlay');
         if (overlay) overlay.classList.toggle('hidden');
+    }
+
+    function scrollAlFinal() {
+        const tbody = document.getElementById('detalles-body');
+        if (tbody && tbody.lastElementChild) {
+            tbody.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
     }
 
     function mostrarUsuario(){ 
@@ -137,14 +163,14 @@
                 sel.innerHTML = '<option value="">Seleccione</option>'; 
                 proveedores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; });
             } 
-        } catch(e){ console.error(e); } 
+        } catch(e){ console.error(e); notify.error('Error al cargar proveedores'); } 
     }
 
     async function cargarProductosCatalogo(){ 
         try{ 
             const res = await API.get('/libreria/productos?incluir_inactivos=true', true); 
             if(res.ok) productosCatalogo = await res.json(); 
-        } catch(e){ console.error(e); } 
+        } catch(e){ console.error(e); notify.error('Error al cargar productos'); } 
     }
 
     function agregarProducto(){ 
@@ -163,7 +189,7 @@
                         <span class="material-symbols-outlined text-[18px]">add_circle</span>
                     </button>
                 </div>
-            </td>
+            <\/td>
             <td class="px-3 py-2"><input type="number" id="cantidad-${idx}" value="1" min="1" class="w-24 border rounded px-2 py-1" onchange="actualizarSubtotal(${idx})"><\/td>
             <td class="px-3 py-2"><input type="number" id="costo-${idx}" step="0.01" min="0" class="w-32 border rounded px-2 py-1" placeholder="0.00" onchange="actualizarSubtotal(${idx})"><\/td>
             <td class="px-3 py-2"><span id="subtotal-${idx}" class="font-mono">Q0.00<\/span><\/td>
@@ -172,6 +198,7 @@
         tbody.appendChild(div);
         detalles.push({ idx, producto_id: null, cantidad: 1, costo: null });
         actualizarTotal();
+        scrollAlFinal();
     }
 
     function actualizarSubtotal(idx){ 
@@ -209,7 +236,7 @@
         filaEnEdicion = idx;
         const proveedorId = document.getElementById('proveedor-id').value;
         if (!proveedorId) {
-            alert('Primero debe seleccionar un proveedor en la compra antes de crear un producto.');
+            notify.warning('Primero debe seleccionar un proveedor en la compra antes de crear un producto.');
             return;
         }
         document.getElementById('nuevo-nombre').value = '';
@@ -233,15 +260,15 @@
         const proveedor_id = document.getElementById('proveedor-id').value;
 
         if (!nombre) {
-            alert('El nombre del producto es obligatorio.');
+            notify.error('El nombre del producto es obligatorio.');
             return;
         }
         if (isNaN(precio) || precio <= 0) {
-            alert('Ingrese un precio de venta válido (mayor a Q0.00).');
+            notify.error('Ingrese un precio de venta válido (mayor a Q0.00).');
             return;
         }
         if (!proveedor_id) {
-            alert('No hay proveedor seleccionado en la compra. Asigne un proveedor primero.');
+            notify.warning('No hay proveedor seleccionado en la compra. Asigne un proveedor primero.');
             return;
         }
 
@@ -275,37 +302,37 @@
                     actualizarSubtotal(filaEnEdicion);
                 }
                 cerrarModalProducto();
-                alert('Producto creado exitosamente y seleccionado.');
+                notify.success('Producto creado exitosamente y seleccionado.');
             } else {
                 const err = await res.json();
-                alert('Error al crear producto: ' + (err.detail || 'Error desconocido'));
+                notify.error('Error al crear producto: ' + (err.detail || 'Error desconocido'));
             }
         } catch (error) {
             console.error(error);
-            alert('Error de conexión al crear producto.');
+            notify.error('Error de conexión al crear producto.');
         }
     }
 
     async function registrarCompra(){ 
         const proveedor_id = document.getElementById('proveedor-id').value; 
-        if(!proveedor_id){ alert('Seleccione proveedor'); return; } 
-        if(detalles.length === 0){ alert('Agregue al menos un producto'); return; } 
+        if(!proveedor_id){ notify.warning('Seleccione proveedor'); return; } 
+        if(detalles.length === 0){ notify.warning('Agregue al menos un producto'); return; } 
         
         let valido = true;
         for (let i = 0; i < detalles.length; i++) {
             const d = detalles[i];
             if (!d.producto_id) {
-                alert(`Fila ${i+1}: debe seleccionar un producto.`);
+                notify.warning(`Fila ${i+1}: debe seleccionar un producto.`);
                 valido = false;
                 break;
             }
             if (!d.cantidad || d.cantidad <= 0) {
-                alert(`Fila ${i+1}: la cantidad debe ser mayor a cero.`);
+                notify.warning(`Fila ${i+1}: la cantidad debe ser mayor a cero.`);
                 valido = false;
                 break;
             }
             if (d.costo === null || isNaN(d.costo) || d.costo < 0) {
-                alert(`Fila ${i+1}: debe ingresar un costo unitario mayor o igual a cero.`);
+                notify.warning(`Fila ${i+1}: debe ingresar un costo unitario mayor o igual a cero.`);
                 valido = false;
                 break;
             }
@@ -324,17 +351,23 @@
                 costo_unitario: d.costo 
             })) 
         }; 
+        const btn = event.currentTarget;
+        btn.disabled = true;
+        btn.textContent = 'Registrando...';
         try{ 
             const res = await API.post('/libreria/compras', payload, true); 
             if(res.ok){ 
-                alert('Compra registrada correctamente'); 
-                location.reload(); 
+                notify.success('Compra registrada correctamente'); 
+                setTimeout(() => location.reload(), 1500);
             } else { 
                 const err = await res.json(); 
-                alert('Error: ' + JSON.stringify(err)); 
+                notify.error('Error: ' + JSON.stringify(err)); 
             } 
         } catch(e){ 
-            alert('Error de conexión'); 
+            notify.error('Error de conexión'); 
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Registrar Compra';
         } 
     }
 

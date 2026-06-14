@@ -79,6 +79,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/notify.js"></script>
 <script src="js/layout.js"></script>
 <script>
     function toggleSidebar() {
@@ -90,7 +91,7 @@
 
     async function cargarLotes() {
         const tbody = document.getElementById('tabla-lotes');
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-secondary">Cargando...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-secondary">Cargando...<\/td><\/tr>';
         try {
             const res = await API.get('/libreria/compras/lotes/pendientes', true);
             if (res.ok) {
@@ -114,10 +115,12 @@
                     tbody.appendChild(tr);
                 });
             } else {
+                notify.error('Error al cargar los lotes');
                 tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-error">Error al cargar los lotes.<\/td><\/tr>';
             }
         } catch (err) {
             console.error('[Lotes] Error:', err);
+            notify.error('Error de conexión');
             tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-error">Error de conexión.<\/td><\/tr>';
         }
     }
