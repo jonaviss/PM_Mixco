@@ -44,12 +44,10 @@
             width: 100%;
             border-collapse: collapse;
             display: table;
+            min-width: 800px;
         }
-        .tabla-productos-container tbody {
-            display: table-row-group;
-        }
-        .tabla-productos-container tr {
-            display: table-row;
+        .tabla-productos-container tbody tr:hover {
+            background-color: #fefce8;
         }
     </style>
 </head>
@@ -57,8 +55,7 @@
 
 <div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
-<!-- El sidebar se inyecta dinámicamente mediante layout.js -->
-
+<!-- Sidebar inyectado por layout.js -->
 <div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
 
     <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
@@ -78,47 +75,103 @@
                 <div><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Fecha Compra (recibido) *</label><input type="date" id="fecha-compra" class="w-full border rounded-lg px-3 py-2"></div>
                 <div><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Fecha Factura</label><input type="date" id="fecha-factura" class="w-full border rounded-lg px-3 py-2"></div>
                 <div><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Factura (Número)</label><input type="text" id="factura" class="w-full border rounded-lg px-3 py-2"></div>
+                <div><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Condición de pago *</label>
+                    <select id="condicion-pago" class="w-full border rounded-lg px-3 py-2">
+                        <option value="CREDITO">Crédito (queda pendiente)</option>
+                        <option value="CONTADO">Contado (pagado en el momento)</option>
+                    </select>
+                </div>
                 <div class="md:col-span-2"><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Observaciones</label><textarea id="observaciones" rows="2" class="w-full border rounded-lg px-3 py-2"></textarea></div>
             </div>
+
             <h3 class="text-sm font-bold text-on-surface mb-2">Productos</h3>
             <div class="tabla-productos-container">
                 <table class="w-full text-left">
                     <thead class="bg-surface-container-low/50">
                         <tr>
-                            <th class="px-3 py-2">Producto <span class="text-error">*</span></th>
-                            <th class="px-3 py-2">Cantidad <span class="text-error">*</span></th>
-                            <th class="px-3 py-2">Costo Unitario (Q) <span class="text-error">*</span></th>
+                            <th class="px-3 py-2">Producto</th>
+                            <th class="px-3 py-2">Categoría</th>
+                            <th class="px-3 py-2">Precio Venta (Q)</th>
+                            <th class="px-3 py-2">Cantidad</th>
+                            <th class="px-3 py-2">Costo Compra (Q)</th>
                             <th class="px-3 py-2">Subtotal</th>
-                            <th class="px-3 py-2"></th>
+                            <th class="px-3 py-2 text-center">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="detalles-body"></tbody>
+                    <tbody id="detalles-body">
+                        <tr class="text-center text-secondary italic">
+                            <td colspan="7" class="px-3 py-6">No hay productos. Presione "+ Agregar producto" para crear uno.</td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
-            <button type="button" onclick="agregarProducto()" class="text-sm text-primary-container border border-primary-container rounded-lg px-3 py-1 hover:bg-primary-container hover:text-white transition">+ Agregar producto</button>
+            <button type="button" id="btn-abrir-modal" class="mt-3 text-sm text-primary-container border border-primary-container rounded-lg px-3 py-1 hover:bg-primary-container hover:text-white transition">+ Agregar producto</button>
             <div class="mt-4 text-right"><span class="font-bold">Total Compra: </span><span id="total-compra" class="font-mono font-bold text-primary">Q0.00</span></div>
-            <div class="flex justify-end gap-3 mt-6"><button onclick="registrarCompra()" class="bg-primary-container text-white font-bold px-6 py-2 rounded-lg hover:opacity-90">Registrar Compra</button></div>
+            <div class="flex justify-end gap-3 mt-6"><button id="btn-registrar" class="bg-primary-container text-white font-bold px-6 py-2 rounded-lg hover:opacity-90">Registrar Compra</button></div>
         </div>
     </main>
 </div>
 
-<!-- MODAL PARA CREAR PRODUCTO RÁPIDO -->
+<!-- MODAL PARA CREAR NUEVO PRODUCTO -->
 <div id="modal-nuevo-producto" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
         <div class="bg-primary px-5 py-4 flex justify-between items-center">
             <h3 class="text-base font-bold text-white">Nuevo Producto</h3>
-            <button onclick="cerrarModalProducto()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+            <button type="button" class="cerrar-modal-x text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="p-5 space-y-4">
             <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Nombre *</label><input type="text" id="nuevo-nombre" class="w-full border rounded-lg px-3 py-2"></div>
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Categoría *</label><select id="nuevo-tipo" class="w-full border rounded-lg px-3 py-2"><option value="Biblia">Biblia</option><option value="Libro">Libro</option><option value="Material">Material de Estudio</option><option value="Accesorio">Accesorio</option></select></div>
-            <div class="bg-amber-50 p-2 rounded text-xs text-amber-800">El producto se asignará al proveedor seleccionado en la compra.</div>
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Precio de Venta (Q) *</label><input type="number" id="nuevo-precio" step="0.01" min="0.01" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Categoría *</label>
+                <select id="nuevo-tipo" class="w-full border rounded-lg px-3 py-2">
+                    <option value="Biblia">Biblia</option>
+                    <option value="Libro">Libro</option>
+                    <option value="Material">Material de Estudio</option>
+                    <option value="Accesorio">Accesorio</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Costo Unitario de Compra (Q) *</label><input type="number" id="nuevo-costo" step="0.01" min="0.01" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Precio de Venta (Q) *</label><input type="number" id="nuevo-precio-venta" step="0.01" min="0.01" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Cantidad a comprar *</label><input type="number" id="nuevo-cantidad" step="1" min="1" value="1" class="w-full border rounded-lg px-3 py-2"></div>
             <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Descripción</label><input type="text" id="nuevo-descripcion" class="w-full border rounded-lg px-3 py-2"></div>
+            <div class="bg-amber-50 p-2 rounded text-xs text-amber-800">El producto se asignará al proveedor seleccionado. La cantidad y costo de compra se usarán en esta línea.</div>
         </div>
         <div class="bg-surface-container-low px-5 py-4 border-t flex justify-end gap-3">
-            <button onclick="cerrarModalProducto()" class="px-4 py-2 text-sm font-bold text-secondary">Cancelar</button>
-            <button onclick="guardarProductoRapido()" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg">Guardar Producto</button>
+            <button type="button" class="cancelar-modal px-4 py-2 text-sm font-bold text-secondary">Cancelar</button>
+            <button type="button" id="guardar-producto" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg">Guardar Producto</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PARA EDITAR PRODUCTO EXISTENTE (datos generales + cantidad y costo de compra) -->
+<div id="modal-editar-producto" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-primary px-5 py-4 flex justify-between items-center">
+            <h3 class="text-base font-bold text-white">Editar Producto</h3>
+            <button type="button" class="cerrar-modal-editar text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-5 space-y-4">
+            <input type="hidden" id="edit-id-temp">
+            <input type="hidden" id="edit-producto-id">
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Nombre *</label><input type="text" id="edit-nombre" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Categoría *</label>
+                <select id="edit-tipo" class="w-full border rounded-lg px-3 py-2">
+                    <option value="Biblia">Biblia</option>
+                    <option value="Libro">Libro</option>
+                    <option value="Material">Material de Estudio</option>
+                    <option value="Accesorio">Accesorio</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Precio de Venta (Q) *</label><input type="number" id="edit-precio-venta" step="0.01" min="0.01" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Descripción</label><input type="text" id="edit-descripcion" class="w-full border rounded-lg px-3 py-2"></div>
+            <hr class="my-2">
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Cantidad en esta compra *</label><input type="number" id="edit-cantidad" step="1" min="1" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Costo Unitario de Compra (Q) *</label><input type="number" id="edit-costo-compra" step="0.01" min="0.01" class="w-full border rounded-lg px-3 py-2"></div>
+        </div>
+        <div class="bg-surface-container-low px-5 py-4 border-t flex justify-end gap-3">
+            <button type="button" class="cancelar-modal-editar px-4 py-2 text-sm font-bold text-secondary">Cancelar</button>
+            <button type="button" id="actualizar-producto" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg">Actualizar Producto</button>
         </div>
     </div>
 </div>
@@ -128,258 +181,354 @@
 <script src="js/notify.js"></script>
 <script src="js/layout.js"></script>
 <script>
+    // ---------- VARIABLES GLOBALES ----------
     let proveedores = [];
-    let productosCatalogo = [];
-    let detalles = [];
-    let filaEnEdicion = null;
+    let detalles = [];         // cada elemento: { id_temp, producto_id, nombre, categoria, precio_venta, descripcion, cantidad, costo_unitario }
+    let nextTempId = 1;
+    let productoEnEdicion = null;   // guarda el objeto del detalle que se está editando
 
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar-dinamico');
-        if (sidebar) sidebar.classList.toggle('open');
-        const overlay = document.getElementById('overlay');
-        if (overlay) overlay.classList.toggle('hidden');
+    // ---------- FUNCIONES AUXILIARES ----------
+    function formatearMoneda(valor) {
+        return 'Q' + (parseFloat(valor) || 0).toLocaleString('es-GT', { minimumFractionDigits: 2 });
     }
 
-    function scrollAlFinal() {
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // Renderizar la tabla con todos los campos
+    function renderizarTabla() {
         const tbody = document.getElementById('detalles-body');
-        if (tbody && tbody.lastElementChild) {
-            tbody.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    }
-
-    function mostrarUsuario(){ 
-        const n=localStorage.getItem('usuario')||'Usuario'; 
-        document.getElementById('nombre-usuario').textContent=n; 
-        document.getElementById('rango-usuario').textContent=localStorage.getItem('rango')||''; 
-        document.getElementById('avatar-inicial').textContent=n.charAt(0).toUpperCase(); 
-    }
-
-    async function cargarProveedores(){ 
-        try{ 
-            const res = await API.get('/libreria/compras/proveedores?estado=activos', true); 
-            if(res.ok) { 
-                proveedores = await res.json(); 
-                const sel = document.getElementById('proveedor-id'); 
-                sel.innerHTML = '<option value="">Seleccione</option>'; 
-                proveedores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; });
-            } 
-        } catch(e){ console.error(e); notify.error('Error al cargar proveedores'); } 
-    }
-
-    async function cargarProductosCatalogo(){ 
-        try{ 
-            const res = await API.get('/libreria/productos?incluir_inactivos=true', true); 
-            if(res.ok) productosCatalogo = await res.json(); 
-        } catch(e){ console.error(e); notify.error('Error al cargar productos'); } 
-    }
-
-    function agregarProducto(){ 
-        const tbody = document.getElementById('detalles-body'); 
-        const idx = detalles.length; 
-        const div = document.createElement('tr'); 
-        div.id = `detalle-${idx}`; 
-        div.innerHTML = `
-            <td class="px-3 py-2">
-                <div class="flex items-center gap-1">
-                    <select id="producto-${idx}" class="w-full border rounded px-2 py-1" onchange="actualizarSubtotal(${idx})">
-                        <option value="">Seleccione</option>
-                        ${productosCatalogo.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('')}
-                    </select>
-                    <button type="button" onclick="abrirModalProducto(${idx})" class="p-1 text-primary hover:text-primary-container" title="Crear nuevo producto">
-                        <span class="material-symbols-outlined text-[18px]">add_circle</span>
-                    </button>
-                </div>
-            <\/td>
-            <td class="px-3 py-2"><input type="number" id="cantidad-${idx}" value="1" min="1" class="w-24 border rounded px-2 py-1" onchange="actualizarSubtotal(${idx})"><\/td>
-            <td class="px-3 py-2"><input type="number" id="costo-${idx}" step="0.01" min="0" class="w-32 border rounded px-2 py-1" placeholder="0.00" onchange="actualizarSubtotal(${idx})"><\/td>
-            <td class="px-3 py-2"><span id="subtotal-${idx}" class="font-mono">Q0.00<\/span><\/td>
-            <td class="px-3 py-2"><button onclick="eliminarDetalle(${idx})" class="text-error"><span class="material-symbols-outlined text-[18px]">delete<\/span><\/button><\/td>
-        `;
-        tbody.appendChild(div);
-        detalles.push({ idx, producto_id: null, cantidad: 1, costo: null });
-        actualizarTotal();
-        scrollAlFinal();
-    }
-
-    function actualizarSubtotal(idx){ 
-        const prodSel = document.getElementById(`producto-${idx}`); 
-        const cantidad = parseFloat(document.getElementById(`cantidad-${idx}`).value) || 0; 
-        const costoInput = document.getElementById(`costo-${idx}`).value;
-        let costo = parseFloat(costoInput);
-        if (isNaN(costo)) costo = null;
-        const subtotal = (cantidad && costo) ? cantidad * costo : 0;
-        document.getElementById(`subtotal-${idx}`).innerText = formatearMoneda(subtotal); 
-        detalles[idx] = { idx, producto_id: prodSel.value, cantidad: cantidad, costo: costo }; 
-        actualizarTotal(); 
-    }
-
-    function eliminarDetalle(idx){ 
-        const row = document.getElementById(`detalle-${idx}`); 
-        if(row) row.remove(); 
-        detalles = detalles.filter(d => d.idx !== idx); 
-        actualizarTotal(); 
-    }
-
-    function actualizarTotal(){ 
-        let total = 0; 
-        detalles.forEach(d => { 
-            if (d.cantidad && d.costo) total += d.cantidad * d.costo; 
-        }); 
-        document.getElementById('total-compra').innerText = formatearMoneda(total); 
-    }
-
-    function formatearMoneda(val){ 
-        return 'Q' + parseFloat(val||0).toLocaleString('es-GT', { minimumFractionDigits: 2 }); 
-    }
-
-    function abrirModalProducto(idx) {
-        filaEnEdicion = idx;
-        const proveedorId = document.getElementById('proveedor-id').value;
-        if (!proveedorId) {
-            notify.warning('Primero debe seleccionar un proveedor en la compra antes de crear un producto.');
+        if (!detalles.length) {
+            tbody.innerHTML = `<tr class="text-center text-secondary italic"><td colspan="7" class="px-3 py-6">No hay productos. Presione "+ Agregar producto" para crear uno.</td></tr>`;
+            document.getElementById('total-compra').innerText = formatearMoneda(0);
             return;
         }
+
+        let html = '';
+        let totalGeneral = 0;
+        for (let item of detalles) {
+            const subtotal = item.cantidad * item.costo_unitario;
+            totalGeneral += subtotal;
+            html += `
+                <tr data-temp-id="${item.id_temp}">
+                    <td class="px-3 py-2 font-medium">${escapeHtml(item.nombre)}</td>
+                    <td class="px-3 py-2">${escapeHtml(item.categoria)}</td>
+                    <td class="px-3 py-2 font-mono">${formatearMoneda(item.precio_venta)}</td>
+                    <td class="px-3 py-2"><input type="number" min="0.01" step="1" value="${item.cantidad}" class="cantidad-input w-24 border rounded px-2 py-1" data-id="${item.id_temp}"></td>
+                    <td class="px-3 py-2"><input type="number" min="0" step="0.01" value="${item.costo_unitario.toFixed(2)}" class="costo-input w-32 border rounded px-2 py-1" data-id="${item.id_temp}"></td>
+                    <td class="px-3 py-2 font-mono font-semibold">${formatearMoneda(subtotal)}</td>
+                    <td class="px-3 py-2 text-center whitespace-nowrap">
+                        <button class="editar-btn text-primary hover:text-primary-container mr-2" data-id="${item.id_temp}" title="Editar producto"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+                        <button class="eliminar-btn text-error hover:bg-red-50 rounded-full p-1" data-id="${item.id_temp}" title="Eliminar de la compra"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+                    </td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = html;
+        document.getElementById('total-compra').innerText = formatearMoneda(totalGeneral);
+
+        // Eventos para inputs de cantidad y costo
+        document.querySelectorAll('.cantidad-input').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const id = parseInt(e.target.dataset.id);
+                const nuevoValor = parseFloat(e.target.value);
+                const item = detalles.find(d => d.id_temp === id);
+                if (item && !isNaN(nuevoValor) && nuevoValor > 0) {
+                    item.cantidad = nuevoValor;
+                } else if (item) {
+                    item.cantidad = 1;
+                    e.target.value = 1;
+                }
+                renderizarTabla();
+            });
+        });
+        document.querySelectorAll('.costo-input').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const id = parseInt(e.target.dataset.id);
+                const nuevoCosto = parseFloat(e.target.value);
+                const item = detalles.find(d => d.id_temp === id);
+                if (item && !isNaN(nuevoCosto) && nuevoCosto >= 0) {
+                    item.costo_unitario = nuevoCosto;
+                } else if (item) {
+                    e.target.value = item.costo_unitario.toFixed(2);
+                }
+                renderizarTabla();
+            });
+        });
+        // Botón editar
+        document.querySelectorAll('.editar-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.dataset.id);
+                const item = detalles.find(d => d.id_temp === id);
+                if (item) abrirModalEditar(item);
+            });
+        });
+        // Botón eliminar
+        document.querySelectorAll('.eliminar-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.dataset.id);
+                detalles = detalles.filter(d => d.id_temp !== id);
+                renderizarTabla();
+                notify.info('Producto eliminado de la compra');
+            });
+        });
+    }
+
+    // ---------- CARGAR PROVEEDORES ----------
+    async function cargarProveedores() {
+        try {
+            const res = await API.get('/libreria/compras/proveedores?estado=activos', true);
+            if (res.ok) {
+                proveedores = await res.json();
+                const sel = document.getElementById('proveedor-id');
+                sel.innerHTML = '<option value="">Seleccione</option>';
+                proveedores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; });
+            }
+        } catch (e) { console.error(e); notify.error('Error al cargar proveedores'); }
+    }
+
+    // ---------- MODAL CREAR PRODUCTO ----------
+    function abrirModalCrear() {
+        const proveedorId = document.getElementById('proveedor-id').value;
+        if (!proveedorId) {
+            notify.warning('Primero debe seleccionar un proveedor en la compra.');
+            return;
+        }
+        // Limpiar campos
         document.getElementById('nuevo-nombre').value = '';
         document.getElementById('nuevo-tipo').value = 'Biblia';
-        document.getElementById('nuevo-precio').value = '';
+        document.getElementById('nuevo-costo').value = '';
+        document.getElementById('nuevo-precio-venta').value = '';
+        document.getElementById('nuevo-cantidad').value = '1';
         document.getElementById('nuevo-descripcion').value = '';
-        document.getElementById('modal-nuevo-producto').classList.remove('hidden');
-        document.getElementById('modal-nuevo-producto').classList.add('flex');
+        const modal = document.getElementById('modal-nuevo-producto');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
     }
 
-    function cerrarModalProducto() {
-        document.getElementById('modal-nuevo-producto').classList.add('hidden');
-        filaEnEdicion = null;
+    function cerrarModalCrear() {
+        const modal = document.getElementById('modal-nuevo-producto');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
     }
 
-    async function guardarProductoRapido() {
+    async function guardarProductoNuevo() {
         const nombre = document.getElementById('nuevo-nombre').value.trim();
-        const tipo = document.getElementById('nuevo-tipo').value;
-        const precio = parseFloat(document.getElementById('nuevo-precio').value);
+        const categoria = document.getElementById('nuevo-tipo').value;
+        const costoCompra = parseFloat(document.getElementById('nuevo-costo').value);
+        const precioVenta = parseFloat(document.getElementById('nuevo-precio-venta').value);
+        const cantidad = parseInt(document.getElementById('nuevo-cantidad').value);
         const descripcion = document.getElementById('nuevo-descripcion').value.trim() || null;
         const proveedor_id = document.getElementById('proveedor-id').value;
 
-        if (!nombre) {
-            notify.error('El nombre del producto es obligatorio.');
-            return;
-        }
-        if (isNaN(precio) || precio <= 0) {
-            notify.error('Ingrese un precio de venta válido (mayor a Q0.00).');
-            return;
-        }
-        if (!proveedor_id) {
-            notify.warning('No hay proveedor seleccionado en la compra. Asigne un proveedor primero.');
-            return;
-        }
+        if (!nombre) { notify.error('Nombre obligatorio'); return; }
+        if (isNaN(costoCompra) || costoCompra <= 0) { notify.error('Costo de compra inválido'); return; }
+        if (isNaN(precioVenta) || precioVenta <= 0) { notify.error('Precio de venta inválido'); return; }
+        if (isNaN(cantidad) || cantidad < 1) { notify.error('Cantidad debe ser al menos 1'); return; }
 
         const payload = {
-            tipo_producto: tipo,
+            tipo_producto: categoria,
             nombre: nombre,
             descripcion: descripcion,
-            precio: precio,
+            precio: precioVenta,
             stock: 0,
             estado: true,
             atributos_especificos: {},
-            proveedor_id: proveedor_id
+            proveedor_id: parseInt(proveedor_id)
         };
 
         try {
             const res = await API.post('/libreria/productos', payload, true);
             if (res.ok) {
                 const data = await res.json();
-                await cargarProductosCatalogo();
-                for (let i = 0; i < detalles.length; i++) {
-                    const select = document.getElementById(`producto-${i}`);
-                    if (select) {
-                        const oldValue = select.value;
-                        select.innerHTML = '<option value="">Seleccione</option>' + productosCatalogo.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
-                        if (oldValue) select.value = oldValue;
-                    }
-                }
-                const selectActual = document.getElementById(`producto-${filaEnEdicion}`);
-                if (selectActual) {
-                    selectActual.value = data.data.id;
-                    actualizarSubtotal(filaEnEdicion);
-                }
-                cerrarModalProducto();
-                notify.success('Producto creado exitosamente y seleccionado.');
+                const nuevoProducto = data.data;
+                detalles.push({
+                    id_temp: nextTempId++,
+                    producto_id: nuevoProducto.id,
+                    nombre: nombre,
+                    categoria: categoria,
+                    precio_venta: precioVenta,
+                    descripcion: descripcion || '',
+                    cantidad: cantidad,
+                    costo_unitario: costoCompra
+                });
+                renderizarTabla();
+                cerrarModalCrear();
+                notify.success(`Producto "${nombre}" creado y agregado a la compra.`);
             } else {
                 const err = await res.json();
-                notify.error('Error al crear producto: ' + (err.detail || 'Error desconocido'));
+                notify.error('Error al crear: ' + (err.detail || 'Error desconocido'));
             }
         } catch (error) {
             console.error(error);
-            notify.error('Error de conexión al crear producto.');
+            notify.error('Error de conexión');
         }
     }
 
-    async function registrarCompra(){ 
-        const proveedor_id = document.getElementById('proveedor-id').value; 
-        if(!proveedor_id){ notify.warning('Seleccione proveedor'); return; } 
-        if(detalles.length === 0){ notify.warning('Agregue al menos un producto'); return; } 
-        
-        let valido = true;
-        for (let i = 0; i < detalles.length; i++) {
-            const d = detalles[i];
-            if (!d.producto_id) {
-                notify.warning(`Fila ${i+1}: debe seleccionar un producto.`);
-                valido = false;
-                break;
+    // ---------- MODAL EDITAR PRODUCTO ----------
+    function abrirModalEditar(item) {
+        productoEnEdicion = item;
+        document.getElementById('edit-id-temp').value = item.id_temp;
+        document.getElementById('edit-producto-id').value = item.producto_id;
+        document.getElementById('edit-nombre').value = item.nombre;
+        document.getElementById('edit-tipo').value = item.categoria;
+        document.getElementById('edit-precio-venta').value = item.precio_venta;
+        document.getElementById('edit-descripcion').value = item.descripcion || '';
+        document.getElementById('edit-cantidad').value = item.cantidad;
+        document.getElementById('edit-costo-compra').value = item.costo_unitario;
+        const modal = document.getElementById('modal-editar-producto');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function cerrarModalEditar() {
+        const modal = document.getElementById('modal-editar-producto');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        productoEnEdicion = null;
+    }
+
+    async function actualizarProductoEditado() {
+        if (!productoEnEdicion) return;
+        const idTemp = parseInt(document.getElementById('edit-id-temp').value);
+        const productoId = parseInt(document.getElementById('edit-producto-id').value);
+        const nuevoNombre = document.getElementById('edit-nombre').value.trim();
+        const nuevaCategoria = document.getElementById('edit-tipo').value;
+        const nuevoPrecioVenta = parseFloat(document.getElementById('edit-precio-venta').value);
+        const nuevaDescripcion = document.getElementById('edit-descripcion').value.trim() || null;
+        const nuevaCantidad = parseInt(document.getElementById('edit-cantidad').value);
+        const nuevoCostoCompra = parseFloat(document.getElementById('edit-costo-compra').value);
+
+        if (!nuevoNombre) { notify.error('Nombre obligatorio'); return; }
+        if (isNaN(nuevoPrecioVenta) || nuevoPrecioVenta <= 0) { notify.error('Precio de venta inválido'); return; }
+        if (isNaN(nuevaCantidad) || nuevaCantidad < 1) { notify.error('Cantidad inválida'); return; }
+        if (isNaN(nuevoCostoCompra) || nuevoCostoCompra <= 0) { notify.error('Costo de compra inválido'); return; }
+
+        // Actualizar en backend (producto)
+        const payloadProducto = {
+            tipo_producto: nuevaCategoria,
+            nombre: nuevoNombre,
+            descripcion: nuevaDescripcion,
+            precio: nuevoPrecioVenta,
+            estado: true,
+            atributos_especificos: {}
+        };
+        try {
+            const res = await API.put(`/libreria/productos/${productoId}`, payloadProducto, true);
+            if (res.ok) {
+                // Actualizar en array local
+                const index = detalles.findIndex(d => d.id_temp === idTemp);
+                if (index !== -1) {
+                    detalles[index].nombre = nuevoNombre;
+                    detalles[index].categoria = nuevaCategoria;
+                    detalles[index].precio_venta = nuevoPrecioVenta;
+                    detalles[index].descripcion = nuevaDescripcion;
+                    detalles[index].cantidad = nuevaCantidad;
+                    detalles[index].costo_unitario = nuevoCostoCompra;
+                }
+                renderizarTabla();
+                cerrarModalEditar();
+                notify.success('Producto actualizado correctamente');
+            } else {
+                const err = await res.json();
+                notify.error('Error al actualizar: ' + (err.detail || 'Error desconocido'));
             }
-            if (!d.cantidad || d.cantidad <= 0) {
-                notify.warning(`Fila ${i+1}: la cantidad debe ser mayor a cero.`);
-                valido = false;
-                break;
-            }
-            if (d.costo === null || isNaN(d.costo) || d.costo < 0) {
-                notify.warning(`Fila ${i+1}: debe ingresar un costo unitario mayor o igual a cero.`);
-                valido = false;
-                break;
+        } catch (error) {
+            console.error(error);
+            notify.error('Error de conexión');
+        }
+    }
+
+    // ---------- REGISTRAR COMPRA ----------
+    async function registrarCompra() {
+        const proveedor_id = document.getElementById('proveedor-id').value;
+        if (!proveedor_id) { notify.warning('Seleccione proveedor'); return; }
+        if (detalles.length === 0) { notify.warning('Agregue al menos un producto'); return; }
+
+        for (let d of detalles) {
+            if (!d.producto_id || d.cantidad <= 0 || d.costo_unitario <= 0) {
+                notify.warning('Revise los datos de los productos (cantidad y costo deben ser mayores a cero)');
+                return;
             }
         }
-        if (!valido) return;
 
-        const payload = { 
-            proveedor_id, 
-            fecha_compra: document.getElementById('fecha-compra').value, 
-            fecha_factura: document.getElementById('fecha-factura').value || null, 
-            factura: document.getElementById('factura').value || null, 
-            observaciones: document.getElementById('observaciones').value || null, 
-            detalles: detalles.filter(d => d.producto_id && d.cantidad && d.costo !== null).map(d => ({ 
-                producto_id: d.producto_id, 
-                cantidad: d.cantidad, 
-                costo_unitario: d.costo 
-            })) 
-        }; 
-        const btn = event.currentTarget;
+        const payload = {
+            proveedor_id: parseInt(proveedor_id),
+            fecha_compra: document.getElementById('fecha-compra').value,
+            fecha_factura: document.getElementById('fecha-factura').value || null,
+            factura: document.getElementById('factura').value || null,
+            observaciones: document.getElementById('observaciones').value || null,
+            condicion_pago: document.getElementById('condicion-pago').value,
+            detalles: detalles.map(d => ({
+                producto_id: d.producto_id,
+                cantidad: d.cantidad,
+                costo_unitario: d.costo_unitario
+            }))
+        };
+
+        const btn = document.getElementById('btn-registrar');
+        const originalText = btn.innerHTML;
         btn.disabled = true;
-        btn.textContent = 'Registrando...';
-        try{ 
-            const res = await API.post('/libreria/compras', payload, true); 
-            if(res.ok){ 
-                notify.success('Compra registrada correctamente'); 
+        btn.innerHTML = 'Registrando...';
+        try {
+            const res = await API.post('/libreria/compras', payload, true);
+            if (res.ok) {
+                notify.success('Compra registrada correctamente');
                 setTimeout(() => location.reload(), 1500);
-            } else { 
-                const err = await res.json(); 
-                notify.error('Error: ' + JSON.stringify(err)); 
-            } 
-        } catch(e){ 
-            notify.error('Error de conexión'); 
+            } else {
+                const err = await res.json();
+                notify.error('Error: ' + JSON.stringify(err));
+            }
+        } catch (e) {
+            notify.error('Error de conexión');
         } finally {
             btn.disabled = false;
-            btn.textContent = 'Registrar Compra';
-        } 
+            btn.innerHTML = originalText;
+        }
     }
 
-    document.addEventListener('DOMContentLoaded', async () => { 
-        if(!localStorage.getItem('token')) window.location.href='index.html'; 
-        mostrarUsuario(); 
-        await cargarProveedores(); 
-        await cargarProductosCatalogo(); 
-        document.getElementById('fecha-compra').valueAsDate = new Date(); 
-        agregarProducto();
+    // ---------- INICIALIZACIÓN ----------
+    function mostrarUsuario() {
+        const n = localStorage.getItem('usuario') || 'Usuario';
+        document.getElementById('nombre-usuario').textContent = n;
+        document.getElementById('rango-usuario').textContent = localStorage.getItem('rango') || '';
+        document.getElementById('avatar-inicial').textContent = n.charAt(0).toUpperCase();
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (!localStorage.getItem('token')) window.location.href = 'index.html';
+        mostrarUsuario();
+        await cargarProveedores();
+        document.getElementById('fecha-compra').valueAsDate = new Date();
+
+        // Eventos modales
+        document.getElementById('btn-abrir-modal').addEventListener('click', abrirModalCrear);
+        document.getElementById('btn-registrar').addEventListener('click', registrarCompra);
+        document.getElementById('guardar-producto').addEventListener('click', guardarProductoNuevo);
+        document.getElementById('actualizar-producto').addEventListener('click', actualizarProductoEditado);
+
+        // Cerrar modales (botones X y cancelar)
+        document.querySelectorAll('.cerrar-modal-x, .cancelar-modal').forEach(btn => {
+            btn.addEventListener('click', cerrarModalCrear);
+        });
+        document.querySelectorAll('.cerrar-modal-editar, .cancelar-modal-editar').forEach(btn => {
+            btn.addEventListener('click', cerrarModalEditar);
+        });
+        // Cerrar al hacer clic fuera
+        const modalCrear = document.getElementById('modal-nuevo-producto');
+        modalCrear.addEventListener('click', (e) => { if (e.target === modalCrear) cerrarModalCrear(); });
+        const modalEditar = document.getElementById('modal-editar-producto');
+        modalEditar.addEventListener('click', (e) => { if (e.target === modalEditar) cerrarModalEditar(); });
+
+        renderizarTabla();
     });
 </script>
-
 </body>
 </html>
