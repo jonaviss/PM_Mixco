@@ -16,7 +16,6 @@
                         "primary": "#755b00",
                         "primary-container": "#C9A227",
                         "on-primary": "#ffffff",
-                        "on-primary-container": "#4b3a00",
                         "surface": "#F8FAFC",
                         "surface-container-lowest": "#ffffff",
                         "surface-container-low": "#F1F5F9",
@@ -150,6 +149,19 @@
                             </tbody>
                         </table>
                     </div>
+                    <!-- PAGINACIÓN DEL CATÁLOGO -->
+                    <div class="px-4 py-2 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center">
+                        <span id="info-paginacion-pos" class="text-xs font-mono text-secondary">— productos</span>
+                        <div class="flex gap-2 items-center">
+                            <button id="btn-pos-anterior" onclick="cambiarPaginaPos(-1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary" disabled>
+                                <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                            </button>
+                            <span id="pagina-pos-label" class="text-xs font-mono text-secondary px-2">Pág. 1</span>
+                            <button id="btn-pos-siguiente" onclick="cambiarPaginaPos(1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary" disabled>
+                                <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -235,7 +247,7 @@
 <script>
 /**
  * @file libreria_ventas.js (inline)
- * @description Lógica del POS del módulo de librería.
+ * @description Lógica del POS del módulo de librería con paginación en el catálogo.
  */
 
 let cacheProductos = [];
@@ -243,8 +255,13 @@ let cacheClientes = [];
 let carrito = [];
 let tipoPagoActual = 'contado';
 
+// Variables de paginación para el catálogo
+let productosFiltrados = [];
+let paginaPosActual = 1;
+const POR_PAGINA_POS = 10;
+
 function formatearMoneda(valor) {
-    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2 });
 }
 
 function mostrarUsuario() {
@@ -260,7 +277,10 @@ async function cargarProductos() {
         const res = await API.get('/libreria/productos', true);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         cacheProductos = await res.json();
-        renderizarProductos(cacheProductos);
+        // Inicializar productos filtrados con todos
+        productosFiltrados = [...cacheProductos];
+        paginaPosActual = 1;
+        renderizarProductosPos(productosFiltrados);
     } catch (err) {
         console.error('[POS] Error al cargar productos:', err);
         notify.error('Error al cargar el catálogo de productos');
@@ -268,6 +288,7 @@ async function cargarProductos() {
             <tr><td colspan="5" class="text-center py-8 text-error font-bold text-sm">
                 Error al cargar el catálogo.
             </td></tr>`;
+        document.getElementById('info-paginacion-pos').textContent = '0 productos';
     }
 }
 
@@ -281,10 +302,21 @@ async function cargarClientes() {
     }
 }
 
-function renderizarProductos(productos) {
+function renderizarProductosPos(productos) {
+    // Calcular página actual y slice
+    const total = productos.length;
+    const totalPaginas = Math.ceil(total / POR_PAGINA_POS);
+    if (paginaPosActual > totalPaginas) paginaPosActual = 1;
+    const inicio = (paginaPosActual - 1) * POR_PAGINA_POS;
+    const pagina = productos.slice(inicio, inicio + POR_PAGINA_POS);
+
+    document.getElementById('info-paginacion-pos').textContent = `${total} productos`;
+    document.getElementById('pagina-pos-label').textContent = `Pág. ${paginaPosActual} de ${totalPaginas || 1}`;
+    document.getElementById('btn-pos-anterior').disabled = paginaPosActual <= 1;
+    document.getElementById('btn-pos-siguiente').disabled = paginaPosActual >= totalPaginas;
+
     const tbody = document.getElementById('tabla-productos-pos');
-    document.getElementById('contador-resultados').textContent = `${productos.length} productos`;
-    if (productos.length === 0) {
+    if (pagina.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-secondary text-sm">
             <span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">search_off</span>
             No se encontraron productos.
@@ -292,7 +324,7 @@ function renderizarProductos(productos) {
         return;
     }
     tbody.innerHTML = '';
-    productos.forEach(p => {
+    pagina.forEach(p => {
         const sinStock = p.stock <= 0;
         const tr = document.createElement('tr');
         tr.className = `table-row transition-colors ${sinStock ? 'opacity-50' : ''}`;
@@ -313,6 +345,12 @@ function renderizarProductos(productos) {
         `;
         tbody.appendChild(tr);
     });
+}
+
+// Cambiar página en el catálogo
+function cambiarPaginaPos(delta) {
+    paginaPosActual += delta;
+    renderizarProductosPos(productosFiltrados);
 }
 
 function configurarBuscadorClientes() {
@@ -368,8 +406,13 @@ function configurarBuscadorProductos() {
         clearTimeout(debounce);
         debounce = setTimeout(() => {
             const query = e.target.value.toLowerCase().trim();
-            const filtrados = query ? cacheProductos.filter(p => p.nombre.toLowerCase().includes(query)) : cacheProductos;
-            renderizarProductos(filtrados);
+            if (query) {
+                productosFiltrados = cacheProductos.filter(p => p.nombre.toLowerCase().includes(query));
+            } else {
+                productosFiltrados = [...cacheProductos];
+            }
+            paginaPosActual = 1;
+            renderizarProductosPos(productosFiltrados);
         }, 200);
     });
 }

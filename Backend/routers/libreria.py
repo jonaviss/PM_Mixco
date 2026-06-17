@@ -1,7 +1,7 @@
 """
 Módulo de gestión de librería.
 Maneja inventario, ventas (contado y crédito), abonos simples y distribuidos.
-Incluye FIFO para consumo de lotes.
+Incluye FIFO para consumo de lotes y creación automática de lotes para productos creados desde inventario.
 """
 
 import os
@@ -13,19 +13,28 @@ from schemas import ProductoLibreriaCreate, VentaLibreriaCreate, PagoLibreriaCre
 from routers.dependencies import obtener_usuario_actual
 from routers.pdf_libreria import generar_pdf_comprobante
 from typing import Dict, Any, Optional
+from datetime import datetime
 
 router = APIRouter()
 
-# ======================== FUNCIÓN AUXILIAR FIFO ========================
+# ======================== FUNCIÓN AUXILIAR FIFO (CORREGIDA) ========================
 async def consumir_lote_fifo(producto_id: str, cantidad_vendida: int) -> float:
     """
     Consume la cantidad vendida de los lotes más antiguos (FIFO).
-    Actualiza la tabla lotes y retorna el costo total de la venta.
+    Si no hay lotes, usa el costo_promedio del producto.
+    Retorna el costo total de la venta.
     """
+    if cantidad_vendida <= 0:
+        return 0.0
+
     costo_total = 0.0
     restante = cantidad_vendida
+
+    # Buscar lotes disponibles
     res_lotes = supabase.table("lotes").select("*").eq("producto_id", producto_id).gt("cantidad_restante", 0).order("fecha_compra", desc=False).execute()
     lotes = res_lotes.data or []
+
+    # Consumir lotes FIFO
     for lote in lotes:
         if restante <= 0:
             break
@@ -35,8 +44,16 @@ async def consumir_lote_fifo(producto_id: str, cantidad_vendida: int) -> float:
         nuevo_restante = disponible - descontar
         supabase.table("lotes").update({"cantidad_restante": nuevo_restante}).eq("id", lote["id"]).execute()
         restante -= descontar
+
+    # Si aún falta stock (no hay suficientes lotes), usar costo_promedio
     if restante > 0:
-        raise HTTPException(status_code=400, detail=f"No hay suficiente stock en lotes para el producto {producto_id}")
+        res_prod = supabase.table("inventario_libreria").select("costo_promedio").eq("id", producto_id).execute()
+        if not res_prod.data:
+            raise HTTPException(404, f"Producto {producto_id} no encontrado")
+        costo_promedio = res_prod.data[0].get("costo_promedio", 0)
+        costo_total += restante * costo_promedio
+        # Opcional: registrar en bitácora que no había lotes suficientes
+
     return costo_total
 
 # ======================== NOTIFICACIONES ASÍNCRONAS ========================
@@ -115,18 +132,14 @@ async def listar_productos(
             query = query.eq("estado", True)
         res = query.execute()
         productos = res.data or []
-        
         # Obtener nombres de creadores
         cuis = list(set(p.get("creado_por") for p in productos if p.get("creado_por")))
         nombres = {}
         if cuis:
             res_usuarios = supabase.table("usuarios").select("cui, nombre_completo").in_("cui", cuis).execute()
             nombres = {u["cui"]: u["nombre_completo"] for u in (res_usuarios.data or [])}
-        
-        # Agregar campo creado_por_nombre a cada producto
         for p in productos:
             p["creado_por_nombre"] = nombres.get(p.get("creado_por"), p.get("creado_por") or "—")
-        
         return productos
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -140,16 +153,32 @@ async def listar_clientes(usuario_actual: Dict[str, Any] = Depends(obtener_usuar
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/productos", status_code=status.HTTP_201_CREATED)
-def registrar_producto(payload: ProductoLibreriaCreate, usuario_actual: Dict = Depends(obtener_usuario_actual)):
+def registrar_producto(payload: ProductoLibreriaCreate, usuario_actual=Depends(obtener_usuario_actual)):
     if usuario_actual.get("rango") not in ["encargado", "administrador", "super_admin"]:
         raise HTTPException(403, "No tiene permisos para registrar productos.")
     try:
         data = payload.model_dump(exclude_none=True)
-        # Agregar creado_por con el CUI del usuario actual
+        # Guardar creado_por
         data["creado_por"] = usuario_actual["sub"]
-        # Si no viene costo_promedio, se guarda como None (la BD lo maneja)
         res = supabase.table("inventario_libreria").insert(data).execute()
-        return {"mensaje": "Producto registrado", "data": res.data[0]}
+        nuevo_producto = res.data[0]
+        producto_id = nuevo_producto["id"]
+
+        # ===== NUEVO: Crear lote automático si el producto tiene stock y costo =====
+        stock = data.get("stock", 0)
+        costo_promedio = data.get("costo_promedio")
+        if stock > 0 and costo_promedio is not None:
+            lote_data = {
+                "producto_id": producto_id,
+                "compra_id": None,  # Sin compra asociada (creado desde inventario)
+                "cantidad_inicial": stock,
+                "cantidad_restante": stock,
+                "costo_unitario": costo_promedio,
+                "fecha_compra": datetime.now().isoformat()
+            }
+            supabase.table("lotes").insert(lote_data).execute()
+
+        return {"mensaje": "Producto registrado", "data": nuevo_producto}
     except Exception as e:
         raise HTTPException(500, str(e))
 
@@ -186,14 +215,14 @@ async def toggle_estado_producto(producto_id: str, usuario_actual=Depends(obtene
 
 # ======================== VENTAS CON FIFO (CORREGIDO) ========================
 @router.post("/ventas", status_code=status.HTTP_201_CREATED)
-async def registrar_venta(  # Convertido a async
+async def registrar_venta(
     payload: VentaLibreriaCreate,
     background_tasks: BackgroundTasks,
     usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
 ):
     try:
         res_producto = supabase.table("inventario_libreria") \
-            .select("id, nombre, stock, precio") \
+            .select("id, nombre, stock, precio, costo_promedio") \
             .eq("id", payload.producto_id) \
             .execute()
         if not res_producto.data:
@@ -208,7 +237,7 @@ async def registrar_venta(  # Convertido a async
         estado_inicial = "pagado" if es_contado else "pendiente"
         monto_ingresado = total_venta if es_contado else 0.0
 
-        # CORRECCIÓN: AWAIT a la función async
+        # Consumir lotes (corregido para manejar productos sin lotes)
         costo_total_venta = await consumir_lote_fifo(payload.producto_id, payload.cantidad)
         costo_unitario_venta = costo_total_venta / payload.cantidad if payload.cantidad > 0 else 0
 
@@ -244,7 +273,7 @@ async def registrar_venta(  # Convertido a async
             .eq("id", payload.producto_id) \
             .execute()
 
-        # Obtener datos para correo (igual que antes)
+        # Obtener datos para correo
         res_comprador = supabase.table("usuarios") \
             .select("cui, nombre_completo") \
             .eq("cui", payload.comprador_cui) \
