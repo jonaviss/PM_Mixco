@@ -40,6 +40,123 @@
             }
         }
     </script>
+    <style>
+        /* ===== ESTILOS GENERALES ===== */
+        .tabla-productos-container {
+            overflow-x: auto;
+            overflow-y: visible;
+            max-height: none;
+        }
+        .tabla-productos-container table {
+            width: 100%;
+            border-collapse: collapse;
+            display: table;
+            min-width: 1100px;
+        }
+        .tabla-productos-container tbody tr:hover {
+            background-color: #fefce8;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .price-input {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .orden-btn {
+            transition: all 0.15s ease;
+            cursor: pointer;
+            background-color: white;
+            position: relative;
+        }
+        .orden-btn.active {
+            background-color: #C9A227;
+            color: white;
+            border-color: #C9A227;
+        }
+        .orden-btn:hover:not(.active) {
+            background-color: #f1f5f9;
+        }
+        select {
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        select:focus {
+            outline: none;
+            border-color: #C9A227;
+            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
+        }
+
+        /* ===== TOOLTIPS CON BORDES REDONDEADOS Y POSICIÓN MEJORADA ===== */
+        [data-tooltip] {
+            position: relative;
+        }
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 3px 10px;
+            background: #ffffff;
+            color: #1E293B;
+            border-radius: 4px;
+            font-size: 10px;
+            font-family: 'Sora', sans-serif;
+            font-weight: 400;
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+        [data-tooltip]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #e2e8f0;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        [data-tooltip]:hover::after,
+        [data-tooltip]:hover::before {
+            opacity: 1;
+        }
+
+        /* Ajuste para tooltips de botones de orden y acciones */
+        .orden-btn[data-tooltip]:hover::after,
+        .accion-btn[data-tooltip]:hover::after {
+            white-space: nowrap;
+        }
+        .search-wrapper [data-tooltip]:hover::after {
+            white-space: nowrap;
+        }
+
+        /* ===== BUSCADOR MÁS CORTO Y ALINEADO A LA IZQUIERDA ===== */
+        .search-wrapper {
+            flex: 0 1 auto;
+            max-width: 280px;
+        }
+        .search-wrapper input {
+            text-align: left;
+        }
+        #buscador {
+            text-align: left !important;
+        }
+    </style>
 </head>
 <body class="text-on-surface">
 
@@ -60,7 +177,9 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
-            <!-- Botón Nuevo Producto eliminado -->
+            <button id="btn-nuevo-producto" class="bg-primary-container text-white font-bold px-4 py-2 rounded-lg hover:opacity-90 transition text-sm flex items-center gap-1">
+                <span class="material-symbols-outlined text-[18px]">add</span> Nuevo Producto
+            </button>
             <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
                 <div class="text-right hidden sm:block">
                     <p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p>
@@ -98,23 +217,45 @@
         <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
 
             <!-- Filtros y buscador -->
-            <div class="p-4 border-b border-outline-variant flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-surface-container-low/30 flex-wrap">
-                <div class="flex gap-2 flex-wrap">
-                    <button onclick="filtrarCategoria('todos')" class="filter-btn active px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors" data-cat="todos">Todos</button>
-                    <button onclick="filtrarCategoria('Biblia')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Biblia">Biblias</button>
-                    <button onclick="filtrarCategoria('Libro')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Libro">Libros</button>
-                    <button onclick="filtrarCategoria('Material')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Material">Material</button>
-                    <button onclick="filtrarCategoria('Accesorio')" class="filter-btn px-3 py-1.5 rounded-full text-xs font-mono border border-outline-variant bg-surface-container-lowest hover:bg-surface-container transition-colors text-secondary" data-cat="Accesorio">Accesorios</button>
-                </div>
-                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                    <div class="relative w-full sm:w-64">
-                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
-                        <input type="text" id="buscador" placeholder="Buscar producto..." class="w-full pl-9 pr-4 py-2 text-sm bg-surface-container-lowest border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+            <div class="p-4 border-b border-outline-variant bg-surface-container-low/30">
+                <!-- Fila única: Categoría, Buscador (más corto), Checkbox -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Categoría -->
+                    <div class="flex items-center gap-3">
+                        <label class="text-xs font-mono font-bold text-secondary uppercase tracking-wider whitespace-nowrap">Categoría:</label>
+                        <select id="categoria-select" class="border border-outline-variant rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-container transition min-w-[180px]">
+                            <option value="todos">Todas las categorías</option>
+                        </select>
                     </div>
-                    <label class="flex items-center gap-2 text-sm text-secondary whitespace-nowrap">
+
+                    <!-- Buscador (más corto) -->
+                    <div class="search-wrapper">
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+                            <input type="text" id="buscador" placeholder="Buscar por nombre (ej: Biblia, Marcos)" 
+                                   data-tooltip="Ejemplo: 'Biblia' o 'Marcos' – busca en el nombre del producto"
+                                   class="w-full pl-9 pr-4 py-2 text-sm bg-surface-container-lowest border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                        </div>
+                    </div>
+
+                    <!-- Mostrar desactivados -->
+                    <label class="flex items-center gap-2 text-sm text-secondary whitespace-nowrap flex-shrink-0">
                         <input type="checkbox" id="mostrar-inactivos" class="rounded border-outline-variant">
                         Mostrar desactivados
                     </label>
+                </div>
+
+                <!-- Fila de ordenamiento (con nuevo botón Stock ↑) -->
+                <div class="flex flex-wrap gap-1 items-center mt-3">
+                    <span class="text-xs font-mono text-secondary mr-1">Ordenar:</span>
+                    <button onclick="setOrden('nombre', 'asc')" class="orden-btn active px-2.5 py-1 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition-colors" data-orden="nombre-asc" data-tooltip="A→Z por nombre">A→Z</button>
+                    <button onclick="setOrden('nombre', 'desc')" class="orden-btn px-2.5 py-1 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition-colors" data-orden="nombre-desc" data-tooltip="Z→A por nombre">Z→A</button>
+                    <button onclick="setOrden('fecha', 'desc')" class="orden-btn px-2.5 py-1 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition-colors" data-orden="fecha-desc" data-tooltip="Más reciente primero">Más reciente</button>
+                    <button onclick="setOrden('fecha', 'asc')" class="orden-btn px-2.5 py-1 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition-colors" data-orden="fecha-asc" data-tooltip="Más antiguo primero">Más antigua</button>
+                    <button onclick="setOrden('stock', 'asc')" class="orden-btn px-2.5 py-1 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition-colors" data-orden="stock-asc" data-tooltip="Menos stock primero (reabastecer)">Reabastecer</button>
+                    <button onclick="setOrden('stock', 'desc')" class="orden-btn px-2.5 py-1 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition-colors" data-orden="stock-desc" data-tooltip="Más stock primero">Stock ↑</button>
+                    <button onclick="setOrden('precio', 'desc')" class="orden-btn px-2.5 py-1 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition-colors" data-orden="precio-desc" data-tooltip="Más caro primero">Precio ↓</button>
+                    <button onclick="setOrden('precio', 'asc')" class="orden-btn px-2.5 py-1 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition-colors" data-orden="precio-asc" data-tooltip="Más barato primero">Precio ↑</button>
                 </div>
             </div>
 
@@ -123,18 +264,20 @@
                 <table class="w-full text-left">
                     <thead class="bg-surface-container-low/50">
                         <tr>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">ID</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Producto</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Categoría</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Proveedor</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Stock</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Precio</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Acciones</th>
+                            <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Producto</th>
+                            <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Categoría</th>
+                            <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Proveedor</th>
+                            <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Stock</th>
+                            <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Costo Compra</th>
+                            <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Precio Venta</th>
+                            <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha / Hora</th>
+                            <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Creado por</th>
+                            <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
+                            <th class="px-4 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-productos" class="divide-y divide-outline-variant text-sm">
-                        <tr><td colspan="8" class="text-center py-10 text-secondary">Cargando productos...</td></tr>
+                        <tr><td colspan="10" class="text-center py-10 text-secondary">Cargando productos...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -160,16 +303,70 @@
     </footer>
 </div>
 
-<!-- MODAL: EDITAR PRODUCTO (ya no hay modal de creación) -->
-<div id="modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+<!-- MODAL: NUEVO PRODUCTO -->
+<div id="modal-nuevo-producto" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-primary px-5 py-4 flex justify-between items-center">
+            <h3 class="text-base font-bold text-white">Nuevo Producto</h3>
+            <button onclick="cerrarModalNuevoProducto()" class="text-white/70 hover:text-white">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="p-5 space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-secondary uppercase mb-1">Nombre *</label>
+                <input type="text" id="np-nombre" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: Biblia RVR 1960">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-secondary uppercase mb-1">Categoría *</label>
+                <select id="np-categoria" class="w-full border rounded-lg px-3 py-2">
+                    <option value="Biblia">Biblia</option>
+                    <option value="Libro">Libro</option>
+                    <option value="Material">Material de Estudio</option>
+                    <option value="Accesorio">Accesorio</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-secondary uppercase mb-1">Costo de Referencia (Q) <span class="font-light text-secondary">(opcional)</span></label>
+                <input type="text" id="np-costo" class="w-full border rounded-lg px-3 py-2 price-input" placeholder="Ej: 85.50">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-secondary uppercase mb-1">Precio de Venta (Q) *</label>
+                <input type="text" id="np-precio" class="w-full border rounded-lg px-3 py-2 price-input" placeholder="Ej: 125.00">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-secondary uppercase mb-1">Stock Inicial <span class="font-light text-secondary">(opcional)</span></label>
+                <input type="number" id="np-stock" min="0" value="0" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: 10">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-secondary uppercase mb-1">Descripción</label>
+                <input type="text" id="np-descripcion" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: Tapa dura, índice">
+            </div>
+            <div class="bg-amber-50 p-2 rounded text-xs text-amber-800">
+                El producto se creará con el stock que indiques y sin proveedor asignado. 
+                El costo de referencia se usará para calcular ganancias hasta que se registre una compra.
+            </div>
+        </div>
+        <div class="bg-surface-container-low px-5 py-4 border-t flex justify-end gap-3">
+            <button onclick="cerrarModalNuevoProducto()" class="px-4 py-2 text-sm font-bold text-secondary">Cancelar</button>
+            <button id="btn-guardar-nuevo" onclick="guardarNuevoProducto()" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg flex items-center gap-2">
+                Crear Producto
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: EDITAR PRODUCTO -->
+<div id="modal-editar" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
     <div class="bg-surface-container-lowest rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
         <div class="bg-primary px-5 py-4 flex justify-between items-center">
             <h3 id="modal-titulo" class="text-base font-bold text-white">Editar Producto</h3>
-            <button onclick="cerrarModal()" class="text-white/70 hover:text-white transition-colors"><span class="material-symbols-outlined">close</span></button>
+            <button onclick="cerrarModalEditar()" class="text-white/70 hover:text-white transition-colors"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="p-5">
-            <div id="msg-modal" class="hidden px-4 py-2 rounded-lg mb-4 text-sm font-bold"></div>
-            <input type="hidden" id="producto-id">
+            <div id="msg-modal-editar" class="hidden px-4 py-2 rounded-lg mb-4 text-sm font-bold"></div>
+            <input type="hidden" id="producto-id-editar">
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Categoría <span class="text-error">*</span></label>
@@ -196,22 +393,22 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Precio (Q) <span class="text-error">*</span></label>
-                    <input type="number" id="prod-precio" step="0.01" min="0.01" placeholder="0.00" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low font-mono">
+                    <input type="text" id="prod-precio" placeholder="0.00" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low font-mono price-input focus:outline-none focus:ring-2 focus:ring-primary-container transition">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Stock <span class="text-error">*</span></label>
-                    <input type="number" id="prod-stock" min="0" placeholder="0" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low font-mono">
+                    <input type="number" id="prod-stock" min="0" placeholder="0" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low font-mono focus:outline-none focus:ring-2 focus:ring-primary-container transition">
                 </div>
             </div>
         </div>
         <div class="bg-surface-container-low px-5 py-4 border-t border-outline-variant flex justify-end gap-3">
-            <button onclick="cerrarModal()" class="px-5 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cancelar</button>
-            <button id="btn-guardar" onclick="guardarProducto()" class="px-5 py-2 text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition shadow-sm">Guardar</button>
+            <button onclick="cerrarModalEditar()" class="px-5 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cancelar</button>
+            <button id="btn-guardar-editar" onclick="guardarEditarProducto()" class="px-5 py-2 text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition shadow-sm">Guardar</button>
         </div>
     </div>
 </div>
 
-<!-- MODAL DE CONFIRMACIÓN PARA DESACTIVAR/REACTIVAR -->
+<!-- MODAL DE CONFIRMACIÓN -->
 <div id="modal-confirmacion" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
         <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center" id="modal-confirmacion-header">
@@ -231,8 +428,9 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/layout.js"></script>
+<script src="js/notify.js"></script>
 <script>
-// --- VARIABLES GLOBALES ---
+// ======================== VARIABLES GLOBALES ========================
 let todosLosProductos = [];
 let categoriaActiva = 'todos';
 let busquedaActiva = '';
@@ -241,8 +439,30 @@ const POR_PAGINA = 15;
 let confirmacionCallback = null;
 let listaProveedores = [];
 
+// Variables de ordenamiento
+let ordenActual = 'nombre';
+let direccionActual = 'asc';
+
+// ======================== FUNCIONES AUXILIARES ========================
 function formatearMoneda(valor) {
-    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2 });
+}
+
+function formatearFechaHora(fechaISO) {
+    if (!fechaISO) return '—';
+    try {
+        const fecha = new Date(fechaISO);
+        return fecha.toLocaleString('es-GT', {
+            timeZone: 'America/Guatemala',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return '—';
+    }
 }
 
 function mostrarUsuario() {
@@ -256,7 +476,32 @@ function mostrarUsuario() {
     if (elAvatar) elAvatar.textContent = nombre.charAt(0).toUpperCase();
 }
 
-async function cargarProveedoresParaSelect() {
+// Configurar campos de precio
+function configurarCampoPrecio(input) {
+    if (!input) return;
+    input.addEventListener('input', function() {
+        let valor = this.value.replace(',', '.');
+        valor = valor.replace(/[^0-9.]/g, '');
+        const partes = valor.split('.');
+        if (partes.length > 2) {
+            valor = partes[0] + '.' + partes.slice(1).join('');
+        }
+        this.value = valor;
+    });
+    input.addEventListener('blur', function() {
+        let valor = this.value.trim();
+        if (valor === '') return;
+        const numero = parseFloat(valor);
+        if (!isNaN(numero) && numero >= 0) {
+            this.value = numero.toFixed(2);
+        } else {
+            this.value = '';
+        }
+    });
+}
+
+// ======================== CARGAR PROVEEDORES ========================
+async function cargarProveedoresSelect() {
     try {
         const res = await API.get('/libreria/compras/proveedores?estado=activos', true);
         if (res.ok) {
@@ -272,6 +517,7 @@ async function cargarProveedoresParaSelect() {
     }
 }
 
+// ======================== CARGAR PRODUCTOS ========================
 async function cargarProductos() {
     const incluirInactivos = document.getElementById('mostrar-inactivos').checked;
     const url = `/libreria/productos?incluir_inactivos=${incluirInactivos}`;
@@ -280,10 +526,11 @@ async function cargarProductos() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         todosLosProductos = await res.json();
         calcularStats();
+        actualizarCategorias();
         renderizarTabla();
     } catch (err) {
         console.error('[Inventario] Error:', err);
-        document.getElementById('tabla-productos').innerHTML = `<tr><td colspan="8" class="text-center py-10 text-error">Error al cargar inventario.</td></tr>`;
+        document.getElementById('tabla-productos').innerHTML = `<tr><td colspan="10" class="text-center py-10 text-error">Error al cargar inventario.</td></tr>`;
     }
 }
 
@@ -297,29 +544,112 @@ function calcularStats() {
     document.getElementById('stat-valor').textContent = formatearMoneda(valorTotal);
 }
 
+// ======================== ACTUALIZAR SELECTOR DE CATEGORÍAS ========================
+function actualizarCategorias() {
+    const select = document.getElementById('categoria-select');
+    const categorias = new Set();
+    todosLosProductos.forEach(p => {
+        if (p.tipo_producto) categorias.add(p.tipo_producto);
+    });
+    const categoriasOrdenadas = Array.from(categorias).sort();
+    const valorActual = select.value;
+    select.innerHTML = '<option value="todos">Todas las categorías</option>';
+    categoriasOrdenadas.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        select.appendChild(option);
+    });
+    if (valorActual && categoriasOrdenadas.includes(valorActual)) {
+        select.value = valorActual;
+    } else {
+        select.value = 'todos';
+        categoriaActiva = 'todos';
+    }
+}
+
+// ======================== ORDENAMIENTO ========================
+function setOrden(campo, direccion) {
+    ordenActual = campo;
+    direccionActual = direccion;
+    paginaActual = 1;
+
+    document.querySelectorAll('.orden-btn').forEach(btn => {
+        const btnData = btn.dataset.orden;
+        btn.classList.remove('active', 'bg-primary-container', 'text-white', 'text-secondary', 'bg-white');
+        if (btnData === `${campo}-${direccion}`) {
+            btn.classList.add('active', 'bg-primary-container', 'text-white');
+        } else {
+            btn.classList.add('bg-white', 'text-secondary');
+        }
+    });
+
+    renderizarTabla();
+}
+
+function ordenarProductos(productos) {
+    const copy = [...productos];
+    switch (ordenActual) {
+        case 'nombre':
+            copy.sort((a, b) => {
+                const comp = a.nombre.localeCompare(b.nombre);
+                return direccionActual === 'asc' ? comp : -comp;
+            });
+            break;
+        case 'fecha':
+            copy.sort((a, b) => {
+                const fechaA = a.created_at || a.updated_at || '';
+                const fechaB = b.created_at || b.updated_at || '';
+                const comp = fechaA.localeCompare(fechaB);
+                return direccionActual === 'asc' ? comp : -comp;
+            });
+            break;
+        case 'stock':
+            copy.sort((a, b) => {
+                const comp = a.stock - b.stock;
+                return direccionActual === 'asc' ? comp : -comp;
+            });
+            break;
+        case 'precio':
+            copy.sort((a, b) => {
+                const comp = a.precio - b.precio;
+                return direccionActual === 'asc' ? comp : -comp;
+            });
+            break;
+        default:
+            break;
+    }
+    return copy;
+}
+
+// ======================== RENDERIZAR TABLA ========================
 function renderizarTabla() {
     let filtrados = todosLosProductos.filter(p => {
         const coincideCategoria = categoriaActiva === 'todos' || p.tipo_producto === categoriaActiva;
         const coincideBusqueda = p.nombre.toLowerCase().includes(busquedaActiva.toLowerCase());
         return coincideCategoria && coincideBusqueda;
     });
+
+    filtrados = ordenarProductos(filtrados);
+
     const total = filtrados.length;
     const totalPaginas = Math.ceil(total / POR_PAGINA);
     if (paginaActual > totalPaginas) paginaActual = 1;
     const inicio = (paginaActual - 1) * POR_PAGINA;
     const pagina = filtrados.slice(inicio, inicio + POR_PAGINA);
+
     document.getElementById('info-paginacion').textContent = `${total} productos`;
     document.getElementById('pagina-label').textContent = `Pág. ${paginaActual} de ${totalPaginas || 1}`;
     document.getElementById('btn-anterior').disabled = paginaActual <= 1;
     document.getElementById('btn-siguiente').disabled = paginaActual >= totalPaginas;
+
     const tbody = document.getElementById('tabla-productos');
     if (pagina.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-secondary">No se encontraron productos.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-10 text-secondary">No se encontraron productos.</td></tr>`;
         return;
     }
     tbody.innerHTML = '';
     pagina.forEach(p => {
-        const idCorto = p.id.substring(0, 8) + '...';
         const stockClass = p.stock === 0 ? 'text-error font-bold' : p.stock < 5 ? 'text-amber-600 font-bold' : 'text-on-surface font-bold';
         let estadoBadge = '';
         if (p.estado === false) {
@@ -331,37 +661,40 @@ function renderizarTabla() {
         } else {
             estadoBadge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">En Stock</span>';
         }
-        let botones = `<button onclick="editarProducto('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Editar"><span class="material-symbols-outlined text-[16px]">edit</span></button>`;
+        let botones = `<button onclick="editarProducto('${p.id}')" class="accion-btn p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" data-tooltip="Editar"><span class="material-symbols-outlined text-[16px]">edit</span></button>`;
         if (p.estado) {
-            botones += `<button onclick="confirmarDesactivar('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-error hover:bg-red-50 transition ml-1" title="Desactivar"><span class="material-symbols-outlined text-[16px]">delete_forever</span></button>`;
+            botones += `<button onclick="confirmarDesactivar('${p.id}')" class="accion-btn p-1.5 rounded-lg border border-outline-variant text-error hover:bg-red-50 transition ml-1" data-tooltip="Desactivar"><span class="material-symbols-outlined text-[16px]">delete_forever</span></button>`;
         } else {
-            botones += `<button onclick="confirmarReactivar('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-green-600 hover:bg-green-50 transition ml-1" title="Reactivar"><span class="material-symbols-outlined text-[16px]">restore_from_trash</span></button>`;
+            botones += `<button onclick="confirmarReactivar('${p.id}')" class="accion-btn p-1.5 rounded-lg border border-outline-variant text-green-600 hover:bg-green-50 transition ml-1" data-tooltip="Reactivar"><span class="material-symbols-outlined text-[16px]">restore_from_trash</span></button>`;
         }
         const proveedorNombre = p.proveedores?.nombre || (p.proveedor_id ? (listaProveedores.find(pr => pr.id === p.proveedor_id)?.nombre || '—') : '—');
+        const fechaCreacion = p.created_at || p.updated_at || null;
+        const fechaFormateada = formatearFechaHora(fechaCreacion);
+        const creadorNombre = p.creado_por_nombre || p.creado_por || '—';
+        const costoCompra = p.costo_promedio !== undefined && p.costo_promedio !== null ? p.costo_promedio : 0;
+
         const tr = document.createElement('tr');
         tr.className = 'table-row transition-colors';
         tr.innerHTML = `
-            <td class="px-5 py-3 font-mono text-xs text-secondary">${idCorto}</td>
-            <td class="px-5 py-3 font-bold text-on-surface">${p.nombre}</td>
-            <td class="px-5 py-3"><span class="px-2 py-0.5 bg-surface-container text-secondary rounded text-xs font-mono">${p.tipo_producto}</span></td>
-            <td class="px-5 py-3">${proveedorNombre}</td>
-            <td class="px-5 py-3 text-right font-mono ${stockClass}">${p.stock}</td>
-            <td class="px-5 py-3 text-right font-mono font-bold">${formatearMoneda(p.precio)}</td>
-            <td class="px-5 py-3 text-center">${estadoBadge}</td>
-            <td class="px-5 py-3 text-center">${botones}</td>
+            <td class="px-4 py-3 font-bold text-on-surface">${p.nombre}</td>
+            <td class="px-4 py-3"><span class="px-2 py-0.5 bg-surface-container text-secondary rounded text-xs font-mono">${p.tipo_producto}</span></td>
+            <td class="px-4 py-3">${proveedorNombre}</td>
+            <td class="px-4 py-3 text-right font-mono ${stockClass}">${p.stock}</td>
+            <td class="px-4 py-3 text-right font-mono">${formatearMoneda(costoCompra)}</td>
+            <td class="px-4 py-3 text-right font-mono font-bold">${formatearMoneda(p.precio)}</td>
+            <td class="px-4 py-3 text-xs text-secondary">${fechaFormateada}</td>
+            <td class="px-4 py-3 text-sm text-secondary">${creadorNombre}</td>
+            <td class="px-4 py-3 text-center">${estadoBadge}</td>
+            <td class="px-4 py-3 text-center whitespace-nowrap">${botones}</td>
         `;
         tbody.appendChild(tr);
     });
 }
 
-function filtrarCategoria(categoria) {
-    categoriaActiva = categoria;
+function filtrarCategoriaDesdeSelect() {
+    const select = document.getElementById('categoria-select');
+    categoriaActiva = select.value;
     paginaActual = 1;
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        const esActivo = btn.dataset.cat === categoria;
-        btn.classList.toggle('active', esActivo);
-        btn.classList.toggle('text-secondary', !esActivo);
-    });
     renderizarTabla();
 }
 
@@ -371,49 +704,113 @@ function cambiarPagina(direccion) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function cerrarModal() {
-    document.getElementById('modal').classList.add('hidden');
-    document.getElementById('modal').classList.remove('flex');
+// ======================== MODAL NUEVO PRODUCTO ========================
+function abrirModalNuevoProducto() {
+    document.getElementById('np-nombre').value = '';
+    document.getElementById('np-categoria').value = 'Biblia';
+    document.getElementById('np-costo').value = '';
+    document.getElementById('np-precio').value = '';
+    document.getElementById('np-stock').value = '0';
+    document.getElementById('np-descripcion').value = '';
+    document.getElementById('modal-nuevo-producto').classList.remove('hidden');
+    document.getElementById('modal-nuevo-producto').classList.add('flex');
+    document.getElementById('np-nombre').focus();
 }
 
-function mostrarMsgModal(texto, tipo) {
-    const msg = document.getElementById('msg-modal');
-    msg.textContent = texto;
-    msg.className = `px-4 py-2 rounded-lg mb-4 text-sm font-bold block ${tipo === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`;
+function cerrarModalNuevoProducto() {
+    document.getElementById('modal-nuevo-producto').classList.add('hidden');
+    document.getElementById('modal-nuevo-producto').classList.remove('flex');
+    const btn = document.getElementById('btn-guardar-nuevo');
+    btn.disabled = false;
+    btn.innerHTML = 'Crear Producto';
 }
 
+async function guardarNuevoProducto() {
+    const btn = document.getElementById('btn-guardar-nuevo');
+    const nombre = document.getElementById('np-nombre').value.trim();
+    const categoria = document.getElementById('np-categoria').value;
+    const costo = parseFloat(document.getElementById('np-costo').value || '0');
+    const precio = parseFloat(document.getElementById('np-precio').value || '0');
+    const stock = parseInt(document.getElementById('np-stock').value) || 0;
+    const descripcion = document.getElementById('np-descripcion').value.trim() || null;
+
+    if (!nombre) { notify.error('El nombre del producto es obligatorio'); return; }
+    if (isNaN(precio) || precio <= 0) { notify.error('El precio de venta debe ser mayor a Q0.00'); return; }
+    if (isNaN(costo) || costo < 0) { notify.error('El costo de referencia no puede ser negativo'); return; }
+    if (isNaN(stock) || stock < 0) { notify.error('El stock no puede ser negativo'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Creando...';
+
+    const payload = {
+        tipo_producto: categoria,
+        nombre: nombre,
+        descripcion: descripcion,
+        precio: precio,
+        stock: stock,
+        estado: true,
+        atributos_especificos: {},
+        proveedor_id: null,
+        costo_promedio: costo
+    };
+
+    try {
+        const res = await API.post('/libreria/productos', payload, true);
+        if (res.ok) {
+            cerrarModalNuevoProducto();
+            await cargarProductos();
+            notify.success(`Producto "${nombre}" creado exitosamente con ${stock} unidades.`);
+        } else {
+            const err = await res.json();
+            const msg = err.detail || 'Error desconocido al crear el producto';
+            notify.error('Error: ' + msg);
+        }
+    } catch (error) {
+        console.error(error);
+        notify.error('Error de conexión al crear el producto');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Crear Producto';
+    }
+}
+
+// ======================== MODAL EDITAR PRODUCTO ========================
 async function editarProducto(id) {
     const producto = todosLosProductos.find(p => p.id === id);
     if (!producto) return;
     document.getElementById('modal-titulo').textContent = 'Editar Producto';
-    document.getElementById('producto-id').value = producto.id;
+    document.getElementById('producto-id-editar').value = producto.id;
     document.getElementById('prod-tipo').value = producto.tipo_producto;
     document.getElementById('prod-nombre').value = producto.nombre;
     document.getElementById('prod-desc').value = producto.descripcion || '';
-    document.getElementById('prod-precio').value = producto.precio;
+    document.getElementById('prod-precio').value = producto.precio.toFixed(2);
     document.getElementById('prod-stock').value = producto.stock;
     document.getElementById('prod-proveedor').value = producto.proveedor_id || '';
-    document.getElementById('msg-modal').classList.add('hidden');
-    document.getElementById('modal').classList.remove('hidden');
-    document.getElementById('modal').classList.add('flex');
+    document.getElementById('msg-modal-editar').classList.add('hidden');
+    document.getElementById('modal-editar').classList.remove('hidden');
+    document.getElementById('modal-editar').classList.add('flex');
 }
 
-async function guardarProducto() {
-    const id = document.getElementById('producto-id').value;
-    if (!id) {
-        mostrarMsgModal('No se puede crear un producto desde aquí. Utilice el módulo de compras.', 'error');
-        setTimeout(() => cerrarModal(), 2000);
-        return;
-    }
-    const btn = document.getElementById('btn-guardar');
+function cerrarModalEditar() {
+    document.getElementById('modal-editar').classList.add('hidden');
+    document.getElementById('modal-editar').classList.remove('flex');
+    const btn = document.getElementById('btn-guardar-editar');
+    btn.disabled = false;
+    btn.innerHTML = 'Guardar';
+}
+
+async function guardarEditarProducto() {
+    const id = document.getElementById('producto-id-editar').value;
+    if (!id) return;
+    const btn = document.getElementById('btn-guardar-editar');
     const nombre = document.getElementById('prod-nombre').value.trim();
-    const precio = parseFloat(document.getElementById('prod-precio').value);
+    const precio = parseFloat(document.getElementById('prod-precio').value || '0');
     const stock = parseInt(document.getElementById('prod-stock').value);
-    if (!nombre) { mostrarMsgModal('El nombre del producto es obligatorio.', 'error'); return; }
-    if (isNaN(precio) || precio <= 0) { mostrarMsgModal('Precio inválido.', 'error'); return; }
-    if (isNaN(stock) || stock < 0) { mostrarMsgModal('Stock inválido.', 'error'); return; }
+    if (!nombre) { notify.error('El nombre del producto es obligatorio'); return; }
+    if (isNaN(precio) || precio <= 0) { notify.error('Precio inválido'); return; }
+    if (isNaN(stock) || stock < 0) { notify.error('Stock inválido'); return; }
     btn.disabled = true;
-    btn.textContent = 'Guardando...';
+    btn.innerHTML = '<span class="spinner"></span> Guardando...';
     const payload = {
         tipo_producto: document.getElementById('prod-tipo').value,
         nombre,
@@ -425,22 +822,23 @@ async function guardarProducto() {
     };
     try {
         const res = await API.put(`/libreria/productos/${id}`, payload, true);
-        const data = await res.json();
         if (res.ok) {
-            cerrarModal();
+            cerrarModalEditar();
             await cargarProductos();
+            notify.success('Producto actualizado correctamente');
         } else {
-            const detalle = API.mensajeError(data);
-            mostrarMsgModal(detalle, 'error');
+            const err = await res.json();
+            notify.error('Error: ' + (err.detail || 'Error desconocido'));
         }
     } catch (err) {
-        mostrarMsgModal('Error de conexión.', 'error');
+        notify.error('Error de conexión');
     } finally {
         btn.disabled = false;
-        btn.textContent = 'Guardar';
+        btn.innerHTML = 'Guardar';
     }
 }
 
+// ======================== CONFIRMACIÓN ========================
 function mostrarModalConfirmacion(mensaje, accionCallback, tipoAccion) {
     const modal = document.getElementById('modal-confirmacion');
     const mensajeEl = document.getElementById('confirmacion-mensaje');
@@ -477,28 +875,26 @@ function cerrarModalConfirmacion() {
 function confirmarDesactivar(id) {
     const producto = todosLosProductos.find(p => p.id === id);
     if (!producto) return;
-    const nombre = producto.nombre;
-    mostrarModalConfirmacion(`¿Está seguro que desea desactivar el producto "${nombre}"? Dejará de aparecer en el catálogo.`, () => toggleEstadoProducto(id, false), 'desactivar');
+    mostrarModalConfirmacion(`¿Está seguro que desea desactivar el producto "${producto.nombre}"? Dejará de aparecer en el catálogo.`, () => toggleEstadoProducto(id, false), 'desactivar');
 }
 
 function confirmarReactivar(id) {
     const producto = todosLosProductos.find(p => p.id === id);
     if (!producto) return;
-    const nombre = producto.nombre;
-    mostrarModalConfirmacion(`¿Está seguro que desea reactivar el producto "${nombre}"? Volverá a estar disponible en el catálogo.`, () => toggleEstadoProducto(id, true), 'reactivar');
+    mostrarModalConfirmacion(`¿Está seguro que desea reactivar el producto "${producto.nombre}"? Volverá a estar disponible en el catálogo.`, () => toggleEstadoProducto(id, true), 'reactivar');
 }
 
 async function toggleEstadoProducto(id, nuevoEstado) {
     try {
         const res = await API.put(`/libreria/productos/${id}/toggle-estado`, {}, true);
-        const data = await res.json();
         if (res.ok) {
             await cargarProductos();
         } else {
-            alert(`Error: ${data.detail || 'No se pudo cambiar el estado.'}`);
+            const data = await res.json();
+            notify.error(data.detail || 'No se pudo cambiar el estado.');
         }
     } catch (err) {
-        alert('Error de conexión.');
+        notify.error('Error de conexión.');
     }
 }
 
@@ -509,27 +905,39 @@ function toggleSidebar() {
     if (overlay) overlay.classList.toggle('hidden');
 }
 
+// ======================== INICIALIZACIÓN ========================
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
     if (!token) { window.location.href = 'index.html'; return; }
     mostrarUsuario();
-    document.getElementById('btnCerrarSesion').addEventListener('click', (e) => { e.preventDefault(); localStorage.clear(); window.location.href = 'index.html'; });
+
+    document.getElementById('btn-nuevo-producto').addEventListener('click', abrirModalNuevoProducto);
+
+    configurarCampoPrecio(document.getElementById('np-costo'));
+    configurarCampoPrecio(document.getElementById('np-precio'));
+    configurarCampoPrecio(document.getElementById('prod-precio'));
+
     const cbInactivos = document.getElementById('mostrar-inactivos');
     cbInactivos.addEventListener('change', () => {
         paginaActual = 1;
         cargarProductos();
     });
+
+    document.getElementById('categoria-select').addEventListener('change', filtrarCategoriaDesdeSelect);
+
     let debounce;
     document.getElementById('buscador').addEventListener('input', (e) => {
         clearTimeout(debounce);
         debounce = setTimeout(() => {
-            busquedaActiva = e.target.value;
+            busquedaActiva = e.target.value.toLowerCase().trim();
             paginaActual = 1;
             renderizarTabla();
         }, 300);
     });
-    await cargarProveedoresParaSelect();
+
+    await cargarProveedoresSelect();
     await cargarProductos();
+    setOrden('nombre', 'asc');
 });
 </script>
 

@@ -24,7 +24,8 @@ class ProductoLibreriaCreate(BaseModel):
     stock: int = Field(..., ge=0)
     estado: bool = True
     atributos_especificos: Dict[str, Any] = Field(default_factory=dict)
-    proveedor_id: Optional[str] = None  # Nuevo campo
+    proveedor_id: Optional[str] = None
+    costo_promedio: Optional[float] = Field(None, ge=0, description="Costo promedio de referencia")
 
 class ProductoLibreriaUpdate(BaseModel):
     tipo_producto: Optional[str] = Field(None, description="Categoría del producto")
@@ -34,7 +35,7 @@ class ProductoLibreriaUpdate(BaseModel):
     stock: Optional[int] = Field(None, ge=0, description="Cantidad en inventario")
     estado: Optional[bool] = Field(None, description="Activo o inactivo")
     atributos_especificos: Optional[Dict[str, Any]] = Field(None, description="Atributos adicionales")
-    proveedor_id: Optional[str] = None  # Nuevo campo
+    proveedor_id: Optional[str] = None
 
 class VentaLibreriaCreate(BaseModel):
     producto_id: str

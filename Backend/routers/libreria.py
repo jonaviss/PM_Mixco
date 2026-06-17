@@ -114,7 +114,20 @@ async def listar_productos(
         if not incluir_inactivos:
             query = query.eq("estado", True)
         res = query.execute()
-        return res.data
+        productos = res.data or []
+        
+        # Obtener nombres de creadores
+        cuis = list(set(p.get("creado_por") for p in productos if p.get("creado_por")))
+        nombres = {}
+        if cuis:
+            res_usuarios = supabase.table("usuarios").select("cui, nombre_completo").in_("cui", cuis).execute()
+            nombres = {u["cui"]: u["nombre_completo"] for u in (res_usuarios.data or [])}
+        
+        # Agregar campo creado_por_nombre a cada producto
+        for p in productos:
+            p["creado_por_nombre"] = nombres.get(p.get("creado_por"), p.get("creado_por") or "—")
+        
+        return productos
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -127,11 +140,14 @@ async def listar_clientes(usuario_actual: Dict[str, Any] = Depends(obtener_usuar
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/productos", status_code=status.HTTP_201_CREATED)
-def registrar_producto(payload: ProductoLibreriaCreate, usuario_actual=Depends(obtener_usuario_actual)):
+def registrar_producto(payload: ProductoLibreriaCreate, usuario_actual: Dict = Depends(obtener_usuario_actual)):
     if usuario_actual.get("rango") not in ["encargado", "administrador", "super_admin"]:
         raise HTTPException(403, "No tiene permisos para registrar productos.")
     try:
         data = payload.model_dump(exclude_none=True)
+        # Agregar creado_por con el CUI del usuario actual
+        data["creado_por"] = usuario_actual["sub"]
+        # Si no viene costo_promedio, se guarda como None (la BD lo maneja)
         res = supabase.table("inventario_libreria").insert(data).execute()
         return {"mensaje": "Producto registrado", "data": res.data[0]}
     except Exception as e:
