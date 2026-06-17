@@ -1,6 +1,7 @@
 """
 Módulo de gestión de compras, proveedores y pagos con control de inventario FIFO.
 Permite costo unitario 0 (para donaciones) y registra operador en pagos.
+Soporte para compras al contado: se registran como pagadas automáticamente.
 """
 
 from fastapi import APIRouter, HTTPException, Depends, status
@@ -39,6 +40,7 @@ class CompraCreate(BaseModel):
     fecha_factura: Optional[date] = None
     factura: Optional[str] = None
     observaciones: Optional[str] = None
+    condicion_pago: str = "CREDITO"  # Nuevo campo: CONTADO o CREDITO
     detalles: List[CompraDetalleCreate]
 
 class PagoProveedorCreate(BaseModel):
@@ -113,6 +115,11 @@ async def registrar_compra(payload: CompraCreate, usuario_actual: Dict = Depends
         raise HTTPException(403, "No tiene permisos para registrar compras.")
     try:
         total_compra = sum(d.cantidad * d.costo_unitario for d in payload.detalles)
+        
+        # Determinar si es contado o crédito
+        es_contado = payload.condicion_pago == "CONTADO"
+        
+        # Datos de la compra
         compra_data = {
             "proveedor_id": payload.proveedor_id,
             "fecha_compra": payload.fecha_compra.isoformat(),
@@ -120,12 +127,14 @@ async def registrar_compra(payload: CompraCreate, usuario_actual: Dict = Depends
             "factura": payload.factura,
             "observaciones": payload.observaciones,
             "total_compra": total_compra,
-            "total_pagado": 0,
-            "estado": "pendiente"
+            "total_pagado": total_compra if es_contado else 0,
+            "estado": "pagado" if es_contado else "pendiente"
         }
+        
         res_compra = supabase.table("compras").insert(compra_data).execute()
         compra_id = res_compra.data[0]["id"]
 
+        # Insertar detalles y lotes
         for detalle in payload.detalles:
             detalle_data = {
                 "compra_id": compra_id,
@@ -146,6 +155,7 @@ async def registrar_compra(payload: CompraCreate, usuario_actual: Dict = Depends
             }
             supabase.table("lotes").insert(lote_data).execute()
 
+            # Actualizar stock y costo promedio del producto
             res_prod = supabase.table("inventario_libreria").select("stock, costo_promedio").eq("id", detalle.producto_id).execute()
             if not res_prod.data:
                 raise HTTPException(404, f"Producto {detalle.producto_id} no encontrado")
@@ -160,6 +170,18 @@ async def registrar_compra(payload: CompraCreate, usuario_actual: Dict = Depends
                 "stock": nuevo_stock,
                 "costo_promedio": nuevo_costo_promedio
             }).eq("id", detalle.producto_id).execute()
+
+        # Si es contado, registrar un pago automático
+        if es_contado:
+            pago_data = {
+                "compra_id": compra_id,
+                "monto": total_compra,
+                "fecha_pago": payload.fecha_compra.isoformat(),
+                "metodo_pago_id": 1,  # Efectivo (ajustar según tus métodos de pago)
+                "referencia": "Pago al contado",
+                "digitado_por": usuario_actual["sub"]
+            }
+            supabase.table("pagos_proveedores").insert(pago_data).execute()
 
         return {"mensaje": "Compra registrada", "compra_id": compra_id, "total": total_compra}
     except HTTPException:

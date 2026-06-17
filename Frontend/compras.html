@@ -44,10 +44,46 @@
             width: 100%;
             border-collapse: collapse;
             display: table;
-            min-width: 800px;
+            min-width: 950px;
         }
         .tabla-productos-container tbody tr:hover {
             background-color: #fefce8;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .btn-agregar-producto {
+            background-color: #C9A227;
+            color: white;
+            font-weight: 700;
+            padding: 0.5rem 1.2rem;
+            border-radius: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: opacity 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-agregar-producto:hover {
+            opacity: 0.9;
+        }
+        .btn-agregar-producto .material-symbols-outlined {
+            font-size: 1.2rem;
+        }
+        /* Estilo para campos de precio */
+        .price-input {
+            font-family: 'JetBrains Mono', monospace;
+            text-align: right;
         }
     </style>
 </head>
@@ -55,7 +91,6 @@
 
 <div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
-<!-- Sidebar inyectado por layout.js -->
 <div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
 
     <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
@@ -74,45 +109,51 @@
                 <div><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Proveedor *</label><select id="proveedor-id" class="w-full border rounded-lg px-3 py-2"></select></div>
                 <div><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Fecha Compra (recibido) *</label><input type="date" id="fecha-compra" class="w-full border rounded-lg px-3 py-2"></div>
                 <div><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Fecha Factura</label><input type="date" id="fecha-factura" class="w-full border rounded-lg px-3 py-2"></div>
-                <div><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Factura (Número)</label><input type="text" id="factura" class="w-full border rounded-lg px-3 py-2"></div>
+                <div><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Factura (Número)</label><input type="text" id="factura" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: 001-001-1234"></div>
                 <div><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Condición de pago *</label>
                     <select id="condicion-pago" class="w-full border rounded-lg px-3 py-2">
                         <option value="CREDITO">Crédito (queda pendiente)</option>
                         <option value="CONTADO">Contado (pagado en el momento)</option>
                     </select>
                 </div>
-                <div class="md:col-span-2"><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Observaciones</label><textarea id="observaciones" rows="2" class="w-full border rounded-lg px-3 py-2"></textarea></div>
+                <div class="md:col-span-2"><label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Observaciones</label><textarea id="observaciones" rows="2" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: Compra de biblias para campaña"></textarea></div>
             </div>
 
-            <h3 class="text-sm font-bold text-on-surface mb-2">Productos</h3>
+            <div class="mb-3">
+                <button type="button" id="btn-abrir-modal" class="btn-agregar-producto">
+                    <span class="material-symbols-outlined">add_circle</span> Agregar producto
+                </button>
+            </div>
+
             <div class="tabla-productos-container">
                 <table class="w-full text-left">
                     <thead class="bg-surface-container-low/50">
                         <tr>
                             <th class="px-3 py-2">Producto</th>
                             <th class="px-3 py-2">Categoría</th>
+                            <th class="px-3 py-2">Descripción</th>
+                            <th class="px-3 py-2">Costo Compra (Q)</th>
                             <th class="px-3 py-2">Precio Venta (Q)</th>
                             <th class="px-3 py-2">Cantidad</th>
-                            <th class="px-3 py-2">Costo Compra (Q)</th>
                             <th class="px-3 py-2">Subtotal</th>
                             <th class="px-3 py-2 text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="detalles-body">
                         <tr class="text-center text-secondary italic">
-                            <td colspan="7" class="px-3 py-6">No hay productos. Presione "+ Agregar producto" para crear uno.</td>
+                            <td colspan="8" class="px-3 py-6">No hay productos. Presione "Agregar producto" para crear uno.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            <button type="button" id="btn-abrir-modal" class="mt-3 text-sm text-primary-container border border-primary-container rounded-lg px-3 py-1 hover:bg-primary-container hover:text-white transition">+ Agregar producto</button>
+
             <div class="mt-4 text-right"><span class="font-bold">Total Compra: </span><span id="total-compra" class="font-mono font-bold text-primary">Q0.00</span></div>
             <div class="flex justify-end gap-3 mt-6"><button id="btn-registrar" class="bg-primary-container text-white font-bold px-6 py-2 rounded-lg hover:opacity-90">Registrar Compra</button></div>
         </div>
     </main>
 </div>
 
-<!-- MODAL PARA CREAR NUEVO PRODUCTO -->
+<!-- MODAL CREAR PRODUCTO -->
 <div id="modal-nuevo-producto" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
         <div class="bg-primary px-5 py-4 flex justify-between items-center">
@@ -120,7 +161,7 @@
             <button type="button" class="cerrar-modal-x text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="p-5 space-y-4">
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Nombre *</label><input type="text" id="nuevo-nombre" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Nombre *</label><input type="text" id="nuevo-nombre" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: Biblia RVR 1960"></div>
             <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Categoría *</label>
                 <select id="nuevo-tipo" class="w-full border rounded-lg px-3 py-2">
                     <option value="Biblia">Biblia</option>
@@ -130,20 +171,24 @@
                     <option value="Otro">Otro</option>
                 </select>
             </div>
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Costo Unitario de Compra (Q) *</label><input type="number" id="nuevo-costo" step="0.01" min="0.01" class="w-full border rounded-lg px-3 py-2"></div>
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Precio de Venta (Q) *</label><input type="number" id="nuevo-precio-venta" step="0.01" min="0.01" class="w-full border rounded-lg px-3 py-2"></div>
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Cantidad a comprar *</label><input type="number" id="nuevo-cantidad" step="1" min="1" value="1" class="w-full border rounded-lg px-3 py-2"></div>
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Descripción</label><input type="text" id="nuevo-descripcion" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Descripción</label><input type="text" id="nuevo-descripcion" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: Tapa dura, índice"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Costo Unitario de Compra (Q) *</label>
+                <input type="text" id="nuevo-costo" class="w-full border rounded-lg px-3 py-2 price-input" placeholder="Ej: 85.50">
+            </div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Precio de Venta (Q) *</label>
+                <input type="text" id="nuevo-precio-venta" class="w-full border rounded-lg px-3 py-2 price-input" placeholder="Ej: 125.00">
+            </div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Cantidad a comprar *</label><input type="number" id="nuevo-cantidad" step="1" min="1" value="1" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: 10"></div>
             <div class="bg-amber-50 p-2 rounded text-xs text-amber-800">El producto se asignará al proveedor seleccionado. La cantidad y costo de compra se usarán en esta línea.</div>
         </div>
         <div class="bg-surface-container-low px-5 py-4 border-t flex justify-end gap-3">
             <button type="button" class="cancelar-modal px-4 py-2 text-sm font-bold text-secondary">Cancelar</button>
-            <button type="button" id="guardar-producto" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg">Guardar Producto</button>
+            <button type="button" id="guardar-producto" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg flex items-center gap-2">Guardar Producto</button>
         </div>
     </div>
 </div>
 
-<!-- MODAL PARA EDITAR PRODUCTO EXISTENTE (datos generales + cantidad y costo de compra) -->
+<!-- MODAL EDITAR PRODUCTO -->
 <div id="modal-editar-producto" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
         <div class="bg-primary px-5 py-4 flex justify-between items-center">
@@ -153,7 +198,7 @@
         <div class="p-5 space-y-4">
             <input type="hidden" id="edit-id-temp">
             <input type="hidden" id="edit-producto-id">
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Nombre *</label><input type="text" id="edit-nombre" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Nombre *</label><input type="text" id="edit-nombre" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: Biblia RVR 1960"></div>
             <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Categoría *</label>
                 <select id="edit-tipo" class="w-full border rounded-lg px-3 py-2">
                     <option value="Biblia">Biblia</option>
@@ -163,15 +208,36 @@
                     <option value="Otro">Otro</option>
                 </select>
             </div>
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Precio de Venta (Q) *</label><input type="number" id="edit-precio-venta" step="0.01" min="0.01" class="w-full border rounded-lg px-3 py-2"></div>
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Descripción</label><input type="text" id="edit-descripcion" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Descripción</label><input type="text" id="edit-descripcion" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: Tapa dura, índice"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Precio de Venta (Q) *</label>
+                <input type="text" id="edit-precio-venta" class="w-full border rounded-lg px-3 py-2 price-input" placeholder="Ej: 125.00">
+            </div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Costo Unitario de Compra (Q) *</label>
+                <input type="text" id="edit-costo-compra" class="w-full border rounded-lg px-3 py-2 price-input" placeholder="Ej: 85.50">
+            </div>
             <hr class="my-2">
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Cantidad en esta compra *</label><input type="number" id="edit-cantidad" step="1" min="1" class="w-full border rounded-lg px-3 py-2"></div>
-            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Costo Unitario de Compra (Q) *</label><input type="number" id="edit-costo-compra" step="0.01" min="0.01" class="w-full border rounded-lg px-3 py-2"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Cantidad en esta compra *</label><input type="number" id="edit-cantidad" step="1" min="1" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: 10"></div>
         </div>
         <div class="bg-surface-container-low px-5 py-4 border-t flex justify-end gap-3">
             <button type="button" class="cancelar-modal-editar px-4 py-2 text-sm font-bold text-secondary">Cancelar</button>
-            <button type="button" id="actualizar-producto" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg">Actualizar Producto</button>
+            <button type="button" id="actualizar-producto" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg flex items-center gap-2">Actualizar Producto</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE CONFIRMACIÓN PERSONALIZADO PARA ELIMINAR -->
+<div id="modal-confirmacion" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-primary px-5 py-4 flex justify-between items-center">
+            <h3 class="text-base font-bold text-white">Confirmar eliminación</h3>
+            <button onclick="cerrarModalConfirmacion()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-5">
+            <p id="confirmacion-mensaje" class="text-sm text-on-surface mb-5">¿Estás seguro de eliminar este producto de la compra?</p>
+            <div class="flex justify-end gap-3">
+                <button onclick="cerrarModalConfirmacion()" class="px-4 py-2 text-sm font-bold text-secondary border border-outline-variant rounded-lg hover:bg-surface-container transition">Cancelar</button>
+                <button id="confirmacion-aceptar" class="px-4 py-2 text-sm font-bold bg-error text-white rounded-lg hover:opacity-90 transition">Eliminar</button>
+            </div>
         </div>
     </div>
 </div>
@@ -183,9 +249,10 @@
 <script>
     // ---------- VARIABLES GLOBALES ----------
     let proveedores = [];
-    let detalles = [];         // cada elemento: { id_temp, producto_id, nombre, categoria, precio_venta, descripcion, cantidad, costo_unitario }
+    let detalles = [];
     let nextTempId = 1;
-    let productoEnEdicion = null;   // guarda el objeto del detalle que se está editando
+    let productoEnEdicion = null;
+    let confirmacionCallback = null;
 
     // ---------- FUNCIONES AUXILIARES ----------
     function formatearMoneda(valor) {
@@ -202,11 +269,57 @@
         });
     }
 
-    // Renderizar la tabla con todos los campos
+    // ---------- MANEJO DE CAMPOS DE PRECIO (con decimales) ----------
+    function configurarCampoPrecio(input) {
+        // Evento input: solo permitir dígitos y un punto
+        input.addEventListener('input', function(e) {
+            let valor = this.value;
+            // Reemplazar coma por punto (para teclados latinos)
+            valor = valor.replace(',', '.');
+            // Permitir solo dígitos y un punto
+            valor = valor.replace(/[^0-9.]/g, '');
+            // Asegurar que solo haya un punto
+            const partes = valor.split('.');
+            if (partes.length > 2) {
+                valor = partes[0] + '.' + partes.slice(1).join('');
+            }
+            this.value = valor;
+        });
+
+        // Evento blur: formatear a dos decimales si es un número válido
+        input.addEventListener('blur', function() {
+            let valor = this.value.trim();
+            if (valor === '') return;
+            const numero = parseFloat(valor);
+            if (!isNaN(numero) && numero >= 0) {
+                this.value = numero.toFixed(2);
+            } else {
+                this.value = '';
+            }
+        });
+    }
+
+    // ---------- MODAL DE CONFIRMACIÓN PERSONALIZADO ----------
+    function mostrarModalConfirmacion(mensaje, callback) {
+        document.getElementById('confirmacion-mensaje').textContent = mensaje;
+        confirmacionCallback = callback;
+        const modal = document.getElementById('modal-confirmacion');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function cerrarModalConfirmacion() {
+        const modal = document.getElementById('modal-confirmacion');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        confirmacionCallback = null;
+    }
+
+    // ---------- RENDERIZAR TABLA ----------
     function renderizarTabla() {
         const tbody = document.getElementById('detalles-body');
         if (!detalles.length) {
-            tbody.innerHTML = `<tr class="text-center text-secondary italic"><td colspan="7" class="px-3 py-6">No hay productos. Presione "+ Agregar producto" para crear uno.</td></tr>`;
+            tbody.innerHTML = `<tr class="text-center text-secondary italic"><td colspan="8" class="px-3 py-6">No hay productos. Presione "Agregar producto" para crear uno.</td></tr>`;
             document.getElementById('total-compra').innerText = formatearMoneda(0);
             return;
         }
@@ -220,9 +333,10 @@
                 <tr data-temp-id="${item.id_temp}">
                     <td class="px-3 py-2 font-medium">${escapeHtml(item.nombre)}</td>
                     <td class="px-3 py-2">${escapeHtml(item.categoria)}</td>
+                    <td class="px-3 py-2 text-sm text-secondary max-w-[150px] truncate" title="${escapeHtml(item.descripcion || '')}">${escapeHtml(item.descripcion || '—')}</td>
+                    <td class="px-3 py-2 font-mono">${formatearMoneda(item.costo_unitario)}</td>
                     <td class="px-3 py-2 font-mono">${formatearMoneda(item.precio_venta)}</td>
                     <td class="px-3 py-2"><input type="number" min="0.01" step="1" value="${item.cantidad}" class="cantidad-input w-24 border rounded px-2 py-1" data-id="${item.id_temp}"></td>
-                    <td class="px-3 py-2"><input type="number" min="0" step="0.01" value="${item.costo_unitario.toFixed(2)}" class="costo-input w-32 border rounded px-2 py-1" data-id="${item.id_temp}"></td>
                     <td class="px-3 py-2 font-mono font-semibold">${formatearMoneda(subtotal)}</td>
                     <td class="px-3 py-2 text-center whitespace-nowrap">
                         <button class="editar-btn text-primary hover:text-primary-container mr-2" data-id="${item.id_temp}" title="Editar producto"><span class="material-symbols-outlined text-[20px]">edit</span></button>
@@ -234,51 +348,50 @@
         tbody.innerHTML = html;
         document.getElementById('total-compra').innerText = formatearMoneda(totalGeneral);
 
-        // Eventos para inputs de cantidad y costo
+        // Eventos: cantidad
         document.querySelectorAll('.cantidad-input').forEach(input => {
             input.addEventListener('change', (e) => {
                 const id = parseInt(e.target.dataset.id);
                 const nuevoValor = parseFloat(e.target.value);
                 const item = detalles.find(d => d.id_temp === id);
-                if (item && !isNaN(nuevoValor) && nuevoValor > 0) {
-                    item.cantidad = nuevoValor;
-                } else if (item) {
-                    item.cantidad = 1;
-                    e.target.value = 1;
-                }
+                if (item && !isNaN(nuevoValor) && nuevoValor > 0) item.cantidad = nuevoValor;
+                else if (item) { item.cantidad = 1; e.target.value = 1; }
                 renderizarTabla();
             });
         });
-        document.querySelectorAll('.costo-input').forEach(input => {
-            input.addEventListener('change', (e) => {
-                const id = parseInt(e.target.dataset.id);
-                const nuevoCosto = parseFloat(e.target.value);
-                const item = detalles.find(d => d.id_temp === id);
-                if (item && !isNaN(nuevoCosto) && nuevoCosto >= 0) {
-                    item.costo_unitario = nuevoCosto;
-                } else if (item) {
-                    e.target.value = item.costo_unitario.toFixed(2);
-                }
-                renderizarTabla();
-            });
-        });
-        // Botón editar
+
+        // Editar
         document.querySelectorAll('.editar-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', () => {
                 const id = parseInt(btn.dataset.id);
                 const item = detalles.find(d => d.id_temp === id);
                 if (item) abrirModalEditar(item);
             });
         });
-        // Botón eliminar
+
+        // Eliminar (con modal personalizado)
         document.querySelectorAll('.eliminar-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', () => {
                 const id = parseInt(btn.dataset.id);
-                detalles = detalles.filter(d => d.id_temp !== id);
-                renderizarTabla();
-                notify.info('Producto eliminado de la compra');
+                const item = detalles.find(d => d.id_temp === id);
+                if (item) {
+                    const mensaje = `¿Estás seguro de eliminar "${item.nombre}" de la compra? Esta acción no se puede deshacer.`;
+                    mostrarModalConfirmacion(mensaje, () => {
+                        detalles = detalles.filter(d => d.id_temp !== id);
+                        renderizarTabla();
+                        notify.success(`Producto "${item.nombre}" eliminado de la compra.`);
+                    });
+                }
             });
         });
+
+        // Asignar evento al botón de confirmación del modal
+        document.getElementById('confirmacion-aceptar').onclick = function() {
+            if (confirmacionCallback) {
+                confirmacionCallback();
+                cerrarModalConfirmacion();
+            }
+        };
     }
 
     // ---------- CARGAR PROVEEDORES ----------
@@ -296,42 +409,45 @@
 
     // ---------- MODAL CREAR PRODUCTO ----------
     function abrirModalCrear() {
-        const proveedorId = document.getElementById('proveedor-id').value;
-        if (!proveedorId) {
-            notify.warning('Primero debe seleccionar un proveedor en la compra.');
+        if (!document.getElementById('proveedor-id').value) {
+            notify.warning('Primero seleccione un proveedor');
             return;
         }
-        // Limpiar campos
         document.getElementById('nuevo-nombre').value = '';
         document.getElementById('nuevo-tipo').value = 'Biblia';
+        document.getElementById('nuevo-descripcion').value = '';
         document.getElementById('nuevo-costo').value = '';
         document.getElementById('nuevo-precio-venta').value = '';
         document.getElementById('nuevo-cantidad').value = '1';
-        document.getElementById('nuevo-descripcion').value = '';
-        const modal = document.getElementById('modal-nuevo-producto');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+        document.getElementById('modal-nuevo-producto').classList.remove('hidden');
+        document.getElementById('modal-nuevo-producto').classList.add('flex');
     }
 
     function cerrarModalCrear() {
-        const modal = document.getElementById('modal-nuevo-producto');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        document.getElementById('modal-nuevo-producto').classList.add('hidden');
+        const btn = document.getElementById('guardar-producto');
+        btn.disabled = false;
+        btn.innerHTML = 'Guardar Producto';
     }
 
+    // ---------- GUARDAR PRODUCTO NUEVO ----------
     async function guardarProductoNuevo() {
+        const btn = document.getElementById('guardar-producto');
         const nombre = document.getElementById('nuevo-nombre').value.trim();
         const categoria = document.getElementById('nuevo-tipo').value;
-        const costoCompra = parseFloat(document.getElementById('nuevo-costo').value);
-        const precioVenta = parseFloat(document.getElementById('nuevo-precio-venta').value);
-        const cantidad = parseInt(document.getElementById('nuevo-cantidad').value);
         const descripcion = document.getElementById('nuevo-descripcion').value.trim() || null;
+        const costoCompra = parseFloat(document.getElementById('nuevo-costo').value || '0');
+        const precioVenta = parseFloat(document.getElementById('nuevo-precio-venta').value || '0');
+        const cantidad = parseInt(document.getElementById('nuevo-cantidad').value);
         const proveedor_id = document.getElementById('proveedor-id').value;
 
-        if (!nombre) { notify.error('Nombre obligatorio'); return; }
-        if (isNaN(costoCompra) || costoCompra <= 0) { notify.error('Costo de compra inválido'); return; }
-        if (isNaN(precioVenta) || precioVenta <= 0) { notify.error('Precio de venta inválido'); return; }
-        if (isNaN(cantidad) || cantidad < 1) { notify.error('Cantidad debe ser al menos 1'); return; }
+        if (!nombre) { notify.error('El nombre del producto es obligatorio'); return; }
+        if (isNaN(costoCompra) || costoCompra <= 0) { notify.error('El costo de compra debe ser mayor a Q0.00'); return; }
+        if (isNaN(precioVenta) || precioVenta <= 0) { notify.error('El precio de venta debe ser mayor a Q0.00'); return; }
+        if (isNaN(cantidad) || cantidad < 1) { notify.error('La cantidad debe ser al menos 1'); return; }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Guardando...';
 
         const payload = {
             tipo_producto: categoria,
@@ -341,21 +457,20 @@
             stock: 0,
             estado: true,
             atributos_especificos: {},
-            proveedor_id: parseInt(proveedor_id)
+            proveedor_id: proveedor_id
         };
 
         try {
             const res = await API.post('/libreria/productos', payload, true);
             if (res.ok) {
                 const data = await res.json();
-                const nuevoProducto = data.data;
                 detalles.push({
                     id_temp: nextTempId++,
-                    producto_id: nuevoProducto.id,
+                    producto_id: data.data.id,
                     nombre: nombre,
                     categoria: categoria,
-                    precio_venta: precioVenta,
                     descripcion: descripcion || '',
+                    precio_venta: precioVenta,
                     cantidad: cantidad,
                     costo_unitario: costoCompra
                 });
@@ -364,11 +479,15 @@
                 notify.success(`Producto "${nombre}" creado y agregado a la compra.`);
             } else {
                 const err = await res.json();
-                notify.error('Error al crear: ' + (err.detail || 'Error desconocido'));
+                const msg = err.detail || 'Error desconocido al crear el producto';
+                notify.error('Error: ' + msg);
             }
         } catch (error) {
             console.error(error);
-            notify.error('Error de conexión');
+            notify.error('Error de conexión al crear el producto');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Guardar Producto';
         }
     }
 
@@ -379,39 +498,43 @@
         document.getElementById('edit-producto-id').value = item.producto_id;
         document.getElementById('edit-nombre').value = item.nombre;
         document.getElementById('edit-tipo').value = item.categoria;
-        document.getElementById('edit-precio-venta').value = item.precio_venta;
         document.getElementById('edit-descripcion').value = item.descripcion || '';
+        document.getElementById('edit-precio-venta').value = item.precio_venta.toFixed(2);
+        document.getElementById('edit-costo-compra').value = item.costo_unitario.toFixed(2);
         document.getElementById('edit-cantidad').value = item.cantidad;
-        document.getElementById('edit-costo-compra').value = item.costo_unitario;
-        const modal = document.getElementById('modal-editar-producto');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+        document.getElementById('modal-editar-producto').classList.remove('hidden');
+        document.getElementById('modal-editar-producto').classList.add('flex');
     }
 
     function cerrarModalEditar() {
-        const modal = document.getElementById('modal-editar-producto');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        document.getElementById('modal-editar-producto').classList.add('hidden');
         productoEnEdicion = null;
+        const btn = document.getElementById('actualizar-producto');
+        btn.disabled = false;
+        btn.innerHTML = 'Actualizar Producto';
     }
 
+    // ---------- ACTUALIZAR PRODUCTO EDITADO ----------
     async function actualizarProductoEditado() {
         if (!productoEnEdicion) return;
+        const btn = document.getElementById('actualizar-producto');
         const idTemp = parseInt(document.getElementById('edit-id-temp').value);
         const productoId = parseInt(document.getElementById('edit-producto-id').value);
         const nuevoNombre = document.getElementById('edit-nombre').value.trim();
         const nuevaCategoria = document.getElementById('edit-tipo').value;
-        const nuevoPrecioVenta = parseFloat(document.getElementById('edit-precio-venta').value);
         const nuevaDescripcion = document.getElementById('edit-descripcion').value.trim() || null;
+        const nuevoPrecioVenta = parseFloat(document.getElementById('edit-precio-venta').value || '0');
+        const nuevoCostoCompra = parseFloat(document.getElementById('edit-costo-compra').value || '0');
         const nuevaCantidad = parseInt(document.getElementById('edit-cantidad').value);
-        const nuevoCostoCompra = parseFloat(document.getElementById('edit-costo-compra').value);
 
-        if (!nuevoNombre) { notify.error('Nombre obligatorio'); return; }
+        if (!nuevoNombre) { notify.error('El nombre es obligatorio'); return; }
         if (isNaN(nuevoPrecioVenta) || nuevoPrecioVenta <= 0) { notify.error('Precio de venta inválido'); return; }
-        if (isNaN(nuevaCantidad) || nuevaCantidad < 1) { notify.error('Cantidad inválida'); return; }
         if (isNaN(nuevoCostoCompra) || nuevoCostoCompra <= 0) { notify.error('Costo de compra inválido'); return; }
+        if (isNaN(nuevaCantidad) || nuevaCantidad < 1) { notify.error('Cantidad inválida'); return; }
 
-        // Actualizar en backend (producto)
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Actualizando...';
+
         const payloadProducto = {
             tipo_producto: nuevaCategoria,
             nombre: nuevoNombre,
@@ -423,15 +546,14 @@
         try {
             const res = await API.put(`/libreria/productos/${productoId}`, payloadProducto, true);
             if (res.ok) {
-                // Actualizar en array local
                 const index = detalles.findIndex(d => d.id_temp === idTemp);
                 if (index !== -1) {
                     detalles[index].nombre = nuevoNombre;
                     detalles[index].categoria = nuevaCategoria;
+                    detalles[index].descripcion = nuevaDescripcion || '';
                     detalles[index].precio_venta = nuevoPrecioVenta;
-                    detalles[index].descripcion = nuevaDescripcion;
-                    detalles[index].cantidad = nuevaCantidad;
                     detalles[index].costo_unitario = nuevoCostoCompra;
+                    detalles[index].cantidad = nuevaCantidad;
                 }
                 renderizarTabla();
                 cerrarModalEditar();
@@ -441,8 +563,10 @@
                 notify.error('Error al actualizar: ' + (err.detail || 'Error desconocido'));
             }
         } catch (error) {
-            console.error(error);
-            notify.error('Error de conexión');
+            notify.error('Error de conexión al actualizar');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Actualizar Producto';
         }
     }
 
@@ -460,7 +584,7 @@
         }
 
         const payload = {
-            proveedor_id: parseInt(proveedor_id),
+            proveedor_id: proveedor_id,
             fecha_compra: document.getElementById('fecha-compra').value,
             fecha_factura: document.getElementById('fecha-factura').value || null,
             factura: document.getElementById('factura').value || null,
@@ -502,30 +626,49 @@
         document.getElementById('avatar-inicial').textContent = n.charAt(0).toUpperCase();
     }
 
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar-dinamico');
+        if (sidebar) sidebar.classList.toggle('open');
+        const overlay = document.getElementById('overlay');
+        if (overlay) overlay.classList.toggle('hidden');
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
         if (!localStorage.getItem('token')) window.location.href = 'index.html';
         mostrarUsuario();
         await cargarProveedores();
         document.getElementById('fecha-compra').valueAsDate = new Date();
 
-        // Eventos modales
+        // Configurar campos de precio para que acepten decimales correctamente
+        const camposPrecio = [
+            document.getElementById('nuevo-costo'),
+            document.getElementById('nuevo-precio-venta'),
+            document.getElementById('edit-precio-venta'),
+            document.getElementById('edit-costo-compra')
+        ];
+        camposPrecio.forEach(campo => {
+            if (campo) configurarCampoPrecio(campo);
+        });
+
         document.getElementById('btn-abrir-modal').addEventListener('click', abrirModalCrear);
         document.getElementById('btn-registrar').addEventListener('click', registrarCompra);
         document.getElementById('guardar-producto').addEventListener('click', guardarProductoNuevo);
         document.getElementById('actualizar-producto').addEventListener('click', actualizarProductoEditado);
 
-        // Cerrar modales (botones X y cancelar)
-        document.querySelectorAll('.cerrar-modal-x, .cancelar-modal').forEach(btn => {
-            btn.addEventListener('click', cerrarModalCrear);
+        document.querySelectorAll('.cerrar-modal-x, .cancelar-modal').forEach(btn => btn.addEventListener('click', cerrarModalCrear));
+        document.querySelectorAll('.cerrar-modal-editar, .cancelar-modal-editar').forEach(btn => btn.addEventListener('click', cerrarModalEditar));
+
+        document.getElementById('modal-nuevo-producto').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('modal-nuevo-producto')) cerrarModalCrear();
         });
-        document.querySelectorAll('.cerrar-modal-editar, .cancelar-modal-editar').forEach(btn => {
-            btn.addEventListener('click', cerrarModalEditar);
+        document.getElementById('modal-editar-producto').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('modal-editar-producto')) cerrarModalEditar();
         });
-        // Cerrar al hacer clic fuera
-        const modalCrear = document.getElementById('modal-nuevo-producto');
-        modalCrear.addEventListener('click', (e) => { if (e.target === modalCrear) cerrarModalCrear(); });
-        const modalEditar = document.getElementById('modal-editar-producto');
-        modalEditar.addEventListener('click', (e) => { if (e.target === modalEditar) cerrarModalEditar(); });
+
+        // Cerrar modal de confirmación al hacer clic fuera
+        document.getElementById('modal-confirmacion').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('modal-confirmacion')) cerrarModalConfirmacion();
+        });
 
         renderizarTabla();
     });
