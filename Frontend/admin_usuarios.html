@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrar Usuarios | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#755b00",
+                        "primary-container": "#C9A227",
+                        "on-primary": "#ffffff",
+                        "surface": "#F8FAFC",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#F1F5F9",
+                        "surface-container": "#E2E8F0",
+                        "surface-container-high": "#CBD5E1",
+                        "outline-variant": "#CBD5E1",
+                        "outline": "#94A3B8",
+                        "on-surface": "#1E293B",
+                        "on-surface-variant": "#475569",
+                        "secondary": "#64748B",
+                        "error": "#EF4444"
+                    },
+                    fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
+                    spacing: { "sidebar": "260px" }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-on-surface">
+
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            <div>
+                <h2 class="text-base font-bold text-on-surface leading-none">Administrar Usuarios</h2>
+                <p class="text-xs text-secondary mt-0.5">Gestión de cuentas, roles y permisos</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block">
+                <p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p>
+                <p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p>
+            </div>
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm">
+                <span id="avatar-inicial">?</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 space-y-6">
+
+        <!-- Header con botón crear -->
+        <section class="flex justify-between items-center">
+            <div>
+                <p id="total-usuarios" class="text-sm font-mono text-secondary">Cargando...</p>
+            </div>
+            <button onclick="abrirModalCrear()" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition flex items-center gap-1">
+                <span class="material-symbols-outlined text-[18px]">person_add</span> Nuevo Usuario
+            </button>
+        </section>
+
+        <!-- Tabla de usuarios -->
+        <section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-surface-container-low/50">
+                        <tr>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">CUI</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Nombre</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Correo</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Rol</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Módulos</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-usuarios" class="divide-y divide-outline-variant text-sm"></tbody>
+                </table>
+            </div>
+            <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center">
+                <p id="info-tabla" class="text-xs font-mono text-secondary"></p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="border-t border-outline-variant px-6 py-3 text-center">
+        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Administración &copy; 2026</p>
+    </footer>
+</div>
+
+<!-- MODAL CREAR / EDITAR USUARIO -->
+<div id="modal-usuario" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+        <div class="bg-primary px-5 py-4 flex justify-between items-center flex-shrink-0" style="background-color:#755b00;">
+            <h3 id="modal-titulo" class="text-base font-bold text-white">Nuevo Usuario</h3>
+            <button onclick="cerrarModal()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="overflow-y-auto flex-1 p-5 space-y-4">
+            <input type="hidden" id="edit-cui-original">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">CUI</label>
+                    <input type="text" id="field-cui" maxlength="13" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="0000000000000">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Nombre Completo</label>
+                    <input type="text" id="field-nombre" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="Nombre completo">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Correo</label>
+                    <input type="email" id="field-correo" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="correo@ejemplo.com">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Contraseña <span id="pass-hint" class="text-error">*</span></label>
+                    <input type="password" id="field-contrasena" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Rol</label>
+                    <select id="field-rol" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition bg-white"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Módulos</label>
+                    <div id="field-modulos" class="space-y-1.5 border border-outline-variant rounded-lg p-3 bg-surface-container-low/20 max-h-32 overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
+        <div class="px-5 py-3 border-t border-outline-variant bg-gray-50 flex justify-end gap-2 flex-shrink-0">
+            <button onclick="cerrarModal()" class="px-4 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cancelar</button>
+            <button id="btn-guardar" onclick="guardarUsuario()" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CONFIRMAR RESET PASSWORD -->
+<div id="modal-reset" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="px-5 py-4 flex justify-between items-center" style="background-color:#C9A227;">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <span class="material-symbols-outlined">lock_reset</span> Reiniciar Contraseña
+            </h3>
+            <button onclick="cerrarModalReset()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-5 space-y-4">
+            <p class="text-sm text-on-surface">¿Reiniciar la contraseña de <strong id="reset-nombre"></strong> a <strong>PalabraMiel2026</strong>?</p>
+        </div>
+        <div class="px-5 py-3 border-t border-outline-variant bg-gray-50 flex justify-end gap-2">
+            <button onclick="cerrarModalReset()" class="px-4 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cancelar</button>
+            <button id="btn-confirmar-reset" onclick="ejecutarReset()" class="px-4 py-2 text-sm font-bold text-white rounded-lg hover:opacity-90 transition" style="background-color:#C9A227;">Sí, reiniciar</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/notify.js"></script>
+<script src="js/layout.js"></script>
+
+<script>
+let usuarios = [];
+let roles = [];
+let modulos = [];
+let editando = false;
+
+function mostrarUsuario() {
+    const nombre = localStorage.getItem('usuario') || 'Usuario';
+    const rango = localStorage.getItem('rango') || '';
+    document.getElementById('nombre-usuario').textContent = nombre;
+    document.getElementById('rango-usuario').textContent = rango;
+    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar-dinamico');
+    if (sidebar) sidebar.classList.toggle('open');
+    const overlay = document.getElementById('overlay');
+    if (overlay) overlay.classList.toggle('hidden');
+}
+
+async function cargarRolesModulos() {
+    try {
+        const [resRoles, resModulos] = await Promise.all([
+            API.get('/admin/roles', true),
+            API.get('/admin/modulos', true)
+        ]);
+        if (resRoles.ok) roles = await resRoles.json();
+        if (resModulos.ok) modulos = await resModulos.json();
+        const selRol = document.getElementById('field-rol');
+        selRol.innerHTML = roles.map(r => `<option value="${r.id}">${r.nombre}</option>`).join('');
+        const divModulos = document.getElementById('field-modulos');
+        divModulos.innerHTML = modulos.map(m => `
+            <label class="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="checkbox" value="${m.id}" class="accent-primary-container"> ${m.nombre}
+            </label>
+        `).join('');
+    } catch (err) {
+        console.error('[Admin] Error cargando roles/módulos:', err);
+        notify.error('Error al cargar roles y módulos');
+    }
+}
+
+async function cargarUsuarios() {
+    try {
+        const res = await API.get('/admin/usuarios', true);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        usuarios = await res.json();
+        document.getElementById('total-usuarios').textContent = `${usuarios.length} usuario(s) registrados`;
+        document.getElementById('info-tabla').textContent = `${usuarios.length} usuario(s)`;
+        renderizarUsuarios();
+    } catch (err) {
+        console.error('[Admin] Error:', err);
+        notify.error('Error al cargar usuarios');
+    }
+}
+
+function renderizarUsuarios() {
+    const tbody = document.getElementById('tabla-usuarios');
+    if (usuarios.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-secondary text-sm"><span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">group_off</span>No hay usuarios registrados.</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = '';
+    usuarios.forEach(u => {
+        const badgeActivo = u.activo
+            ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Activo</span>'
+            : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Inactivo</span>';
+        const modulosStr = (u.modulos || []).map(m => m.nombre).join(', ') || '—';
+        const tr = document.createElement('tr');
+        tr.className = 'table-row transition-colors';
+        tr.innerHTML = `
+            <td class="px-5 py-3 font-mono text-xs text-secondary">${u.cui}</td>
+            <td class="px-5 py-3 text-sm font-bold">${u.nombre_completo}</td>
+            <td class="px-5 py-3 text-sm text-secondary">${u.correo || '—'}</td>
+            <td class="px-5 py-3 text-sm"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-surface-container text-secondary">${u.rango_nombre}</span></td>
+            <td class="px-5 py-3 text-sm text-secondary max-w-[160px] truncate" title="${modulosStr}">${modulosStr}</td>
+            <td class="px-5 py-3 text-center">${badgeActivo}</td>
+            <td class="px-5 py-3 text-center">
+                <div class="flex items-center justify-center gap-1">
+                    <button onclick="editarUsuario('${u.cui}')" class="p-1.5 rounded-lg border border-outline-variant text-secondary hover:bg-primary-container hover:text-white transition" title="Editar">
+                        <span class="material-symbols-outlined text-[16px]">edit</span>
+                    </button>
+                    <button onclick="toggleActivo('${u.cui}')" class="p-1.5 rounded-lg border border-outline-variant text-secondary hover:bg-primary-container hover:text-white transition" title="${u.activo ? 'Desactivar' : 'Activar'}">
+                        <span class="material-symbols-outlined text-[16px]">${u.activo ? 'block' : 'check_circle'}</span>
+                    </button>
+                    <button onclick="resetPassword('${u.cui}')" class="p-1.5 rounded-lg border border-outline-variant text-secondary hover:bg-primary-container hover:text-white transition" title="Reiniciar contraseña">
+                        <span class="material-symbols-outlined text-[16px]">lock_reset</span>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+async function toggleActivo(cui) {
+    try {
+        const res = await API.put(`/admin/usuarios/${cui}/toggle-activo`, {}, true);
+        if (res.ok) {
+            const data = await res.json();
+            notify.success(data.mensaje);
+            await cargarUsuarios();
+        } else {
+            const data = await res.json();
+            notify.error(API.mensajeError(data));
+        }
+    } catch (err) {
+        notify.error('Error al cambiar estado');
+    }
+}
+
+function abrirModalCrear() {
+    editando = false;
+    document.getElementById('modal-titulo').textContent = 'Nuevo Usuario';
+    document.getElementById('btn-guardar').textContent = 'Guardar';
+    document.getElementById('edit-cui-original').value = '';
+    document.getElementById('field-cui').value = '';
+    document.getElementById('field-nombre').value = '';
+    document.getElementById('field-correo').value = '';
+    document.getElementById('field-contrasena').value = 'PalabraMiel2026';
+    document.getElementById('field-contrasena').disabled = false;
+    document.getElementById('pass-hint').textContent = '*';
+    document.getElementById('field-cui').disabled = false;
+    if (roles.length > 0) document.getElementById('field-rol').value = roles[0].id;
+    document.querySelectorAll('#field-modulos input').forEach(cb => cb.checked = false);
+    document.getElementById('msg-modal').classList.add('hidden');
+    document.getElementById('modal-usuario').classList.remove('hidden');
+    document.getElementById('modal-usuario').classList.add('flex');
+}
+
+async function editarUsuario(cui) {
+    editando = true;
+    const u = usuarios.find(x => x.cui === cui);
+    if (!u) return;
+    document.getElementById('modal-titulo').textContent = 'Editar Usuario';
+    document.getElementById('btn-guardar').textContent = 'Actualizar';
+    document.getElementById('edit-cui-original').value = cui;
+    document.getElementById('field-cui').value = cui;
+    document.getElementById('field-cui').disabled = true;
+    document.getElementById('field-nombre').value = u.nombre_completo;
+    document.getElementById('field-correo').value = u.correo || '';
+    document.getElementById('field-contrasena').value = '';
+    document.getElementById('field-contrasena').disabled = true;
+    document.getElementById('pass-hint').textContent = '(dejar vacío para no cambiar)';
+    if (u.rango_id) document.getElementById('field-rol').value = u.rango_id;
+    document.querySelectorAll('#field-modulos input').forEach(cb => {
+        cb.checked = (u.modulos || []).some(m => m.id == cb.value);
+    });
+    document.getElementById('msg-modal').classList.add('hidden');
+    document.getElementById('modal-usuario').classList.remove('hidden');
+    document.getElementById('modal-usuario').classList.add('flex');
+}
+
+function cerrarModal() {
+    document.getElementById('modal-usuario').classList.add('hidden');
+    document.getElementById('modal-usuario').classList.remove('flex');
+}
+
+async function guardarUsuario() {
+    const msg = document.getElementById('msg-modal');
+    msg.classList.add('hidden');
+    const cui = document.getElementById('field-cui').value.trim();
+    const nombre = document.getElementById('field-nombre').value.trim();
+    const correo = document.getElementById('field-correo').value.trim();
+    const contrasena = document.getElementById('field-contrasena').value;
+    const rango_id = parseInt(document.getElementById('field-rol').value);
+    const modulos_ids = [];
+    document.querySelectorAll('#field-modulos input:checked').forEach(cb => modulos_ids.push(parseInt(cb.value)));
+
+    if (!cui || !/^\d{13}$/.test(cui)) { notify.error('El CUI debe tener 13 dígitos numéricos.'); return; }
+    if (!nombre) { notify.error('El nombre es obligatorio.'); return; }
+    if (!editando && !contrasena) { notify.error('La contraseña es obligatoria para nuevos usuarios.'); return; }
+    if (!editando && contrasena.length < 6) { notify.error('La contraseña debe tener al menos 6 caracteres.'); return; }
+
+    const btn = document.getElementById('btn-guardar');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    try {
+        if (editando) {
+            const updateData = { nombre_completo: nombre };
+            if (correo) updateData.correo = correo;
+            if (contrasena) updateData.contrasena = contrasena;
+            const res1 = await API.put(`/admin/usuarios/${cui}`, updateData, true);
+            if (!res1.ok) { const d = await res1.json(); notify.error(API.mensajeError(d)); btn.disabled = false; btn.textContent = 'Actualizar'; return; }
+            const res2 = await API.put(`/admin/usuarios/${cui}/accesos`, { rango_id, modulos_ids }, true);
+            if (!res2.ok) { const d = await res2.json(); notify.error(API.mensajeError(d)); btn.disabled = false; btn.textContent = 'Actualizar'; return; }
+            notify.success('Usuario actualizado correctamente');
+        } else {
+            const res = await API.post('/admin/usuarios', { cui, nombre_completo: nombre, contrasena, correo: correo || null, rango_id, modulos_ids }, true);
+            if (!res.ok) { const d = await res.json(); notify.error(API.mensajeError(d)); btn.disabled = false; btn.textContent = 'Guardar'; return; }
+            notify.success('Usuario creado correctamente');
+        }
+        cerrarModal();
+        await cargarUsuarios();
+    } catch (err) {
+        notify.error('Error de conexión con el servidor.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = editando ? 'Actualizar' : 'Guardar';
+    }
+}
+
+let resetCui = null;
+
+function resetPassword(cui) {
+    resetCui = cui;
+    const u = usuarios.find(x => x.cui === cui);
+    document.getElementById('reset-nombre').textContent = u?.nombre_completo || cui;
+    document.getElementById('modal-reset').classList.remove('hidden');
+    document.getElementById('modal-reset').classList.add('flex');
+}
+
+function cerrarModalReset() {
+    document.getElementById('modal-reset').classList.add('hidden');
+    document.getElementById('modal-reset').classList.remove('flex');
+    resetCui = null;
+}
+
+async function ejecutarReset() {
+    if (!resetCui) return;
+    const btn = document.getElementById('btn-confirmar-reset');
+    btn.disabled = true;
+    btn.textContent = 'Reiniciando...';
+    try {
+        const res = await API.post(`/admin/usuarios/${resetCui}/reset-password`, {}, true);
+        if (res.ok) {
+            const data = await res.json();
+            notify.success(data.mensaje);
+            cerrarModalReset();
+        } else {
+            const data = await res.json();
+            notify.error(API.mensajeError(data));
+        }
+    } catch (err) {
+        notify.error('Error al reiniciar contraseña');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sí, reiniciar';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = 'index.html'; return; }
+    const rango = localStorage.getItem('rango');
+    if (rango !== 'administrador' && rango !== 'super_admin') {
+        window.location.href = 'libreria_dashboard.html';
+        notify?.error('No tienes permisos para acceder a esta página.');
+        return;
+    }
+    mostrarUsuario();
+    document.getElementById('btnCerrarSesion').addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.clear();
+        window.location.href = 'index.html';
+    });
+    await cargarRolesModulos();
+    await cargarUsuarios();
+});
+</script>
+</body>
+</html>

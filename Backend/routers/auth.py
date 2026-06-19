@@ -36,6 +36,74 @@ def generar_token_jwt(data: Dict[str, Any]) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=ALGORITHM)
 
 
+@router.post("/login-cliente", response_model=TokenResponse, status_code=status.HTTP_200_OK)
+def login_cliente(payload: LoginRequest):
+    """
+    Autentica al usuario con CUI y contraseña.
+    Detecta automáticamente si es cliente o empleado según accesos_usuarios.
+    """
+    try:
+        res_usuario = supabase.table("usuarios") \
+            .select("cui, nombre_completo, contrasena_hash, activo") \
+            .eq("cui", payload.cui) \
+            .eq("activo", True) \
+            .execute()
+
+        if not res_usuario.data:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="CUI o contraseña incorrectos."
+            )
+
+        usuario = res_usuario.data[0]
+
+        if not verificar_contrasena(payload.contrasena, usuario["contrasena_hash"]):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="CUI o contraseña incorrectos."
+            )
+
+        res_accesos = supabase.table("accesos_usuarios") \
+            .select("rango_id, rangos(nombre), modulo_id, modulos(nombre)") \
+            .eq("usuario_cui", usuario["cui"]) \
+            .execute()
+
+        if res_accesos.data:
+            rango = res_accesos.data[0]["rangos"]["nombre"]
+            modulos = [
+                acceso["modulos"]["nombre"]
+                for acceso in res_accesos.data
+                if acceso.get("modulos")
+            ]
+        else:
+            rango = "cliente"
+            modulos = []
+
+        token_payload = {
+            "sub": usuario["cui"],
+            "nombre": usuario["nombre_completo"],
+            "rango": rango,
+            "modulos": modulos
+        }
+        jwt_token = generar_token_jwt(token_payload)
+
+        return {
+            "access_token": jwt_token,
+            "token_type": "bearer",
+            "nombre_completo": usuario["nombre_completo"],
+            "rango": rango,
+            "modulos": modulos
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno al procesar el inicio de sesión."
+        )
+
+
 @router.post("/login", response_model=TokenResponse, status_code=status.HTTP_200_OK)
 def login(payload: LoginRequest):
     """

@@ -56,11 +56,12 @@ const Auth = {
     },
 
     /**
-     * Si ya hay sesión activa, redirige al dashboard.
+     * Si ya hay sesión activa, redirige al dashboard según el rol.
      */
     redirigirSiAutenticado: () => {
         if (localStorage.getItem('token')) {
-            window.location.href = 'libreria_dashboard.html';
+            const rango = localStorage.getItem('rango');
+            window.location.href = rango === 'cliente' ? 'cliente_mis_compras.html' : 'libreria_dashboard.html';
         }
     }
 };
