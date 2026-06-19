@@ -1,13 +1,13 @@
 """
 Módulo de generación de PDF para comprobantes de librería.
-Genera comprobantes de venta, crédito y abono con estado de cuenta del hermano.
+Genera comprobantes de venta con detalle de productos y resumen financiero.
 """
 
 import io
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
-from reportlab.lib.colors import HexColor, black, white, Color
+from reportlab.lib.colors import HexColor, white
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
@@ -49,16 +49,14 @@ def formatear_fecha(fecha_iso: str) -> str:
 
 def generar_pdf_comprobante(datos: dict) -> bytes:
     """
-    Genera un PDF de comprobante de venta/crédito/abono.
+    Genera un PDF de comprobante de venta.
 
     Args:
         datos: Diccionario con los datos de la transacción que incluye:
-            - tipo_notificacion: 'venta_contado', 'venta_credito' o 'abono_parcial'
+            - tipo_notificacion: 'venta_contado' o 'venta_credito'
             - venta: dict con datos de la venta
             - productos: list con detalle de productos
-            - pagos: list con pagos realizados
             - hermano: dict con datos del comprador
-            - deuda_hermano: dict con total y cantidad de deudas
 
     Returns:
         bytes: Contenido del PDF generado
@@ -135,25 +133,19 @@ def generar_pdf_comprobante(datos: dict) -> bytes:
     tipo = datos.get("tipo_notificacion", "venta_contado")
     venta = datos.get("venta", {})
     productos = datos.get("productos", [])
-    pagos = datos.get("pagos", [])
     hermano = datos.get("hermano", {})
-    deuda = datos.get("deuda_hermano", {"total": 0, "cantidad": 0})
 
     if tipo == "venta_credito":
         titulo_doc = "NOTIFICACION DE CARGO A CREDITO"
         color_tipo = COLOR_ERROR
-    elif tipo == "venta_contado":
+    else:
         titulo_doc = "COMPROBANTE DE COMPRA EN EFECTIVO"
         color_tipo = COLOR_PRIMARIO
-    else:
-        titulo_doc = "COMPROBANTE DE ABONO RECIBIDO"
-        color_tipo = COLOR_EXITO
 
     elementos = []
 
     # --- ENCABEZADO ---
     elementos.append(Paragraph("PALABRA MIEL MIXCO", estilo_titulo))
-    elementos.append(Paragraph("Sistema de Gestión Institucional — Módulo Librería", estilo_subtitulo))
     elementos.append(Spacer(1, 3*mm))
     elementos.append(HRFlowable(width="100%", thickness=2, color=COLOR_DORADO))
     elementos.append(Spacer(1, 3*mm))
@@ -282,86 +274,6 @@ def generar_pdf_comprobante(datos: dict) -> bytes:
         ('LINEABOVE', (0, 2), (-1, 2), 1, COLOR_DORADO),
     ]))
     elementos.append(tabla_resumen)
-
-    # --- PAGOS REGISTRADOS ---
-    if pagos:
-        elementos.append(Spacer(1, 2*mm))
-        elementos.append(Paragraph("PAGOS REGISTRADOS", estilo_seccion))
-
-        encabezado_pago = [["Fecha / Hora", "Cobrado por", "Monto"]]
-        filas_pago = []
-        for p in pagos:
-            filas_pago.append([
-                formatear_fecha(p.get("fecha_pago", "")),
-                p.get("operador", "—"),
-                formatear_moneda(float(p.get("monto_abonado", 0)))
-            ])
-
-        tabla_pagos = Table(
-            encabezado_pago + filas_pago,
-            colWidths=[60*mm, 80*mm, 30*mm]
-        )
-        tabla_pagos.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), COLOR_FONDO),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (-1, -1), 8),
-            ('TEXTCOLOR', (0, 0), (-1, 0), COLOR_PRIMARIO),
-            ('TEXTCOLOR', (0, 1), (-1, -1), COLOR_TEXTO),
-            ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
-            ('GRID', (0, 0), (-1, -1), 0.5, COLOR_BORDE),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-            ('TOPPADDING', (0, 0), (-1, -1), 4),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [white, COLOR_FONDO]),
-        ]))
-        elementos.append(tabla_pagos)
-
-    # --- ESTADO DE CUENTA DEL HERMANO ---
-    deuda_total    = float(deuda.get("total", 0))
-    deuda_cantidad = int(deuda.get("cantidad", 0))
-
-    if deuda_total > 0:
-        elementos.append(Spacer(1, 4*mm))
-        elementos.append(HRFlowable(width="100%", thickness=1, color=COLOR_ERROR))
-        elementos.append(Spacer(1, 2*mm))
-
-        estilo_alerta = ParagraphStyle(
-            'alerta',
-            parent=estilos['Normal'],
-            fontSize=9,
-            fontName='Helvetica-Bold',
-            textColor=COLOR_ERROR,
-            spaceAfter=2*mm
-        )
-        elementos.append(Paragraph("ESTADO DE CUENTA DEL HERMANO", estilo_alerta))
-
-        datos_cuenta = [
-            ["Deuda Total Pendiente:", formatear_moneda(deuda_total)],
-            ["Ventas con saldo pendiente:", str(deuda_cantidad)],
-        ]
-
-        tabla_cuenta = Table(datos_cuenta, colWidths=[100*mm, 70*mm])
-        tabla_cuenta.setStyle(TableStyle([
-            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('FONTNAME', (1, 0), (1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('TEXTCOLOR', (0, 0), (-1, -1), COLOR_ERROR),
-            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-            ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ]))
-        elementos.append(tabla_cuenta)
-    else:
-        elementos.append(Spacer(1, 4*mm))
-        estilo_ok = ParagraphStyle(
-            'ok',
-            parent=estilos['Normal'],
-            fontSize=9,
-            fontName='Helvetica-Bold',
-            textColor=COLOR_EXITO,
-            alignment=TA_CENTER
-        )
-        elementos.append(Paragraph("El hermano no tiene deudas pendientes.", estilo_ok))
 
     # --- PIE DE PÁGINA ---
     elementos.append(Spacer(1, 6*mm))
