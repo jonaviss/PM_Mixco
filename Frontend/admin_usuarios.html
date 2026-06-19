@@ -126,12 +126,9 @@
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Correo</label>
                     <input type="email" id="field-correo" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="correo@ejemplo.com">
                 </div>
-                <div class="sm:col-span-2 relative">
+                <div class="sm:col-span-2">
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Contraseña <span id="pass-hint" class="text-error">*</span></label>
-                    <input type="password" id="field-contrasena" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm font-mono pr-10 focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="Mínimo 6 caracteres">
-                    <button type="button" onclick="togglePass('field-contrasena', this)" class="absolute right-3 top-[34px] text-secondary hover:text-primary transition" tabindex="-1">
-                        <span class="material-symbols-outlined text-[18px]">visibility_off</span>
-                    </button>
+                    <input type="password" id="field-contrasena" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="Mínimo 6 caracteres">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Rol</label>
@@ -150,11 +147,30 @@
     </div>
 </div>
 
+<!-- MODAL CONFIRMAR RESET PASSWORD -->
+<div id="modal-reset" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="px-5 py-4 flex justify-between items-center" style="background-color:#C9A227;">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <span class="material-symbols-outlined">lock_reset</span> Reiniciar Contraseña
+            </h3>
+            <button onclick="cerrarModalReset()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-5 space-y-4">
+            <p class="text-sm text-on-surface">¿Reiniciar la contraseña de <strong id="reset-nombre"></strong> a <strong>PalabraMiel2026</strong>?</p>
+        </div>
+        <div class="px-5 py-3 border-t border-outline-variant bg-gray-50 flex justify-end gap-2">
+            <button onclick="cerrarModalReset()" class="px-4 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cancelar</button>
+            <button id="btn-confirmar-reset" onclick="ejecutarReset()" class="px-4 py-2 text-sm font-bold text-white rounded-lg hover:opacity-90 transition" style="background-color:#C9A227;">Sí, reiniciar</button>
+        </div>
+    </div>
+</div>
+
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/notify.js"></script>
-<script src="js/layout.js?v=3"></script>
+<script src="js/layout.js"></script>
 
 <script>
 let usuarios = [];
@@ -175,13 +191,6 @@ function toggleSidebar() {
     if (sidebar) sidebar.classList.toggle('open');
     const overlay = document.getElementById('overlay');
     if (overlay) overlay.classList.toggle('hidden');
-}
-
-function togglePass(id, btn) {
-    const input = document.getElementById(id);
-    const icon = btn.querySelector('.material-symbols-outlined');
-    if (input.type === 'password') { input.type = 'text'; icon.textContent = 'visibility'; }
-    else { input.type = 'password'; icon.textContent = 'visibility_off'; }
 }
 
 async function cargarRolesModulos() {
@@ -367,19 +376,42 @@ async function guardarUsuario() {
     }
 }
 
-async function resetPassword(cui) {
-    if (!confirm('¿Reiniciar contraseña a PalabraMiel2026?')) return;
+let resetCui = null;
+
+function resetPassword(cui) {
+    resetCui = cui;
+    const u = usuarios.find(x => x.cui === cui);
+    document.getElementById('reset-nombre').textContent = u?.nombre_completo || cui;
+    document.getElementById('modal-reset').classList.remove('hidden');
+    document.getElementById('modal-reset').classList.add('flex');
+}
+
+function cerrarModalReset() {
+    document.getElementById('modal-reset').classList.add('hidden');
+    document.getElementById('modal-reset').classList.remove('flex');
+    resetCui = null;
+}
+
+async function ejecutarReset() {
+    if (!resetCui) return;
+    const btn = document.getElementById('btn-confirmar-reset');
+    btn.disabled = true;
+    btn.textContent = 'Reiniciando...';
     try {
-        const res = await API.post(`/admin/usuarios/${cui}/reset-password`, {}, true);
+        const res = await API.post(`/admin/usuarios/${resetCui}/reset-password`, {}, true);
         if (res.ok) {
             const data = await res.json();
             notify.success(data.mensaje);
+            cerrarModalReset();
         } else {
             const data = await res.json();
             notify.error(API.mensajeError(data));
         }
     } catch (err) {
         notify.error('Error al reiniciar contraseña');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sí, reiniciar';
     }
 }
 

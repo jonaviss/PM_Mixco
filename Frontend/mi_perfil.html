@@ -91,19 +91,13 @@
                 <span class="material-symbols-outlined text-primary text-[20px]">lock</span> Cambiar Contraseña
             </h3>
             <div class="space-y-4">
-                <div class="relative">
+                <div>
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Contraseña Actual</label>
-                    <input type="password" id="field-pass-actual" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm font-mono pr-10 focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="••••••••">
-                    <button type="button" onclick="togglePass('field-pass-actual', this)" class="absolute right-3 top-[34px] text-secondary hover:text-primary transition" tabindex="-1">
-                        <span class="material-symbols-outlined text-[18px]">visibility_off</span>
-                    </button>
+                    <input type="password" id="field-pass-actual" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="••••••••">
                 </div>
-                <div class="relative">
+                <div>
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Nueva Contraseña</label>
-                    <input type="password" id="field-pass-nueva" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm font-mono pr-10 focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="Mínimo 6 caracteres">
-                    <button type="button" onclick="togglePass('field-pass-nueva', this)" class="absolute right-3 top-[34px] text-secondary hover:text-primary transition" tabindex="-1">
-                        <span class="material-symbols-outlined text-[18px]">visibility_off</span>
-                    </button>
+                    <input type="password" id="field-pass-nueva" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="Mínimo 6 caracteres">
                 </div>
                 <button onclick="cambiarPassword()" id="btn-cambiar-pass" class="px-5 py-2.5 text-sm font-bold border border-primary-container text-primary rounded-lg hover:bg-primary-container hover:text-white transition">Cambiar Contraseña</button>
             </div>
@@ -120,7 +114,7 @@
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/notify.js"></script>
-<script src="js/layout.js?v=3"></script>
+<script src="js/layout.js"></script>
 
 <script>
 function mostrarUsuario() {
@@ -136,18 +130,6 @@ function toggleSidebar() {
     if (sidebar) sidebar.classList.toggle('open');
     const overlay = document.getElementById('overlay');
     if (overlay) overlay.classList.toggle('hidden');
-}
-
-function togglePass(id, btn) {
-    const input = document.getElementById(id);
-    const icon = btn.querySelector('.material-symbols-outlined');
-    if (input.type === 'password') {
-        input.type = 'text';
-        icon.textContent = 'visibility';
-    } else {
-        input.type = 'password';
-        icon.textContent = 'visibility_off';
-    }
 }
 
 async function guardarPerfil() {
