@@ -89,7 +89,7 @@
                     </select>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div id="fecha-inicio-container" class="hidden">
                     <label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Fecha Inicio</label>
                     <input type="date" id="fecha-inicio" class="w-full border rounded-lg px-3 py-2 text-sm">
@@ -97,15 +97,6 @@
                 <div id="fecha-fin-container" class="hidden">
                     <label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Fecha Fin</label>
                     <input type="date" id="fecha-fin" class="w-full border rounded-lg px-3 py-2 text-sm">
-                </div>
-                <div class="relative md:col-span-2">
-                    <label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Cliente</label>
-                    <div class="relative">
-                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none">search</span>
-                        <input type="text" id="cliente-buscar" placeholder="Buscar por CUI o nombre..." class="w-full border rounded-lg pl-10 pr-4 py-2 text-sm">
-                        <div id="cliente-resultados" class="hidden absolute z-20 w-full mt-1 bg-white border border-outline-variant rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-outline-variant"></div>
-                        <input type="hidden" id="cliente-cui-seleccionado">
-                    </div>
                 </div>
             </div>
             <div class="flex justify-end mt-4 gap-3">
@@ -160,7 +151,7 @@
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Cliente</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Recibo</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Detalles</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-reporte" class="divide-y divide-outline-variant text-sm">
@@ -213,7 +204,6 @@
 <script>
 // ======================== VARIABLES GLOBALES ========================
 let ventasLista = [];
-let cacheClientes = [];
 let ventaActual = null;
 let progressInterval = null;
 
@@ -374,71 +364,14 @@ async function cargarVendedores() {
     }
 }
 
-// ======================== BUSCADOR DE CLIENTES ========================
-async function cargarClientes() {
-    try {
-        const res = await API.get('/libreria/clientes', true);
-        if (res.ok) cacheClientes = await res.json();
-    } catch (err) {
-        console.error('[Reportes] Error al cargar clientes:', err);
-    }
-}
-
-function configurarBuscadorClientes() {
-    const input = document.getElementById('cliente-buscar');
-    const results = document.getElementById('cliente-resultados');
-    let debounceTimer;
-
-    input.addEventListener('input', function() {
-        clearTimeout(debounceTimer);
-        const query = this.value.toLowerCase().trim();
-        results.innerHTML = '';
-        if (!query) {
-            results.classList.add('hidden');
-            document.getElementById('cliente-cui-seleccionado').value = '';
-            return;
-        }
-        debounceTimer = setTimeout(() => {
-            const filtrados = cacheClientes.filter(c =>
-                (c.nombre_completo || '').toLowerCase().includes(query) ||
-                (c.cui || '').includes(query)
-            );
-            if (filtrados.length === 0) {
-                results.innerHTML = '<div class="p-3 text-sm text-secondary text-center">Hermano no encontrado.</div>';
-            } else {
-                filtrados.slice(0, 8).forEach(c => {
-                    const div = document.createElement('div');
-                    div.className = 'p-3 cursor-pointer hover:bg-surface-container-low transition text-sm';
-                    div.innerHTML = `<p class="font-bold text-on-surface">${c.nombre_completo}</p><p class="text-xs font-mono text-secondary">CUI: ${c.cui}</p>`;
-                    div.onclick = () => {
-                        input.value = c.nombre_completo;
-                        document.getElementById('cliente-cui-seleccionado').value = c.cui;
-                        results.classList.add('hidden');
-                    };
-                    results.appendChild(div);
-                });
-            }
-            results.classList.remove('hidden');
-        }, 300);
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!input.contains(e.target) && !results.contains(e.target)) {
-            results.classList.add('hidden');
-        }
-    });
-}
-
 // ======================== CARGAR REPORTE ========================
 async function cargarReporte() {
     const rango = obtenerRangoFechas();
     const operador = document.getElementById('operador-select').value;
-    const cliente = document.getElementById('cliente-cui-seleccionado').value;
     const estado = document.getElementById('estado-select').value;
 
     let url = `/libreria/ventas/reporte?inicio=${encodeURIComponent(rango.inicio)}&fin=${encodeURIComponent(rango.fin)}`;
     if (operador) url += `&operador_cui=${operador}`;
-    if (cliente) url += `&cliente_cui=${cliente}`;
     if (estado) url += `&estado=${estado}`;
 
     document.getElementById('tabla-reporte').innerHTML = '<tr><td colspan="6" class="text-center py-10 text-secondary">Cargando...</td></tr>';
@@ -722,8 +655,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     mostrarUsuario();
 
     configurarFiltros();
-    await Promise.all([cargarVendedores(), cargarClientes()]);
-    configurarBuscadorClientes();
+    await cargarVendedores();
 
     document.getElementById('btnCerrarSesion').addEventListener('click', (e) => {
         e.preventDefault();
