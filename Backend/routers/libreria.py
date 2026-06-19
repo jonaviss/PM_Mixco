@@ -15,6 +15,9 @@ from routers.dependencies import obtener_usuario_actual
 from routers.pdf_libreria import generar_pdf_comprobante
 from typing import Dict, Any, Optional
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -61,7 +64,7 @@ async def despachar_correo_libreria(datos: dict):
     """Genera PDF y envía correo (código existente)"""
     api_key = os.getenv("RESEND_API_KEY")
     if not api_key:
-        print("[ALERTA] RESEND_API_KEY no configurada. Correo abortado.")
+        logger.warning("RESEND_API_KEY no configurada. Correo abortado.")
         return
     tipo = datos.get("tipo_notificacion", "venta_contado")
     if tipo == "venta_credito":
@@ -82,7 +85,7 @@ async def despachar_correo_libreria(datos: dict):
             "type": "application/pdf"
         }]
     except Exception as e:
-        print(f"[ERROR] Falla al generar PDF: {e}")
+        logger.error(f"Falla al generar PDF: {e}")
         adjunto = []
     html_content = f"""
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 24px;
@@ -118,7 +121,7 @@ async def despachar_correo_libreria(datos: dict):
     async with httpx.AsyncClient() as client:
         respuesta = await client.post("https://api.resend.com/emails", json=payload_correo, headers=headers)
         if respuesta.status_code != 200:
-            print(f"[ERROR] Falla al despachar correo via Resend: {respuesta.text}")
+            logger.error(f"Falla al despachar correo via Resend: {respuesta.text}")
 
 # ======================== GESTIÓN DE INVENTARIO Y CLIENTES ========================
 @router.get("/productos")
@@ -595,63 +598,73 @@ async def obtener_historial_cliente(cui: str, usuario_actual=Depends(obtener_usu
     except Exception as e:
         raise HTTPException(500, detail=str(e))
 
+async def obtener_datos_venta_completos(venta_id: str):
+    """
+    Obtiene todos los datos de una venta: cabecera, productos y pagos.
+    Función auxiliar compartida que centraliza esta lógica para evitar duplicación.
+    """
+    res_venta = supabase.table("libreria_ventas").select("id, comprador_cui, total_venta, total_pagado, estado_pago, created_at, digitado_por").eq("id", venta_id).execute()
+    if not res_venta.data:
+        raise HTTPException(404, "Venta no encontrada")
+    venta = res_venta.data[0]
+
+    # Productos
+    res_detalle = supabase.table("libreria_ventas_detalle").select("cantidad, precio_unitario, subtotal, costo_unitario, inventario_libreria(nombre, tipo_producto)").eq("venta_id", venta_id).execute()
+    productos = []
+    for d in (res_detalle.data or []):
+        prod_info = d.get("inventario_libreria") or {}
+        productos.append({
+            "nombre": prod_info.get("nombre", "Producto no disponible"),
+            "tipo_producto": prod_info.get("tipo_producto", "—"),
+            "cantidad": d["cantidad"],
+            "precio_unitario": float(d["precio_unitario"]),
+            "subtotal": float(d["subtotal"]),
+            "costo_unitario": float(d["costo_unitario"]) if d.get("costo_unitario") else None
+        })
+
+    # Pagos
+    res_pagos = supabase.table("libreria_pagos").select("id, monto_abonado, fecha_pago, digitado_por").eq("venta_id", venta_id).order("fecha_pago", desc=False).execute()
+    pagos = []
+    for p in (res_pagos.data or []):
+        pagos.append({
+            "monto_abonado": float(p["monto_abonado"]),
+            "fecha_pago": p["fecha_pago"],
+            "operador": "—"
+        })
+
+    # Cliente y operador
+    res_cliente = supabase.table("usuarios").select("nombre_completo").eq("cui", venta["comprador_cui"]).execute()
+    cliente = res_cliente.data[0]["nombre_completo"] if res_cliente.data else "—"
+
+    res_op = supabase.table("usuarios").select("nombre_completo").eq("cui", venta["digitado_por"]).execute()
+    operador = res_op.data[0]["nombre_completo"] if res_op.data else venta.get("digitado_por", "—")
+
+    return venta, productos, pagos, cliente, operador
+
+
 @router.get("/ventas/{venta_id}/detalle")
 async def obtener_detalle_venta(venta_id: str, usuario_actual=Depends(obtener_usuario_actual)):
     try:
-        res_venta = supabase.table("libreria_ventas").select("id, comprador_cui, total_venta, total_pagado, estado_pago, created_at, digitado_por").eq("id", venta_id).execute()
-        if not res_venta.data:
-            raise HTTPException(404, "Venta no encontrada.")
-        venta = res_venta.data[0]
-        res_detalle = supabase.table("libreria_ventas_detalle").select("cantidad, precio_unitario, subtotal, costo_unitario, inventario_libreria(nombre, tipo_producto)").eq("venta_id", venta_id).execute()
-        productos = []
-        for d in (res_detalle.data or []):
-            producto_info = d.get("inventario_libreria") or {}
-            productos.append({
-                "nombre": producto_info.get("nombre", "Producto no disponible"),
-                "tipo_producto": producto_info.get("tipo_producto", "—"),
-                "cantidad": d["cantidad"],
-                "precio_unitario": float(d["precio_unitario"]),
-                "subtotal": float(d["subtotal"]),
-                "costo_unitario": float(d["costo_unitario"]) if d.get("costo_unitario") else None
-            })
-        res_pagos = supabase.table("libreria_pagos").select("id, monto_abonado, fecha_pago, digitado_por").eq("venta_id", venta_id).order("fecha_pago", desc=False).execute()
-        pagos = res_pagos.data or []
-        cuis_pagos = list(set(p["digitado_por"] for p in pagos if p.get("digitado_por")))
-        nombres_pagos = {}
-        if cuis_pagos:
-            res_op = supabase.table("usuarios").select("cui, nombre_completo").in_("cui", cuis_pagos).execute()
-            nombres_pagos = {u["cui"]: u["nombre_completo"] for u in (res_op.data or [])}
-        pagos_enriquecidos = []
-        for p in pagos:
-            cui_op = p.get("digitado_por")
-            pagos_enriquecidos.append({
-                "monto_abonado": float(p["monto_abonado"]),
-                "fecha_pago": p["fecha_pago"],
-                "operador": nombres_pagos.get(cui_op, cui_op or "—")
-            })
-        cui_venta = venta.get("digitado_por")
-        nombre_operador_venta = "—"
-        if cui_venta:
-            res_op_venta = supabase.table("usuarios").select("nombre_completo").eq("cui", cui_venta).execute()
-            if res_op_venta.data:
-                nombre_operador_venta = res_op_venta.data[0]["nombre_completo"]
-        comprador_cui = venta["comprador_cui"]
-        res_deuda = supabase.table("libreria_ventas").select("total_venta, total_pagado").eq("comprador_cui", comprador_cui).in_("estado_pago", ["pendiente", "parcial"]).execute()
+        venta, productos, pagos, cliente, operador = await obtener_datos_venta_completos(venta_id)
+
+        res_deuda = supabase.table("libreria_ventas").select("total_venta, total_pagado").eq("comprador_cui", venta["comprador_cui"]).in_("estado_pago", ["pendiente", "parcial"]).execute()
         deuda_data = res_deuda.data or []
         deuda_total = sum(float(d["total_venta"]) - float(d["total_pagado"]) for d in deuda_data if float(d["total_venta"]) - float(d["total_pagado"]) > 0)
+
         return {
             "venta": {
                 "id": venta["id"],
                 "comprador_cui": venta["comprador_cui"],
+                "cliente": cliente,
                 "total_venta": float(venta["total_venta"]),
                 "total_pagado": float(venta["total_pagado"]),
                 "saldo_pendiente": float(venta["total_venta"]) - float(venta["total_pagado"]),
                 "estado_pago": venta["estado_pago"],
                 "created_at": venta["created_at"],
-                "operador": nombre_operador_venta
+                "operador": operador
             },
             "productos": productos,
-            "pagos": pagos_enriquecidos,
+            "pagos": pagos,
             "deuda_hermano": {"total": deuda_total, "cantidad": len(deuda_data)},
             "ok": True
         }
@@ -803,38 +816,7 @@ async def listar_vendedores(usuario_actual: Dict[str, Any] = Depends(obtener_usu
 async def descargar_pdf_venta(venta_id: str, usuario_actual=Depends(obtener_usuario_actual)):
     """Genera y descarga el PDF de un recibo de venta."""
     try:
-        # Obtener datos de la venta (reutilizando lógica de /ventas/{venta_id}/detalle)
-        res_venta = supabase.table("libreria_ventas").select("id, comprador_cui, total_venta, total_pagado, estado_pago, created_at, digitado_por").eq("id", venta_id).execute()
-        if not res_venta.data:
-            raise HTTPException(404, "Venta no encontrada")
-        venta = res_venta.data[0]
-
-        res_detalle = supabase.table("libreria_ventas_detalle").select("cantidad, precio_unitario, subtotal, costo_unitario, inventario_libreria(nombre, tipo_producto)").eq("venta_id", venta_id).execute()
-        productos = []
-        for d in (res_detalle.data or []):
-            producto_info = d.get("inventario_libreria") or {}
-            productos.append({
-                "nombre": producto_info.get("nombre", "Producto no disponible"),
-                "tipo_producto": producto_info.get("tipo_producto", "—"),
-                "cantidad": d["cantidad"],
-                "precio_unitario": float(d["precio_unitario"]),
-                "subtotal": float(d["subtotal"])
-            })
-
-        res_pagos = supabase.table("libreria_pagos").select("id, monto_abonado, fecha_pago, digitado_por").eq("venta_id", venta_id).order("fecha_pago", desc=False).execute()
-        pagos = []
-        for p in (res_pagos.data or []):
-            pagos.append({
-                "monto_abonado": float(p["monto_abonado"]),
-                "fecha_pago": p["fecha_pago"],
-                "operador": "—"  # Se puede obtener el nombre del operador si se desea
-            })
-
-        res_cliente = supabase.table("usuarios").select("nombre_completo").eq("cui", venta["comprador_cui"]).execute()
-        cliente = res_cliente.data[0]["nombre_completo"] if res_cliente.data else "—"
-
-        res_op = supabase.table("usuarios").select("nombre_completo").eq("cui", venta["digitado_por"]).execute()
-        operador = res_op.data[0]["nombre_completo"] if res_op.data else venta.get("digitado_por", "—")
+        venta, productos, pagos, cliente, operador = await obtener_datos_venta_completos(venta_id)
 
         datos_pdf = {
             "tipo_notificacion": "venta_contado" if venta["estado_pago"] == "pagado" and venta["total_pagado"] >= venta["total_venta"] else "venta_credito",
@@ -876,42 +858,7 @@ async def descargar_pdf_venta(venta_id: str, usuario_actual=Depends(obtener_usua
 async def reenviar_correo_venta(venta_id: str, background_tasks: BackgroundTasks, usuario_actual=Depends(obtener_usuario_actual)):
     """Reenvía el correo con el recibo de una venta."""
     try:
-        # Obtener los mismos datos que para el PDF
-        # Similar a lo anterior pero sin generar el PDF directamente, solo enviar el correo
-        # Reutilizar la lógica de obtener datos y llamar a despachar_correo_libreria
-        # Para simplificar, se puede obtener los datos y llamar a la función
-        # Vamos a obtener los datos de la venta y llamar a despachar_correo_libreria con ellos
-        res_venta = supabase.table("libreria_ventas").select("id, comprador_cui, total_venta, total_pagado, estado_pago, created_at, digitado_por").eq("id", venta_id).execute()
-        if not res_venta.data:
-            raise HTTPException(404, "Venta no encontrada")
-        venta = res_venta.data[0]
-
-        res_detalle = supabase.table("libreria_ventas_detalle").select("cantidad, precio_unitario, subtotal, costo_unitario, inventario_libreria(nombre, tipo_producto)").eq("venta_id", venta_id).execute()
-        productos = []
-        for d in (res_detalle.data or []):
-            producto_info = d.get("inventario_libreria") or {}
-            productos.append({
-                "nombre": producto_info.get("nombre", "Producto no disponible"),
-                "tipo_producto": producto_info.get("tipo_producto", "—"),
-                "cantidad": d["cantidad"],
-                "precio_unitario": float(d["precio_unitario"]),
-                "subtotal": float(d["subtotal"])
-            })
-
-        res_pagos = supabase.table("libreria_pagos").select("id, monto_abonado, fecha_pago, digitado_por").eq("venta_id", venta_id).order("fecha_pago", desc=False).execute()
-        pagos = []
-        for p in (res_pagos.data or []):
-            pagos.append({
-                "monto_abonado": float(p["monto_abonado"]),
-                "fecha_pago": p["fecha_pago"],
-                "operador": "—"
-            })
-
-        res_cliente = supabase.table("usuarios").select("nombre_completo").eq("cui", venta["comprador_cui"]).execute()
-        cliente = res_cliente.data[0]["nombre_completo"] if res_cliente.data else "—"
-
-        res_op = supabase.table("usuarios").select("nombre_completo").eq("cui", venta["digitado_por"]).execute()
-        operador = res_op.data[0]["nombre_completo"] if res_op.data else venta.get("digitado_por", "—")
+        venta, productos, pagos, cliente, operador = await obtener_datos_venta_completos(venta_id)
 
         datos_pdf = {
             "tipo_notificacion": "venta_contado" if venta["estado_pago"] == "pagado" and venta["total_pagado"] >= venta["total_venta"] else "venta_credito",
@@ -936,7 +883,6 @@ async def reenviar_correo_venta(venta_id: str, background_tasks: BackgroundTasks
             "deuda_hermano": {"total": 0, "cantidad": 0}
         }
 
-        # Enviar correo usando la función existente (asíncrona)
         background_tasks.add_task(despachar_correo_libreria, datos_pdf)
         return {"mensaje": "Correo reenviado correctamente"}
     except HTTPException:

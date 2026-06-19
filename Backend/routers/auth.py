@@ -13,7 +13,9 @@ from typing import Dict, Any
 
 router = APIRouter()
 
-JWT_SECRET = os.getenv("JWT_SECRET", "PALABRA_MIEL_MIXCO_SECRET_KEY_2026")
+JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    raise RuntimeError("JWT_SECRET no configurado en variables de entorno.")
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_MINUTES = 480
 

@@ -2,11 +2,11 @@ version: '3.8'
 
 services:
   backend:
-    build: ./backend
+    build: ./Backend
     container_name: erp_visoni_api
     ports:
       - "8000:8000"
     env_file:
-      - ./backend/.env
+      - ./Backend/.env
     volumes:
-      - ./backend:/app
+      - ./Backend:/app

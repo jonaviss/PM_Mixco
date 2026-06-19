@@ -113,6 +113,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
 <script src="js/libreria_shared.js"></script>
 <script src="js/notify.js"></script>
 <script src="js/layout.js"></script>
@@ -122,13 +123,6 @@ let ventasPendientes = [];
 let clienteSeleccionado = null;
 let tipoAbono = 'total';
 
-function formatearMoneda(valor) {
-    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-function formatearFecha(fechaISO) {
-    if (!fechaISO) return '—';
-    return new Date(fechaISO).toLocaleString('es-GT', { timeZone: 'America/Guatemala', day: '2-digit', month: '2-digit', year: 'numeric' });
-}
 function mostrarUsuario() {
     const nombre = localStorage.getItem('usuario') || 'Usuario';
     const rango = localStorage.getItem('rango') || '';

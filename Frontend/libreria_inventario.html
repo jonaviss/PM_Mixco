@@ -427,6 +427,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
 <script src="js/layout.js"></script>
 <script src="js/notify.js"></script>
 <script>
@@ -442,28 +443,6 @@ let listaProveedores = [];
 // Variables de ordenamiento
 let ordenActual = 'nombre';
 let direccionActual = 'asc';
-
-// ======================== FUNCIONES AUXILIARES ========================
-function formatearMoneda(valor) {
-    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2 });
-}
-
-function formatearFechaHora(fechaISO) {
-    if (!fechaISO) return '—';
-    try {
-        const fecha = new Date(fechaISO);
-        return fecha.toLocaleString('es-GT', {
-            timeZone: 'America/Guatemala',
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    } catch (e) {
-        return '—';
-    }
-}
 
 function mostrarUsuario() {
     const nombre = localStorage.getItem('usuario') || 'Usuario';

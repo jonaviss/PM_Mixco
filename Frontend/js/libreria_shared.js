@@ -5,25 +5,6 @@
  * @module LibreriaShared
  */
 
-function formatearMoneda(valor) {
-    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
-}
-
-function formatearFechaHora(fechaISO) {
-    if (!fechaISO) return '—';
-    return new Date(fechaISO).toLocaleString('es-GT', {
-        timeZone: 'America/Guatemala',
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
 // ======================== MODAL DETALLE DE VENTA ========================
 function inyectarModalDetalle() {
     if (document.getElementById('modal-detalle')) return;

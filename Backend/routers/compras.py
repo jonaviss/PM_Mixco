@@ -83,7 +83,7 @@ async def crear_proveedor(payload: ProveedorCreate, usuario_actual: Dict = Depen
     if await existe_proveedor_con_nombre(payload.nombre):
         raise HTTPException(400, f"Ya existe un proveedor con el nombre '{payload.nombre}'. Use un nombre diferente.")
     try:
-        data = payload.dict()
+        data = payload.model_dump()
         data["activo"] = True
         res = supabase.table("proveedores").insert(data).execute()
         return {"mensaje": "Proveedor creado", "data": res.data[0]}
@@ -98,7 +98,7 @@ async def actualizar_proveedor(proveedor_id: str, payload: ProveedorUpdate, usua
         if await existe_proveedor_con_nombre(payload.nombre, excluir_id=proveedor_id):
             raise HTTPException(400, f"Ya existe otro proveedor con el nombre '{payload.nombre}'. Use un nombre diferente.")
     try:
-        update_data = {k: v for k, v in payload.dict().items() if v is not None}
+        update_data = {k: v for k, v in payload.model_dump().items() if v is not None}
         if not update_data:
             raise HTTPException(400, "No hay datos para actualizar")
         res = supabase.table("proveedores").update(update_data).eq("id", proveedor_id).execute()

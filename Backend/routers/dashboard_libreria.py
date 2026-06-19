@@ -59,7 +59,7 @@ async def obtener_kpis(
         # Ventas del día
         query_dia = supabase.table("libreria_ventas").select("total_venta, estado_pago").gte("created_at", inicio_dia)
         if cui_filtro:
-            query_dia = query_dia.eq("comprador_cui", cui_filtro)
+            query_dia = query_dia.eq("digitado_por", cui_filtro)
         res_dia = query_dia.execute()
 
         ventas_dia = res_dia.data or []
@@ -69,7 +69,7 @@ async def obtener_kpis(
         # Créditos pendientes
         query_creditos = supabase.table("libreria_ventas").select("total_venta, total_pagado").in_("estado_pago", ["pendiente", "parcial"])
         if cui_filtro:
-            query_creditos = query_creditos.eq("comprador_cui", cui_filtro)
+            query_creditos = query_creditos.eq("digitado_por", cui_filtro)
         res_creditos = query_creditos.execute()
 
         creditos = res_creditos.data or []
@@ -79,7 +79,7 @@ async def obtener_kpis(
         # Ventas del mes
         query_mes = supabase.table("libreria_ventas").select("total_venta").gte("created_at", inicio_mes)
         if cui_filtro:
-            query_mes = query_mes.eq("comprador_cui", cui_filtro)
+            query_mes = query_mes.eq("digitado_por", cui_filtro)
         res_mes = query_mes.execute()
 
         ventas_mes = res_mes.data or []
@@ -140,7 +140,7 @@ async def obtener_actividad(
         # Total de registros
         query_total = supabase.table("libreria_ventas").select("id", count="exact")
         if cui_filtro:
-            query_total = query_total.eq("comprador_cui", cui_filtro)
+            query_total = query_total.eq("digitado_por", cui_filtro)
         res_total = query_total.execute()
 
         total = res_total.count or 0
@@ -153,7 +153,7 @@ async def obtener_actividad(
             .range(offset, offset + por_pagina - 1)
 
         if cui_filtro:
-            query = query.eq("comprador_cui", cui_filtro)
+            query = query.eq("digitado_por", cui_filtro)
 
         res = query.execute()
 

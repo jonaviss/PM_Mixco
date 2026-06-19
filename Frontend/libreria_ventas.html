@@ -242,6 +242,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
 <script src="js/notify.js"></script>
 <script src="js/layout.js"></script>
 <script>
@@ -259,10 +260,6 @@ let tipoPagoActual = 'contado';
 let productosFiltrados = [];
 let paginaPosActual = 1;
 const POR_PAGINA_POS = 10;
-
-function formatearMoneda(valor) {
-    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2 });
-}
 
 function mostrarUsuario() {
     const nombre = localStorage.getItem('usuario') || 'Usuario';

@@ -12,7 +12,9 @@ from typing import Dict, Any
 # Esquema de seguridad Bearer para Swagger y validación automática
 seguridad = HTTPBearer()
 
-JWT_SECRET = os.getenv("JWT_SECRET", "PALABRA_MIEL_MIXCO_SECRET_KEY_2026")
+JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    raise RuntimeError("JWT_SECRET no configurado en variables de entorno.")
 ALGORITHM = "HS256"
 
 
