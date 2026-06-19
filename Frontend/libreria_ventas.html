@@ -525,32 +525,56 @@ async function procesarVenta() {
         mostrarMsgVenta('El carrito está vacío.', 'error');
         return;
     }
+
     const btn = document.getElementById('btn-procesar');
     btn.disabled = true;
     btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">hourglass_empty</span> Procesando...';
+
     try {
-        for (const item of carrito) {
-            const payload = {
+        let res;
+        let endpoint;
+        const payload = {
+            comprador_cui: compradorCui,
+            tipo_pago: tipoPagoActual
+        };
+
+        // Elegir endpoint según cantidad de productos en el carrito
+        if (carrito.length === 1) {
+            // Venta individual (usar endpoint existente)
+            endpoint = '/libreria/ventas';
+            payload.producto_id = carrito[0].id;
+            payload.cantidad = carrito[0].cantidad;
+        } else {
+            // Venta múltiple (usar nuevo endpoint)
+            endpoint = '/libreria/ventas/multiple';
+            payload.productos = carrito.map(item => ({
                 producto_id: item.id,
-                comprador_cui: compradorCui,
-                cantidad: item.cantidad,
-                tipo_pago: tipoPagoActual
-            };
-            const res = await API.post('/libreria/ventas', payload, true);
-            if (!res.ok) {
-                const data = await res.json();
-                const detalle = Array.isArray(data.detail) ? data.detail.map(e => e.msg).join(', ') : (data.detail || 'Error al procesar la venta.');
-                throw new Error(detalle);
-            }
+                cantidad: item.cantidad
+            }));
         }
-        const totalVenta = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
-        document.getElementById('msg-exito-detalle').textContent = `${tipoPagoActual === 'contado' ? 'Cobro en efectivo' : 'Venta a crédito'} por ${formatearMoneda(totalVenta)} registrada correctamente.`;
+
+        res = await API.post(endpoint, payload, true);
+        if (!res.ok) {
+            const data = await res.json();
+            const detalle = Array.isArray(data.detail) ? data.detail.map(e => e.msg).join(', ') : (data.detail || 'Error al procesar la venta.');
+            throw new Error(detalle);
+        }
+
+        const data = await res.json();
+        const totalVenta = data.total || carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+
+        document.getElementById('msg-exito-detalle').textContent =
+            `${tipoPagoActual === 'contado' ? 'Cobro en efectivo' : 'Venta a crédito'} por ${formatearMoneda(totalVenta)} registrada correctamente.`;
+
         document.getElementById('modal-exito').classList.remove('hidden');
         document.getElementById('modal-exito').classList.add('flex');
+
         carrito = [];
         limpiarCliente();
         await cargarProductos();
         renderizarCarrito();
+        ocultarMsgVenta();
+
     } catch (err) {
         console.error('[POS] Error al procesar venta:', err);
         mostrarMsgVenta(err.message || 'Error al procesar la venta.', 'error');

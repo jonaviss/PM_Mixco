@@ -2,6 +2,7 @@
 Módulo de gestión de librería.
 Maneja inventario, ventas (contado y crédito), abonos simples y distribuidos.
 Incluye FIFO para consumo de lotes y creación automática de lotes para productos creados desde inventario.
+Soporte para ventas con múltiples productos en una sola transacción.
 """
 
 import os
@@ -9,7 +10,7 @@ import base64
 import httpx
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Depends, Query
 from database import supabase
-from schemas import ProductoLibreriaCreate, VentaLibreriaCreate, PagoLibreriaCreate, AbonoDistribuidoCreate, ProductoLibreriaUpdate
+from schemas import ProductoLibreriaCreate, VentaLibreriaCreate, PagoLibreriaCreate, AbonoDistribuidoCreate, ProductoLibreriaUpdate, VentaMultipleCreate
 from routers.dependencies import obtener_usuario_actual
 from routers.pdf_libreria import generar_pdf_comprobante
 from typing import Dict, Any, Optional
@@ -17,7 +18,7 @@ from datetime import datetime
 
 router = APIRouter()
 
-# ======================== FUNCIÓN AUXILIAR FIFO (CORREGIDA) ========================
+# ======================== FUNCIÓN AUXILIAR FIFO ========================
 async def consumir_lote_fifo(producto_id: str, cantidad_vendida: int) -> float:
     """
     Consume la cantidad vendida de los lotes más antiguos (FIFO).
@@ -52,7 +53,6 @@ async def consumir_lote_fifo(producto_id: str, cantidad_vendida: int) -> float:
             raise HTTPException(404, f"Producto {producto_id} no encontrado")
         costo_promedio = res_prod.data[0].get("costo_promedio", 0)
         costo_total += restante * costo_promedio
-        # Opcional: registrar en bitácora que no había lotes suficientes
 
     return costo_total
 
@@ -164,13 +164,13 @@ def registrar_producto(payload: ProductoLibreriaCreate, usuario_actual=Depends(o
         nuevo_producto = res.data[0]
         producto_id = nuevo_producto["id"]
 
-        # ===== NUEVO: Crear lote automático si el producto tiene stock y costo =====
+        # Crear lote automático si el producto tiene stock y costo
         stock = data.get("stock", 0)
         costo_promedio = data.get("costo_promedio")
         if stock > 0 and costo_promedio is not None:
             lote_data = {
                 "producto_id": producto_id,
-                "compra_id": None,  # Sin compra asociada (creado desde inventario)
+                "compra_id": None,
                 "cantidad_inicial": stock,
                 "cantidad_restante": stock,
                 "costo_unitario": costo_promedio,
@@ -213,7 +213,7 @@ async def toggle_estado_producto(producto_id: str, usuario_actual=Depends(obtene
     except Exception as e:
         raise HTTPException(500, str(e))
 
-# ======================== VENTAS CON FIFO (CORREGIDO) ========================
+# ======================== VENTAS INDIVIDUALES (ORIGINAL) ========================
 @router.post("/ventas", status_code=status.HTTP_201_CREATED)
 async def registrar_venta(
     payload: VentaLibreriaCreate,
@@ -237,7 +237,6 @@ async def registrar_venta(
         estado_inicial = "pagado" if es_contado else "pendiente"
         monto_ingresado = total_venta if es_contado else 0.0
 
-        # Consumir lotes (corregido para manejar productos sin lotes)
         costo_total_venta = await consumir_lote_fifo(payload.producto_id, payload.cantidad)
         costo_unitario_venta = costo_total_venta / payload.cantidad if payload.cantidad > 0 else 0
 
@@ -267,13 +266,11 @@ async def registrar_venta(
                 "digitado_por": usuario_actual["sub"]
             }).execute()
 
-        # Actualizar stock (restar)
         supabase.table("inventario_libreria") \
             .update({"stock": stock_actual - payload.cantidad}) \
             .eq("id", payload.producto_id) \
             .execute()
 
-        # Obtener datos para correo
         res_comprador = supabase.table("usuarios") \
             .select("cui, nombre_completo") \
             .eq("cui", payload.comprador_cui) \
@@ -317,6 +314,155 @@ async def registrar_venta(
             "deuda_hermano": {"total": deuda_total, "cantidad": len(deuda_data)}
         })
         return {"mensaje": "Transacción completada exitosamente", "venta_id": venta_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ======================== VENTAS CON MÚLTIPLES PRODUCTOS ========================
+@router.post("/ventas/multiple", status_code=status.HTTP_201_CREATED)
+async def registrar_venta_multiple(
+    payload: VentaMultipleCreate,
+    background_tasks: BackgroundTasks,
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    """
+    Registra una venta con múltiples productos en una sola transacción.
+    """
+    try:
+        if not payload.productos:
+            raise HTTPException(400, "La venta debe tener al menos un producto.")
+
+        productos_detalle = []
+        total_venta = 0.0
+        stock_actual_dict = {}
+
+        for item in payload.productos:
+            res_prod = supabase.table("inventario_libreria") \
+                .select("id, nombre, stock, precio, costo_promedio") \
+                .eq("id", item.producto_id) \
+                .execute()
+
+            if not res_prod.data:
+                raise HTTPException(404, f"Producto {item.producto_id} no encontrado")
+
+            prod = res_prod.data[0]
+            stock_actual = prod["stock"]
+
+            if stock_actual < item.cantidad:
+                raise HTTPException(400, f"Stock insuficiente para '{prod['nombre']}'. Disponible: {stock_actual}")
+
+            precio_unitario = float(prod["precio"])
+            subtotal = precio_unitario * item.cantidad
+            total_venta += subtotal
+
+            productos_detalle.append({
+                "producto": prod,
+                "cantidad": item.cantidad,
+                "precio_unitario": precio_unitario,
+                "subtotal": subtotal
+            })
+            stock_actual_dict[item.producto_id] = stock_actual
+
+        es_contado = payload.tipo_pago == "contado"
+        estado_inicial = "pagado" if es_contado else "pendiente"
+        monto_ingresado = total_venta if es_contado else 0.0
+
+        res_venta = supabase.table("libreria_ventas").insert({
+            "comprador_cui": payload.comprador_cui,
+            "total_venta": total_venta,
+            "total_pagado": monto_ingresado,
+            "estado_pago": estado_inicial,
+            "digitado_por": usuario_actual["sub"]
+        }).execute()
+
+        venta_id = res_venta.data[0]["id"]
+
+        productos_para_correo = []
+        costo_total_venta = 0.0
+
+        for detalle in productos_detalle:
+            prod = detalle["producto"]
+            producto_id = prod["id"]
+            cantidad = detalle["cantidad"]
+            precio_unitario = detalle["precio_unitario"]
+            subtotal = detalle["subtotal"]
+
+            costo_total_producto = await consumir_lote_fifo(producto_id, cantidad)
+            costo_total_venta += costo_total_producto
+            costo_unitario_venta = costo_total_producto / cantidad if cantidad > 0 else 0
+
+            supabase.table("libreria_ventas_detalle").insert({
+                "venta_id": venta_id,
+                "producto_id": producto_id,
+                "cantidad": cantidad,
+                "precio_unitario": precio_unitario,
+                "subtotal": subtotal,
+                "costo_unitario": costo_unitario_venta
+            }).execute()
+
+            stock_actual = stock_actual_dict[producto_id]
+            supabase.table("inventario_libreria") \
+                .update({"stock": stock_actual - cantidad}) \
+                .eq("id", producto_id) \
+                .execute()
+
+            productos_para_correo.append({
+                "nombre": prod["nombre"],
+                "tipo_producto": prod.get("tipo_producto", "—"),
+                "cantidad": cantidad,
+                "precio_unitario": precio_unitario,
+                "subtotal": subtotal
+            })
+
+        if es_contado:
+            supabase.table("libreria_pagos").insert({
+                "venta_id": venta_id,
+                "monto_abonado": total_venta,
+                "metodo_pago_id": 1,
+                "digitado_por": usuario_actual["sub"]
+            }).execute()
+
+        res_comprador = supabase.table("usuarios") \
+            .select("cui, nombre_completo") \
+            .eq("cui", payload.comprador_cui) \
+            .execute()
+        comprador = res_comprador.data[0] if res_comprador.data else {"cui": payload.comprador_cui, "nombre_completo": "—"}
+
+        res_deuda = supabase.table("libreria_ventas") \
+            .select("total_venta, total_pagado") \
+            .eq("comprador_cui", payload.comprador_cui) \
+            .in_("estado_pago", ["pendiente", "parcial"]) \
+            .execute()
+        deuda_data = res_deuda.data or []
+        deuda_total = sum(float(d["total_venta"]) - float(d["total_pagado"]) for d in deuda_data if float(d["total_venta"]) - float(d["total_pagado"]) > 0)
+
+        res_op = supabase.table("usuarios").select("nombre_completo").eq("cui", usuario_actual["sub"]).execute()
+        nombre_op = res_op.data[0]["nombre_completo"] if res_op.data else usuario_actual["sub"]
+
+        tipo_notif = "venta_contado" if es_contado else "venta_credito"
+
+        background_tasks.add_task(despachar_correo_libreria, {
+            "id_transaccion": venta_id,
+            "tipo_notificacion": tipo_notif,
+            "monto": total_venta,
+            "venta": {
+                "id": venta_id,
+                "comprador_cui": payload.comprador_cui,
+                "total_venta": total_venta,
+                "total_pagado": monto_ingresado,
+                "saldo_pendiente": total_venta - monto_ingresado,
+                "estado_pago": estado_inicial,
+                "operador": nombre_op
+            },
+            "productos": productos_para_correo,
+            "pagos": [],
+            "hermano": comprador,
+            "deuda_hermano": {"total": deuda_total, "cantidad": len(deuda_data)}
+        })
+
+        return {"mensaje": "Venta registrada exitosamente", "venta_id": venta_id, "total": total_venta}
+
     except HTTPException:
         raise
     except Exception as e:
@@ -513,3 +659,142 @@ async def obtener_detalle_venta(venta_id: str, usuario_actual=Depends(obtener_us
         raise
     except Exception as e:
         raise HTTPException(500, detail=str(e))
+
+# ======================== REPORTE DE VENTAS ========================
+@router.get("/ventas/reporte")
+async def reporte_ventas(
+    inicio: str,
+    fin: str,
+    operador_cui: Optional[str] = None,
+    cliente_cui: Optional[str] = None,
+    estado: Optional[str] = None,
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    """
+    Genera un reporte de ventas agrupado por día en el rango de fechas especificado.
+    Filtros opcionales: operador_cui, cliente_cui, estado.
+    """
+    try:
+        query = supabase.table("libreria_ventas") \
+            .select("id, comprador_cui, total_venta, total_pagado, estado_pago, created_at, digitado_por") \
+            .gte("created_at", inicio) \
+            .lte("created_at", fin)
+
+        if operador_cui:
+            query = query.eq("digitado_por", operador_cui)
+        if cliente_cui:
+            query = query.eq("comprador_cui", cliente_cui)
+        if estado:
+            query = query.eq("estado_pago", estado)
+
+        res = query.order("created_at", desc=False).execute()
+        ventas = res.data or []
+
+        # Obtener detalles de cada venta (productos)
+        ventas_con_detalle = []
+        for v in ventas:
+            res_detalle = supabase.table("libreria_ventas_detalle") \
+                .select("producto_id, cantidad, precio_unitario, subtotal, inventario_libreria(nombre)") \
+                .eq("venta_id", v["id"]) \
+                .execute()
+
+            productos = []
+            for d in (res_detalle.data or []):
+                productos.append({
+                    "nombre": d.get("inventario_libreria", {}).get("nombre", "Producto no disponible"),
+                    "cantidad": d["cantidad"],
+                    "precio_unitario": d["precio_unitario"],
+                    "subtotal": d["subtotal"]
+                })
+
+            # Obtener nombre del cliente
+            res_cliente = supabase.table("usuarios") \
+                .select("nombre_completo") \
+                .eq("cui", v["comprador_cui"]) \
+                .execute()
+
+            cliente = res_cliente.data[0]["nombre_completo"] if res_cliente.data else "—"
+
+            ventas_con_detalle.append({
+                "id": v["id"],
+                "cliente": cliente,
+                "total": v["total_venta"],
+                "pagado": v["total_pagado"],
+                "estado": v["estado_pago"],
+                "created_at": v["created_at"],
+                "productos": productos
+            })
+
+        # Agrupar por día
+        dias = {}
+        for v in ventas_con_detalle:
+            fecha = v["created_at"].split("T")[0]
+            if fecha not in dias:
+                dias[fecha] = {
+                    "fecha": fecha,
+                    "cantidad": 0,
+                    "total": 0.0,
+                    "productos": 0,
+                    "ventas": []
+                }
+            dias[fecha]["cantidad"] += 1
+            dias[fecha]["total"] += v["total"]
+            dias[fecha]["productos"] += sum(p["cantidad"] for p in v["productos"])
+            dias[fecha]["ventas"].append(v)
+
+        dias_ordenados = sorted(dias.values(), key=lambda x: x["fecha"])
+
+        resumen = {
+            "total_ventas": sum(d["total"] for d in dias_ordenados),
+            "total_transacciones": sum(d["cantidad"] for d in dias_ordenados),
+            "total_productos": sum(d["productos"] for d in dias_ordenados)
+        }
+
+        detalle = {d["fecha"]: d["ventas"] for d in dias_ordenados}
+
+        for d in dias_ordenados:
+            del d["ventas"]
+
+        return {
+            "dias": dias_ordenados,
+            "detalle": detalle,
+            "resumen": resumen
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ======================== USUARIOS VENDEDORES ========================
+@router.get("/usuarios/vendedores")
+async def listar_vendedores(usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
+    """
+    Lista los usuarios que tienen acceso al módulo de librería (vendedores).
+    """
+    try:
+        res = supabase.table("accesos_usuarios") \
+            .select("usuario_cui, usuarios(nombre_completo)") \
+            .eq("modulo_id", 1) \
+            .execute()
+
+        usuarios = res.data or []
+        vendedores = []
+        vistos = set()
+        for u in usuarios:
+            cui = u["usuario_cui"]
+            if cui and cui not in vistos:
+                vistos.add(cui)
+                vendedores.append({
+                    "cui": cui,
+                    "nombre_completo": u.get("usuarios", {}).get("nombre_completo", "—")
+                })
+
+        if not vendedores:
+            res_usuarios = supabase.table("usuarios") \
+                .select("cui, nombre_completo") \
+                .eq("activo", True) \
+                .execute()
+            vendedores = res_usuarios.data or []
+
+        return vendedores
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

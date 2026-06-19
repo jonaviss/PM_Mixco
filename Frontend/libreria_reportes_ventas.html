@@ -1,0 +1,527 @@
+ <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes de Ventas | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#755b00",
+                        "primary-container": "#C9A227",
+                        "on-primary": "#ffffff",
+                        "surface": "#F8FAFC",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#F1F5F9",
+                        "surface-container": "#E2E8F0",
+                        "surface-container-high": "#CBD5E1",
+                        "outline-variant": "#CBD5E1",
+                        "outline": "#94A3B8",
+                        "on-surface": "#1E293B",
+                        "on-surface-variant": "#475569",
+                        "secondary": "#64748B",
+                        "error": "#EF4444"
+                    },
+                    fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
+                    spacing: { "sidebar": "260px" }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-on-surface">
+
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary"><span class="material-symbols-outlined">menu</span></button>
+        <h2 class="text-base font-bold text-on-surface leading-none">Reportes de Ventas</h2>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block"><p id="nombre-usuario" class="text-sm font-bold text-on-surface"></p><p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p></div>
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm"><span id="avatar-inicial">?</span></div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 space-y-6">
+
+        <!-- Filtros -->
+        <div class="bg-white border border-outline-variant rounded-xl p-5 shadow-sm">
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div>
+                    <label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Período</label>
+                    <select id="periodo-select" class="w-full border rounded-lg px-3 py-2">
+                        <option value="hoy">Hoy</option>
+                        <option value="ayer">Ayer</option>
+                        <option value="semana">Esta semana</option>
+                        <option value="mes">Este mes</option>
+                        <option value="personalizado">Personalizado</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Vendedor</label>
+                    <select id="operador-select" class="w-full border rounded-lg px-3 py-2">
+                        <option value="">Todos los vendedores</option>
+                    </select>
+                </div>
+                <div class="relative">
+                    <label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Cliente</label>
+                    <input type="text" id="cliente-buscar" placeholder="Buscar por CUI o nombre..." class="w-full border rounded-lg px-3 py-2">
+                    <div id="cliente-resultados" class="hidden absolute z-20 w-full mt-1 bg-white border border-outline-variant rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-outline-variant"></div>
+                    <input type="hidden" id="cliente-cui-seleccionado">
+                </div>
+                <div>
+                    <label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Estado</label>
+                    <select id="estado-select" class="w-full border rounded-lg px-3 py-2">
+                        <option value="">Todos</option>
+                        <option value="pagado">Pagado</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="parcial">Parcial</option>
+                    </select>
+                </div>
+                <div id="fecha-inicio-container" class="hidden">
+                    <label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Fecha Inicio</label>
+                    <input type="date" id="fecha-inicio" class="w-full border rounded-lg px-3 py-2">
+                </div>
+                <div id="fecha-fin-container" class="hidden">
+                    <label class="block text-xs font-mono font-bold text-secondary uppercase mb-1">Fecha Fin</label>
+                    <input type="date" id="fecha-fin" class="w-full border rounded-lg px-3 py-2">
+                </div>
+                <div class="flex items-end gap-2 col-span-full md:col-span-6">
+                    <button onclick="cargarReporte()" class="bg-primary-container text-white font-bold px-4 py-2 rounded-lg hover:opacity-90 transition flex-1">
+                        <span class="material-symbols-outlined text-[18px] align-middle">bar_chart</span> Generar Reporte
+                    </button>
+                    <button onclick="exportarCSV()" class="border border-primary-container text-primary-container font-bold px-4 py-2 rounded-lg hover:bg-primary-container hover:text-white transition flex-1">
+                        <span class="material-symbols-outlined text-[18px] align-middle">download</span> Exportar CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjetas de resumen -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="tarjetas-resumen">
+            <div class="bg-white border border-outline-variant rounded-xl p-5 shadow-sm">
+                <p class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Total Ventas</p>
+                <p id="total-ventas" class="text-2xl font-bold text-on-surface font-mono mt-1">Q0.00</p>
+            </div>
+            <div class="bg-white border border-outline-variant rounded-xl p-5 shadow-sm">
+                <p class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Cantidad Transacciones</p>
+                <p id="total-transacciones" class="text-2xl font-bold text-on-surface font-mono mt-1">0</p>
+            </div>
+            <div class="bg-white border border-outline-variant rounded-xl p-5 shadow-sm">
+                <p class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Productos Vendidos</p>
+                <p id="total-productos" class="text-2xl font-bold text-on-surface font-mono mt-1">0</p>
+            </div>
+            <div class="bg-white border border-outline-variant rounded-xl p-5 shadow-sm">
+                <p class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Ticket Promedio</p>
+                <p id="ticket-promedio" class="text-2xl font-bold text-on-surface font-mono mt-1">Q0.00</p>
+            </div>
+        </div>
+
+        <!-- Tabla de ventas por día -->
+        <div class="bg-white border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+            <div class="px-5 py-4 border-b border-outline-variant bg-surface-container-low/30 flex justify-between items-center">
+                <h3 class="text-sm font-bold text-on-surface">Ventas por Día</h3>
+                <span id="rango-fechas-label" class="text-xs font-mono text-secondary"></span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-surface-container-low/50">
+                        <tr>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Ventas</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total Facturado</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Productos</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-reporte" class="divide-y divide-outline-variant text-sm">
+                        <tr><td colspan="5" class="text-center py-10 text-secondary">Seleccione un período y genere el reporte.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Modal detalle de día -->
+        <div id="modal-detalle-dia" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                <div class="bg-primary px-5 py-4 flex justify-between items-center flex-shrink-0">
+                    <div>
+                        <h3 class="text-base font-bold text-white">Detalle de Ventas</h3>
+                        <p id="modal-dia-titulo" class="text-xs text-white/70 mt-0.5">—</p>
+                    </div>
+                    <button onclick="cerrarModalDetalleDia()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+                </div>
+                <div class="overflow-y-auto flex-1 p-5">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-surface-container-low/50">
+                                <tr>
+                                    <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase">Hora</th>
+                                    <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase">Cliente</th>
+                                    <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase">Productos</th>
+                                    <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase text-right">Total</th>
+                                    <th class="px-4 py-2 text-xs font-mono font-bold text-secondary uppercase text-center">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-detalle-tabla" class="divide-y divide-outline-variant text-sm">
+                                <tr><td colspan="5" class="text-center py-6 text-secondary">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center flex-shrink-0">
+                    <span id="modal-detalle-total" class="text-sm font-bold font-mono text-primary">Total: Q0.00</span>
+                    <button onclick="cerrarModalDetalleDia()" class="px-4 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="border-t border-outline-variant px-6 py-3 text-center">
+        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Módulo Librería &copy; 2026</p>
+    </footer>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/notify.js"></script>
+<script src="js/layout.js"></script>
+<script>
+// ======================== VARIABLES GLOBALES ========================
+let datosReporte = [];
+let ventasDetalle = [];
+let cacheClientes = [];
+
+// ======================== FUNCIONES AUXILIARES ========================
+function formatearMoneda(valor) {
+    return 'Q' + parseFloat(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2 });
+}
+
+function formatearFecha(fechaISO) {
+    if (!fechaISO) return '—';
+    const fecha = new Date(fechaISO + 'T00:00:00');
+    return fecha.toLocaleDateString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function formatearFechaHora(fechaISO) {
+    if (!fechaISO) return '—';
+    const fecha = new Date(fechaISO);
+    return fecha.toLocaleString('es-GT', {
+        timeZone: 'America/Guatemala',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function mostrarUsuario() {
+    const nombre = localStorage.getItem('usuario') || 'Usuario';
+    const rango = localStorage.getItem('rango') || '';
+    document.getElementById('nombre-usuario').textContent = nombre;
+    document.getElementById('rango-usuario').textContent = rango;
+    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
+}
+
+// ======================== CONFIGURAR FILTROS ========================
+function configurarFiltros() {
+    const periodoSelect = document.getElementById('periodo-select');
+    const fechaInicioContainer = document.getElementById('fecha-inicio-container');
+    const fechaFinContainer = document.getElementById('fecha-fin-container');
+
+    periodoSelect.addEventListener('change', function() {
+        const esPersonalizado = this.value === 'personalizado';
+        fechaInicioContainer.classList.toggle('hidden', !esPersonalizado);
+        fechaFinContainer.classList.toggle('hidden', !esPersonalizado);
+        if (esPersonalizado) {
+            const hoy = new Date().toISOString().split('T')[0];
+            document.getElementById('fecha-inicio').value = hoy;
+            document.getElementById('fecha-fin').value = hoy;
+        }
+    });
+
+    // Inicializar fechas
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('fecha-inicio').value = hoy;
+    document.getElementById('fecha-fin').value = hoy;
+}
+
+function obtenerRangoFechas() {
+    const periodo = document.getElementById('periodo-select').value;
+    const hoy = new Date();
+    let inicio = new Date(hoy);
+    let fin = new Date(hoy);
+
+    switch (periodo) {
+        case 'hoy':
+            inicio.setHours(0, 0, 0, 0);
+            fin.setHours(23, 59, 59, 999);
+            break;
+        case 'ayer':
+            inicio.setDate(hoy.getDate() - 1);
+            inicio.setHours(0, 0, 0, 0);
+            fin.setDate(hoy.getDate() - 1);
+            fin.setHours(23, 59, 59, 999);
+            break;
+        case 'semana':
+            const diaSemana = hoy.getDay();
+            const diff = diaSemana === 0 ? 6 : diaSemana - 1;
+            inicio.setDate(hoy.getDate() - diff);
+            inicio.setHours(0, 0, 0, 0);
+            fin.setHours(23, 59, 59, 999);
+            break;
+        case 'mes':
+            inicio.setDate(1);
+            inicio.setHours(0, 0, 0, 0);
+            fin.setHours(23, 59, 59, 999);
+            break;
+        case 'personalizado':
+            inicio = new Date(document.getElementById('fecha-inicio').value + 'T00:00:00');
+            fin = new Date(document.getElementById('fecha-fin').value + 'T23:59:59');
+            break;
+        default:
+            inicio.setHours(0, 0, 0, 0);
+            fin.setHours(23, 59, 59, 999);
+    }
+
+    return {
+        inicio: inicio.toISOString(),
+        fin: fin.toISOString()
+    };
+}
+
+// ======================== CARGAR VENDEDORES ========================
+async function cargarVendedores() {
+    try {
+        const res = await API.get('/libreria/usuarios/vendedores', true);
+        if (res.ok) {
+            const vendedores = await res.json();
+            const select = document.getElementById('operador-select');
+            vendedores.forEach(v => {
+                const option = document.createElement('option');
+                option.value = v.cui;
+                option.textContent = v.nombre_completo;
+                select.appendChild(option);
+            });
+        }
+    } catch (err) {
+        console.error('[Reportes] Error al cargar vendedores:', err);
+    }
+}
+
+// ======================== BUSCADOR DE CLIENTES ========================
+async function cargarClientes() {
+    try {
+        const res = await API.get('/libreria/clientes', true);
+        if (res.ok) cacheClientes = await res.json();
+    } catch (err) {
+        console.error('[Reportes] Error al cargar clientes:', err);
+    }
+}
+
+function configurarBuscadorClientes() {
+    const input = document.getElementById('cliente-buscar');
+    const results = document.getElementById('cliente-resultados');
+    input.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        results.innerHTML = '';
+        if (!query) { results.classList.add('hidden'); return; }
+        const filtrados = cacheClientes.filter(c =>
+            (c.nombre_completo || '').toLowerCase().includes(query) ||
+            (c.cui || '').includes(query)
+        );
+        if (filtrados.length === 0) {
+            results.innerHTML = '<div class="p-3 text-sm text-secondary text-center">Hermano no encontrado.</div>';
+        } else {
+            filtrados.slice(0, 8).forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'p-3 cursor-pointer hover:bg-surface-container-low transition text-sm';
+                div.innerHTML = `<p class="font-bold text-on-surface">${c.nombre_completo}</p><p class="text-xs font-mono text-secondary">CUI: ${c.cui}</p>`;
+                div.onclick = () => {
+                    input.value = c.nombre_completo;
+                    document.getElementById('cliente-cui-seleccionado').value = c.cui;
+                    results.classList.add('hidden');
+                };
+                results.appendChild(div);
+            });
+        }
+        results.classList.remove('hidden');
+    });
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !results.contains(e.target)) results.classList.add('hidden');
+    });
+}
+
+// ======================== CARGAR REPORTE ========================
+async function cargarReporte() {
+    const rango = obtenerRangoFechas();
+    const operador = document.getElementById('operador-select').value;
+    const cliente = document.getElementById('cliente-cui-seleccionado').value;
+    const estado = document.getElementById('estado-select').value;
+
+    let url = `/libreria/ventas/reporte?inicio=${encodeURIComponent(rango.inicio)}&fin=${encodeURIComponent(rango.fin)}`;
+    if (operador) url += `&operador_cui=${operador}`;
+    if (cliente) url += `&cliente_cui=${cliente}`;
+    if (estado) url += `&estado=${estado}`;
+
+    document.getElementById('tabla-reporte').innerHTML = '<tr><td colspan="5" class="text-center py-10 text-secondary">Cargando...</td></tr>';
+
+    try {
+        const res = await API.get(url, true);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        datosReporte = data.dias || [];
+        ventasDetalle = data.detalle || {};
+
+        renderizarReporte();
+        actualizarResumen(data.resumen || {});
+        document.getElementById('rango-fechas-label').textContent =
+            `${formatearFecha(rango.inicio)} - ${formatearFecha(rango.fin)}`;
+
+    } catch (err) {
+        console.error('[Reporte] Error:', err);
+        notify.error('Error al cargar el reporte');
+        document.getElementById('tabla-reporte').innerHTML = '<tr><td colspan="5" class="text-center py-10 text-error">Error al cargar el reporte.</td></tr>';
+    }
+}
+
+function renderizarReporte() {
+    const tbody = document.getElementById('tabla-reporte');
+    if (datosReporte.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-secondary">No hay ventas en este período.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '';
+    datosReporte.forEach(dia => {
+        const tr = document.createElement('tr');
+        tr.className = 'table-row transition-colors';
+        tr.innerHTML = `
+            <td class="px-5 py-3 font-medium">${formatearFecha(dia.fecha)}</td>
+            <td class="px-5 py-3 text-right font-mono">${dia.cantidad}</td>
+            <td class="px-5 py-3 text-right font-mono font-bold">${formatearMoneda(dia.total)}</td>
+            <td class="px-5 py-3 text-right font-mono">${dia.productos}</td>
+            <td class="px-5 py-3 text-center">
+                <button onclick="verDetalleDia('${dia.fecha}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition">
+                    <span class="material-symbols-outlined text-[16px]">visibility</span>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function actualizarResumen(resumen) {
+    document.getElementById('total-ventas').textContent = formatearMoneda(resumen.total_ventas || 0);
+    document.getElementById('total-transacciones').textContent = resumen.total_transacciones || 0;
+    document.getElementById('total-productos').textContent = resumen.total_productos || 0;
+
+    const promedio = (resumen.total_transacciones || 0) > 0
+        ? (resumen.total_ventas || 0) / resumen.total_transacciones
+        : 0;
+    document.getElementById('ticket-promedio').textContent = formatearMoneda(promedio);
+}
+
+// ======================== MODAL DETALLE POR DÍA ========================
+function verDetalleDia(fecha) {
+    const ventas = ventasDetalle[fecha] || [];
+    document.getElementById('modal-dia-titulo').textContent = `Ventas del ${formatearFecha(fecha)}`;
+
+    const tbody = document.getElementById('modal-detalle-tabla');
+    if (ventas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-secondary">No hay ventas en este día.</td></tr>';
+        document.getElementById('modal-detalle-total').textContent = 'Total: Q0.00';
+    } else {
+        let totalDia = 0;
+        tbody.innerHTML = '';
+        ventas.forEach(v => {
+            totalDia += v.total || 0;
+            const productos = v.productos ? v.productos.map(p => `${p.nombre} (${p.cantidad})`).join(', ') : '—';
+            const badge = v.estado === 'pagado' ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Pagado</span>' :
+                         v.estado === 'parcial' ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>' :
+                         '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>';
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-surface-container-low transition-colors';
+            tr.innerHTML = `
+                <td class="px-4 py-2.5 text-sm font-mono">${formatearFechaHora(v.created_at)}</td>
+                <td class="px-4 py-2.5 text-sm">${v.cliente || '—'}</td>
+                <td class="px-4 py-2.5 text-sm text-secondary">${productos}</td>
+                <td class="px-4 py-2.5 text-right font-mono font-bold">${formatearMoneda(v.total)}</td>
+                <td class="px-4 py-2.5 text-center">${badge}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        document.getElementById('modal-detalle-total').textContent = `Total: ${formatearMoneda(totalDia)}`;
+    }
+
+    document.getElementById('modal-detalle-dia').classList.remove('hidden');
+    document.getElementById('modal-detalle-dia').classList.add('flex');
+}
+
+function cerrarModalDetalleDia() {
+    document.getElementById('modal-detalle-dia').classList.add('hidden');
+    document.getElementById('modal-detalle-dia').classList.remove('flex');
+}
+
+// ======================== EXPORTAR CSV ========================
+function exportarCSV() {
+    if (datosReporte.length === 0) {
+        notify.warning('No hay datos para exportar.');
+        return;
+    }
+
+    let csv = 'Fecha,Cantidad Ventas,Total Facturado,Productos Vendidos\n';
+    datosReporte.forEach(dia => {
+        csv += `${formatearFecha(dia.fecha)},${dia.cantidad},${dia.total},${dia.productos}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `reporte_ventas_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
+
+// ======================== TOGGLE SIDEBAR ========================
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar-dinamico');
+    if (sidebar) sidebar.classList.toggle('open');
+    const overlay = document.getElementById('overlay');
+    if (overlay) overlay.classList.toggle('hidden');
+}
+
+// ======================== INICIALIZACIÓN ========================
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = 'index.html'; return; }
+    mostrarUsuario();
+
+    configurarFiltros();
+    await Promise.all([cargarVendedores(), cargarClientes()]);
+    configurarBuscadorClientes();
+
+    document.getElementById('btnCerrarSesion').addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.clear();
+        window.location.href = 'index.html';
+    });
+
+    // Cargar reporte inicial (hoy)
+    await cargarReporte();
+});
+</script>
+
+</body>
+</html>

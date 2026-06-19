@@ -53,3 +53,12 @@ class AbonoDistribuidoCreate(BaseModel):
     comprador_cui: str = Field(..., description="CUI del cliente con deuda")
     monto_abonado: float = Field(..., gt=0, description="Monto total a distribuir")
     metodo_pago_id: int = Field(default=1, description="ID del método de pago")
+    # ======================== ESQUEMAS PARA VENTAS MÚLTIPLES ========================
+class VentaProductoItem(BaseModel):
+    producto_id: str
+    cantidad: int = Field(..., gt=0, description="Cantidad del producto")
+
+class VentaMultipleCreate(BaseModel):
+    comprador_cui: str
+    tipo_pago: str = Field(..., description="'contado' o 'credito'")
+    productos: List[VentaProductoItem] = Field(..., min_items=1, description="Lista de productos a vender")

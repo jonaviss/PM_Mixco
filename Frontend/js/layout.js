@@ -33,7 +33,9 @@ async function cargarLayout() {
         { href: "proveedores.html", icono: "local_shipping", texto: "Proveedores" },
         { href: "compras.html", icono: "receipt", texto: "Registrar Compra" },
         { href: "pagos_proveedores.html", icono: "payments", texto: "Pagos a Proveedores" },
-        { href: "reporte_lotes.html", icono: "inventory", texto: "Lotes Pendientes" }
+        { href: "reporte_lotes.html", icono: "inventory", texto: "Lotes Pendientes" },
+        { href: "libreria_reportes_ventas.html", icono: "assessment", texto: "Reportes de Ventas" }
+      
     ];
     const paginaActual = window.location.pathname.split('/').pop();
     const nav = document.getElementById('nav-links');
