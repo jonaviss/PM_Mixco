@@ -111,9 +111,10 @@ async def despachar_correo_libreria(datos: dict):
     </div>
     """
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    correo_destino = datos.get("hermano", {}).get("correo") or "jonathanvisoni@gmail.com"
     payload_correo = {
         "from": "Libreria PM Mixco <onboarding@resend.dev>",
-        "to": ["jonathanvisoni@gmail.com"],
+        "to": [correo_destino],
         "subject": f"{titulo_recibo} — Q{monto:.2f} — PM Mixco",
         "html": html_content,
         "attachments": adjunto
@@ -275,10 +276,10 @@ async def registrar_venta(
             .execute()
 
         res_comprador = supabase.table("usuarios") \
-            .select("cui, nombre_completo") \
+            .select("cui, nombre_completo, correo") \
             .eq("cui", payload.comprador_cui) \
             .execute()
-        comprador = res_comprador.data[0] if res_comprador.data else {"cui": payload.comprador_cui, "nombre_completo": "—"}
+        comprador = res_comprador.data[0] if res_comprador.data else {"cui": payload.comprador_cui, "nombre_completo": "—", "correo": ""}
 
         res_deuda = supabase.table("libreria_ventas") \
             .select("total_venta, total_pagado") \
@@ -427,10 +428,10 @@ async def registrar_venta_multiple(
             }).execute()
 
         res_comprador = supabase.table("usuarios") \
-            .select("cui, nombre_completo") \
+            .select("cui, nombre_completo, correo") \
             .eq("cui", payload.comprador_cui) \
             .execute()
-        comprador = res_comprador.data[0] if res_comprador.data else {"cui": payload.comprador_cui, "nombre_completo": "—"}
+        comprador = res_comprador.data[0] if res_comprador.data else {"cui": payload.comprador_cui, "nombre_completo": "—", "correo": ""}
 
         res_deuda = supabase.table("libreria_ventas") \
             .select("total_venta, total_pagado") \
@@ -475,12 +476,14 @@ async def registrar_venta_multiple(
 @router.post("/pagos")
 async def registrar_abono(payload: PagoLibreriaCreate, background_tasks: BackgroundTasks, usuario_actual=Depends(obtener_usuario_actual)):
     try:
-        res_venta = supabase.table("libreria_ventas").select("id, total_venta, total_pagado, estado_pago").eq("id", payload.venta_id).execute()
+        res_venta = supabase.table("libreria_ventas").select("id, comprador_cui, total_venta, total_pagado, estado_pago").eq("id", payload.venta_id).execute()
         if not res_venta.data:
             raise HTTPException(404, "Registro de venta no localizado.")
         venta = res_venta.data[0]
         if venta["estado_pago"] == "pagado":
             raise HTTPException(400, "La deuda asociada a esta venta ya fue liquidada.")
+        res_comprador = supabase.table("usuarios").select("cui, nombre_completo, correo").eq("cui", venta["comprador_cui"]).execute()
+        comprador = res_comprador.data[0] if res_comprador.data else {"cui": venta["comprador_cui"], "nombre_completo": "—", "correo": ""}
         res_pago = supabase.table("libreria_pagos").insert({
             "venta_id": payload.venta_id,
             "monto_abonado": payload.monto_abonado,
@@ -501,7 +504,8 @@ async def registrar_abono(payload: PagoLibreriaCreate, background_tasks: Backgro
             "tipo_notificacion": "abono_parcial",
             "detalle_producto": f"Abono a cuenta ({nombre_prod})",
             "cantidad": 1,
-            "monto": payload.monto_abonado
+            "monto": payload.monto_abonado,
+            "hermano": comprador
         })
         return {"mensaje": "Abono aplicado correctamente", "estado_actual": estado_nuevo}
     except HTTPException:
@@ -542,8 +546,8 @@ async def distribuir_abono(payload: AbonoDistribuidoCreate, background_tasks: Ba
             ventas_pagadas.append({"venta_id": venta["id"], "abono_aplicado": abono_aplicar, "estado": nuevo_estado})
             monto_restante -= abono_aplicar
         if ventas_pagadas:
-            res_comprador = supabase.table("usuarios").select("cui, nombre_completo").eq("cui", payload.comprador_cui).execute()
-            comprador = res_comprador.data[0] if res_comprador.data else {"cui": payload.comprador_cui, "nombre_completo": "—"}
+            res_comprador = supabase.table("usuarios").select("cui, nombre_completo, correo").eq("cui", payload.comprador_cui).execute()
+            comprador = res_comprador.data[0] if res_comprador.data else {"cui": payload.comprador_cui, "nombre_completo": "—", "correo": ""}
             res_deuda = supabase.table("libreria_ventas").select("total_venta, total_pagado").eq("comprador_cui", payload.comprador_cui).in_("estado_pago", ["pendiente", "parcial"]).execute()
             deuda_data = res_deuda.data or []
             deuda_total = sum(float(d["total_venta"]) - float(d["total_pagado"]) for d in deuda_data if float(d["total_venta"]) - float(d["total_pagado"]) > 0)
@@ -633,19 +637,20 @@ async def obtener_datos_venta_completos(venta_id: str):
         })
 
     # Cliente y operador
-    res_cliente = supabase.table("usuarios").select("nombre_completo").eq("cui", venta["comprador_cui"]).execute()
+    res_cliente = supabase.table("usuarios").select("nombre_completo, correo").eq("cui", venta["comprador_cui"]).execute()
     cliente = res_cliente.data[0]["nombre_completo"] if res_cliente.data else "—"
+    correo_cliente = res_cliente.data[0].get("correo", "") if res_cliente.data else ""
 
     res_op = supabase.table("usuarios").select("nombre_completo").eq("cui", venta["digitado_por"]).execute()
     operador = res_op.data[0]["nombre_completo"] if res_op.data else venta.get("digitado_por", "—")
 
-    return venta, productos, pagos, cliente, operador
+    return venta, productos, pagos, cliente, correo_cliente, operador
 
 
 @router.get("/ventas/{venta_id}/detalle")
 async def obtener_detalle_venta(venta_id: str, usuario_actual=Depends(obtener_usuario_actual)):
     try:
-        venta, productos, pagos, cliente, operador = await obtener_datos_venta_completos(venta_id)
+        venta, productos, pagos, cliente, _, operador = await obtener_datos_venta_completos(venta_id)
 
         res_deuda = supabase.table("libreria_ventas").select("total_venta, total_pagado").eq("comprador_cui", venta["comprador_cui"]).in_("estado_pago", ["pendiente", "parcial"]).execute()
         deuda_data = res_deuda.data or []
@@ -816,7 +821,7 @@ async def listar_vendedores(usuario_actual: Dict[str, Any] = Depends(obtener_usu
 async def descargar_pdf_venta(venta_id: str, usuario_actual=Depends(obtener_usuario_actual)):
     """Genera y descarga el PDF de un recibo de venta."""
     try:
-        venta, productos, pagos, cliente, operador = await obtener_datos_venta_completos(venta_id)
+        venta, productos, pagos, cliente, _, operador = await obtener_datos_venta_completos(venta_id)
 
         datos_pdf = {
             "tipo_notificacion": "venta_contado" if venta["estado_pago"] == "pagado" and venta["total_pagado"] >= venta["total_venta"] else "venta_credito",
@@ -858,7 +863,7 @@ async def descargar_pdf_venta(venta_id: str, usuario_actual=Depends(obtener_usua
 async def reenviar_correo_venta(venta_id: str, background_tasks: BackgroundTasks, usuario_actual=Depends(obtener_usuario_actual)):
     """Reenvía el correo con el recibo de una venta."""
     try:
-        venta, productos, pagos, cliente, operador = await obtener_datos_venta_completos(venta_id)
+        venta, productos, pagos, cliente, correo_cliente, operador = await obtener_datos_venta_completos(venta_id)
 
         datos_pdf = {
             "tipo_notificacion": "venta_contado" if venta["estado_pago"] == "pagado" and venta["total_pagado"] >= venta["total_venta"] else "venta_credito",
@@ -878,7 +883,8 @@ async def reenviar_correo_venta(venta_id: str, background_tasks: BackgroundTasks
             "pagos": pagos,
             "hermano": {
                 "cui": venta["comprador_cui"],
-                "nombre_completo": cliente
+                "nombre_completo": cliente,
+                "correo": correo_cliente
             },
             "deuda_hermano": {"total": 0, "cantidad": 0}
         }
