@@ -149,19 +149,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <!-- PAGINACIÓN DEL CATÁLOGO -->
-                    <div class="px-4 py-2 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center">
-                        <span id="info-paginacion-pos" class="text-xs font-mono text-secondary">— productos</span>
-                        <div class="flex gap-2 items-center">
-                            <button id="btn-pos-anterior" onclick="cambiarPaginaPos(-1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary" disabled>
-                                <span class="material-symbols-outlined text-[18px]">chevron_left</span>
-                            </button>
-                            <span id="pagina-pos-label" class="text-xs font-mono text-secondary px-2">Pág. 1</span>
-                            <button id="btn-pos-siguiente" onclick="cambiarPaginaPos(1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary" disabled>
-                                <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-                            </button>
-                        </div>
-                    </div>
+                    <div id="paginacion-pos" class="px-4 py-2 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center"></div>
                 </div>
             </section>
 
@@ -244,7 +232,8 @@
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/notify.js"></script>
-<script src="js/layout.js"></script>
+<script src="js/layout.js?v=3"></script>
+<script src="js/table.js"></script>
 <script>
 /**
  * @file libreria_ventas.js (inline)
@@ -256,10 +245,7 @@ let cacheClientes = [];
 let carrito = [];
 let tipoPagoActual = 'contado';
 
-// Variables de paginación para el catálogo
 let productosFiltrados = [];
-let paginaPosActual = 1;
-const POR_PAGINA_POS = 10;
 
 function mostrarUsuario() {
     const nombre = localStorage.getItem('usuario') || 'Usuario';
@@ -274,9 +260,7 @@ async function cargarProductos() {
         const res = await API.get('/libreria/productos', true);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         cacheProductos = await res.json();
-        // Inicializar productos filtrados con todos
         productosFiltrados = [...cacheProductos];
-        paginaPosActual = 1;
         renderizarProductosPos(productosFiltrados);
     } catch (err) {
         console.error('[POS] Error al cargar productos:', err);
@@ -285,7 +269,6 @@ async function cargarProductos() {
             <tr><td colspan="5" class="text-center py-8 text-error font-bold text-sm">
                 Error al cargar el catálogo.
             </td></tr>`;
-        document.getElementById('info-paginacion-pos').textContent = '0 productos';
     }
 }
 
@@ -299,56 +282,51 @@ async function cargarClientes() {
     }
 }
 
+function stockEnCarrito(productoId) {
+    return carrito.reduce((acc, i) => i.id === productoId ? acc + i.cantidad : acc, 0);
+}
+
 function renderizarProductosPos(productos) {
-    // Calcular página actual y slice
-    const total = productos.length;
-    const totalPaginas = Math.ceil(total / POR_PAGINA_POS);
-    if (paginaPosActual > totalPaginas) paginaPosActual = 1;
-    const inicio = (paginaPosActual - 1) * POR_PAGINA_POS;
-    const pagina = productos.slice(inicio, inicio + POR_PAGINA_POS);
-
-    document.getElementById('info-paginacion-pos').textContent = `${total} productos`;
-    document.getElementById('pagina-pos-label').textContent = `Pág. ${paginaPosActual} de ${totalPaginas || 1}`;
-    document.getElementById('btn-pos-anterior').disabled = paginaPosActual <= 1;
-    document.getElementById('btn-pos-siguiente').disabled = paginaPosActual >= totalPaginas;
-
-    const tbody = document.getElementById('tabla-productos-pos');
-    if (pagina.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-secondary text-sm">
-            <span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">search_off</span>
-            No se encontraron productos.
-        <tr></tr>`;
-        return;
-    }
-    tbody.innerHTML = '';
-    pagina.forEach(p => {
-        const sinStock = p.stock <= 0;
-        const tr = document.createElement('tr');
-        tr.className = `table-row transition-colors ${sinStock ? 'opacity-50' : ''}`;
-        tr.innerHTML = `
-            <td class="px-4 py-3 font-bold text-on-surface">${p.nombre}</td>
-            <td class="px-4 py-3">
-                <span class="px-2 py-0.5 bg-surface-container text-secondary rounded text-xs font-mono">${p.tipo_producto}</span>
-            </td>
-            <td class="px-4 py-3 text-center font-mono font-bold ${p.stock < 5 ? 'text-error' : 'text-on-surface'}">${p.stock}</td>
-            <td class="px-4 py-3 text-right font-mono font-bold">${formatearMoneda(p.precio)}</td>
-            <td class="px-4 py-3 text-center">
-                <button onclick="agregarAlCarrito('${p.id}')"
-                    ${sinStock ? 'disabled' : ''}
-                    class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white hover:border-primary-container transition disabled:opacity-40 disabled:cursor-not-allowed">
-                    <span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(tr);
+    const data = productos.map(p => ({
+        id: p.id,
+        nombre: p.nombre,
+        tipo: p.tipo_producto,
+        stock: p.stock,
+        precio: p.precio,
+        _raw: p
+    }));
+    Table.init('tabla-productos-pos', {
+        columns: [
+            { key: 'nombre', label: 'Producto', sortable: true },
+            { key: 'tipo', label: 'Tipo', sortable: true },
+            { key: 'stock', label: 'Stock', sortable: true, class: 'text-center' },
+            { key: 'precio', label: 'Precio', sortable: true, class: 'text-right' },
+            { key: 'acciones', label: 'Agregar', class: 'text-center' },
+        ],
+        data,
+        pageSize: 10,
+        sortBy: { key: 'nombre', dir: 'asc' },
+        paginationEl: '#paginacion-pos',
+        onRow: (item) => {
+            const enCarrito = stockEnCarrito(item.id);
+            const disponible = item.stock - enCarrito;
+            const sinStock = disponible <= 0;
+            return `
+                <td class="px-4 py-3 font-bold text-on-surface">${item.nombre}</td>
+                <td class="px-4 py-3"><span class="px-2 py-0.5 bg-surface-container text-secondary rounded text-xs font-mono">${item.tipo}</span></td>
+                <td class="px-4 py-3 text-center font-mono font-bold ${disponible < 5 ? 'text-error' : 'text-on-surface'}">${disponible}</td>
+                <td class="px-4 py-3 text-right font-mono font-bold">${formatearMoneda(item.precio)}</td>
+                <td class="px-4 py-3 text-center">
+                    <button onclick="agregarAlCarrito('${item.id}')" ${sinStock ? 'disabled' : ''}
+                        class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white hover:border-primary-container transition disabled:opacity-40 disabled:cursor-not-allowed">
+                        <span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
+                    </button>
+                </td>
+            `;
+        }
     });
 }
 
-// Cambiar página en el catálogo
-function cambiarPaginaPos(delta) {
-    paginaPosActual += delta;
-    renderizarProductosPos(productosFiltrados);
-}
 
 function configurarBuscadorClientes() {
     const input = document.getElementById('pos-cliente-search');
@@ -408,7 +386,6 @@ function configurarBuscadorProductos() {
             } else {
                 productosFiltrados = [...cacheProductos];
             }
-            paginaPosActual = 1;
             renderizarProductosPos(productosFiltrados);
         }, 200);
     });
@@ -417,17 +394,20 @@ function configurarBuscadorProductos() {
 function agregarAlCarrito(productoId) {
     const producto = cacheProductos.find(p => p.id === productoId);
     if (!producto) return;
+    const enCarrito = stockEnCarrito(productoId);
+    const disponible = producto.stock - enCarrito;
+    if (disponible <= 0) {
+        notify.warning('Stock insuficiente para agregar más unidades.');
+        return;
+    }
     const existente = carrito.find(item => item.id === productoId);
     if (existente) {
-        if (existente.cantidad >= producto.stock) {
-            notify.warning('Stock insuficiente para agregar más unidades.');
-            return;
-        }
         existente.cantidad++;
     } else {
         carrito.push({ id: productoId, nombre: producto.nombre, precio: producto.precio, cantidad: 1, stock: producto.stock });
     }
     renderizarCarrito();
+    renderizarProductosPos(productosFiltrados);
     ocultarMsgVenta();
 }
 
@@ -477,19 +457,25 @@ function renderizarCarrito() {
 }
 
 function cambiarCantidad(idx, delta) {
-    carrito[idx].cantidad += delta;
-    if (carrito[idx].cantidad <= 0) {
+    const item = carrito[idx];
+    const enCarrito = stockEnCarrito(item.id);
+    const disponible = item.stock - (enCarrito - item.cantidad);
+    if (delta > 0 && item.cantidad >= disponible) {
+        notify.warning('Stock insuficiente.');
+        return;
+    }
+    item.cantidad += delta;
+    if (item.cantidad <= 0) {
         carrito.splice(idx, 1);
-    } else if (carrito[idx].cantidad > carrito[idx].stock) {
-        carrito[idx].cantidad = carrito[idx].stock;
-        notify.warning('Stock máximo alcanzado.');
     }
     renderizarCarrito();
+    renderizarProductosPos(productosFiltrados);
 }
 
 function eliminarDelCarrito(idx) {
     carrito.splice(idx, 1);
     renderizarCarrito();
+    renderizarProductosPos(productosFiltrados);
 }
 
 function seleccionarTipoPago(tipo) {

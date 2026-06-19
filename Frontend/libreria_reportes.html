@@ -69,7 +69,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/notify.js"></script>
-<script src="js/layout.js"></script>
+<script src="js/layout.js?v=3"></script>
 <script>
 function mostrarUsuario() { const nombre = localStorage.getItem('usuario') || 'Usuario'; const rango = localStorage.getItem('rango') || ''; document.getElementById('nombre-usuario').textContent = nombre; document.getElementById('rango-usuario').textContent = rango; document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase(); }
 function toggleSidebar() { const sidebar = document.getElementById('sidebar-dinamico'); if (sidebar) sidebar.classList.toggle('open'); const overlay = document.getElementById('overlay'); if (overlay) overlay.classList.toggle('hidden'); }

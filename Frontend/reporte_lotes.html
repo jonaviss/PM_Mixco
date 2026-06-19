@@ -39,8 +39,6 @@
 
 <div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
-<!-- El sidebar se inyecta dinámicamente mediante layout.js -->
-
 <div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
 
     <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
@@ -55,20 +53,11 @@
     <main class="flex-1 p-6 space-y-6">
         <div class="bg-white border border-outline-variant rounded-xl overflow-hidden">
             <table class="w-full text-left">
-                <thead class="bg-surface-container-low/50">
-                    <tr>
-                        <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Producto</th>
-                        <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Cantidad Inicial</th>
-                        <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Cantidad Restante</th>
-                        <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Costo Unitario</th>
-                        <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha Compra</th>
-                        <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Proveedor</th>
-                    </tr>
-                </thead>
                 <tbody id="tabla-lotes" class="divide-y divide-outline-variant text-sm">
-                    <tr><td colspan="6" class="text-center py-10 text-secondary">Cargando lotes pendientes...<\/td><\/tr>
+                    <tr><td colspan="6" class="text-center py-10 text-secondary">Cargando lotes pendientes...</td></tr>
                 </tbody>
             </table>
+            <div id="paginacion-lotes" class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center"></div>
         </div>
     </main>
 
@@ -81,7 +70,8 @@
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/notify.js"></script>
-<script src="js/layout.js"></script>
+<script src="js/layout.js?v=3"></script>
+<script src="js/table.js"></script>
 <script>
     function toggleSidebar() {
         const sidebar = document.getElementById('sidebar-dinamico');
@@ -91,57 +81,57 @@
     }
 
     async function cargarLotes() {
-        const tbody = document.getElementById('tabla-lotes');
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-secondary">Cargando...<\/td><\/tr>';
         try {
             const res = await API.get('/libreria/compras/lotes/pendientes', true);
             if (res.ok) {
                 const lotes = await res.json();
-                if (lotes.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-secondary">No hay lotes pendientes.<\/td><\/tr>';
-                    return;
-                }
-                tbody.innerHTML = '';
-                lotes.forEach(l => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'table-row transition-colors';
-                    tr.innerHTML = `
-                        <td class="px-5 py-3 font-medium">${l.inventario_libreria?.nombre || '-'}<\/td>
-                        <td class="px-5 py-3 text-center font-mono">${l.cantidad_inicial}<\/td>
-                        <td class="px-5 py-3 text-center font-mono font-bold">${l.cantidad_restante}<\/td>
-                        <td class="px-5 py-3 text-right font-mono">Q${parseFloat(l.costo_unitario).toLocaleString('es-GT', {minimumFractionDigits: 2})}<\/td>
-                        <td class="px-5 py-3 text-center">${new Date(l.fecha_compra).toLocaleDateString('es-GT')}<\/td>
-                        <td class="px-5 py-3">${l.compras?.proveedores?.nombre || '-'}<\/td>
-                    `;
-                    tbody.appendChild(tr);
+                Table.init('tabla-lotes', {
+                    columns: [
+                        { key: 'producto', label: 'Producto', sortable: true },
+                        { key: 'cantidad_inicial', label: 'Cantidad Inicial', sortable: true, class: 'text-center' },
+                        { key: 'cantidad_restante', label: 'Cantidad Restante', sortable: true, class: 'text-center' },
+                        { key: 'costo_unitario', label: 'Costo Unitario', sortable: true, class: 'text-right' },
+                        { key: 'fecha_compra', label: 'Fecha Compra', sortable: true, class: 'text-center' },
+                        { key: 'proveedor', label: 'Proveedor', sortable: true },
+                    ],
+                    data: lotes.map(l => ({
+                        producto: l.inventario_libreria?.nombre || '-',
+                        cantidad_inicial: l.cantidad_inicial,
+                        cantidad_restante: l.cantidad_restante,
+                        costo_unitario: l.costo_unitario,
+                        fecha_compra: l.fecha_compra,
+                        proveedor: l.compras?.proveedores?.nombre || '-',
+                        _raw: l
+                    })),
+                    pageSize: 10,
+                    sortBy: { key: 'producto', dir: 'asc' },
+                    paginationEl: '#paginacion-lotes',
+                    onRow: (item) => `
+                        <td class="px-5 py-3 font-medium">${item.producto}</td>
+                        <td class="px-5 py-3 text-center font-mono">${item.cantidad_inicial}</td>
+                        <td class="px-5 py-3 text-center font-mono font-bold">${item.cantidad_restante}</td>
+                        <td class="px-5 py-3 text-right font-mono">Q${parseFloat(item.costo_unitario).toLocaleString('es-GT', {minimumFractionDigits: 2})}</td>
+                        <td class="px-5 py-3 text-center">${new Date(item.fecha_compra).toLocaleDateString('es-GT')}</td>
+                        <td class="px-5 py-3">${item.proveedor}</td>
+                    `
                 });
             } else {
                 notify.error('Error al cargar los lotes');
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-error">Error al cargar los lotes.<\/td><\/tr>';
             }
         } catch (err) {
             console.error('[Lotes] Error:', err);
             notify.error('Error de conexión');
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-error">Error de conexión.<\/td><\/tr>';
         }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        if (!localStorage.getItem('token')) {
-            window.location.href = 'index.html';
-            return;
-        }
-        mostrarUsuario();
+        if (!localStorage.getItem('token')) { window.location.href = 'index.html'; return; }
+        const nombre = localStorage.getItem('usuario') || 'Usuario';
+        document.getElementById('nombre-usuario').textContent = nombre;
+        document.getElementById('rango-usuario').textContent = localStorage.getItem('rango') || '';
+        document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
         cargarLotes();
     });
-
-    function mostrarUsuario() {
-        const nombre = localStorage.getItem('usuario') || 'Usuario';
-        const rango = localStorage.getItem('rango') || '';
-        document.getElementById('nombre-usuario').textContent = nombre;
-        document.getElementById('rango-usuario').textContent = rango;
-        document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
-    }
 </script>
 
 </body>

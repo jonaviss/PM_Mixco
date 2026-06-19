@@ -81,10 +81,10 @@
                 <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/30"><h3 class="text-sm font-bold text-on-surface">Ventas Pendientes de Pago</h3><span class="px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full uppercase">Créditos activos</span></div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
-                        <thead class="bg-surface-container-low/50"><tr><th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Venta ID</th><th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha</th><th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total</th><th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Pagado</th><th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Pendiente</th><th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th><th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Detalle</th></tr></thead>
                         <tbody id="tabla-deudas" class="divide-y divide-outline-variant text-sm"></tbody>
                         <tfoot><tr class="bg-surface-container-low/30"><td colspan="4" class="px-5 py-3 text-sm font-bold text-right text-on-surface">Total Pendiente:</td><td class="px-5 py-3 text-sm font-bold text-right font-mono text-primary" id="total-pendiente">Q0.00</td><td></td><td></td></tr></tfoot>
                     </table>
+                    <div id="paginacion-deudas" class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center"></div>
                 </div>
             </div>
             <div class="space-y-4">
@@ -116,7 +116,8 @@
 <script src="js/utils.js"></script>
 <script src="js/libreria_shared.js"></script>
 <script src="js/notify.js"></script>
-<script src="js/layout.js"></script>
+<script src="js/layout.js?v=3"></script>
+<script src="js/table.js"></script>
 <script>
 let cacheClientes = [];
 let ventasPendientes = [];
@@ -160,6 +161,13 @@ async function seleccionarCliente(cliente) {
     document.getElementById('tarjeta-cliente').classList.remove('opacity-40');
     await cargarDeudas(cliente.cui);
 }
+function actualizarTotalesDeuda() {
+    const filtered = Table.getFiltered('tabla-deudas');
+    const totalPendiente = filtered.reduce((acc, v) => acc + v.pendiente, 0);
+    document.getElementById('total-pendiente').textContent = formatearMoneda(totalPendiente);
+    document.getElementById('monto-pendiente-display').textContent = formatearMoneda(totalPendiente);
+}
+
 async function cargarDeudas(cui) {
     try {
         const res = await API.get(`/libreria/cobros/pendientes?cui=${cui}`, true);
@@ -168,29 +176,53 @@ async function cargarDeudas(cui) {
         ventasPendientes = data.ventas || [];
         const totalPendiente = ventasPendientes.reduce((acc, v) => acc + (v.total_venta - v.total_pagado), 0);
         document.getElementById('cliente-deuda').textContent = `Deuda total: ${formatearMoneda(totalPendiente)}`;
-        document.getElementById('total-pendiente').textContent = formatearMoneda(totalPendiente);
         document.getElementById('monto-pendiente-display').textContent = formatearMoneda(totalPendiente);
+        document.getElementById('btn-registrar-cobro').disabled = ventasPendientes.length === 0;
         document.getElementById('estado-vacio').style.display = 'none';
         document.getElementById('seccion-deuda').style.display = 'grid';
-        renderizarDeudas();
+
+        const indebdata = ventasPendientes.map(v => ({
+            id: v.id,
+            venta_id: v.id,
+            fecha: v.created_at,
+            total: v.total_venta,
+            pagado: v.total_pagado,
+            pendiente: v.total_venta - v.total_pagado,
+            estado_pago: v.estado_pago,
+            _raw: v
+        }));
+
+        Table.init('tabla-deudas', {
+            columns: [
+                { key: 'id', label: 'Venta ID', sortable: true },
+                { key: 'fecha', label: 'Fecha', sortable: true },
+                { key: 'total', label: 'Total', sortable: true, class: 'text-right' },
+                { key: 'pagado', label: 'Pagado', sortable: true, class: 'text-right' },
+                { key: 'pendiente', label: 'Pendiente', sortable: true, class: 'text-right' },
+                { key: 'estado_pago', label: 'Estado', sortable: true, class: 'text-center' },
+                { key: 'detalle', label: 'Detalle', class: 'text-center' },
+            ],
+            data: indebdata,
+            pageSize: 10,
+            sortBy: { key: 'fecha', dir: 'asc' },
+            paginationEl: '#paginacion-deudas',
+            onRow: (item) => {
+                const badgeEstado = item.estado_pago === 'parcial'
+                    ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>'
+                    : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>';
+                return `
+                    <td class="px-5 py-3 font-mono text-xs text-secondary">${item.id.substring(0,8)}...</td>
+                    <td class="px-5 py-3 text-sm">${formatearFecha(item.fecha)}</td>
+                    <td class="px-5 py-3 text-sm font-mono text-right font-bold">${formatearMoneda(item.total)}</td>
+                    <td class="px-5 py-3 text-sm font-mono text-right">${formatearMoneda(item.pagado)}</td>
+                    <td class="px-5 py-3 text-sm font-mono text-right font-bold text-error">${formatearMoneda(item.pendiente)}</td>
+                    <td class="px-5 py-3 text-center">${badgeEstado}</td>
+                    <td class="px-5 py-3 text-center"><button onclick="abrirDetalleVenta('${item.venta_id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Ver detalle"><span class="material-symbols-outlined text-[16px]">receipt_long</span></button></td>
+                `;
+            },
+            onRender: actualizarTotalesDeuda
+        });
     } catch (err) { console.error('[Cobros] Error al cargar deudas:', err); notify.error('Error al cargar deudas'); }
-}
-function renderizarDeudas() {
-    const tbody = document.getElementById('tabla-deudas');
-    if (ventasPendientes.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-secondary text-sm"><span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">check_circle</span>Este hermano no tiene deudas pendientes. </td></tr>`;
-        document.getElementById('btn-registrar-cobro').disabled = true;
-        return;
-    }
-    tbody.innerHTML = '';
-    ventasPendientes.forEach(v => {
-        const pendiente = v.total_venta - v.total_pagado;
-        const badgeEstado = v.estado_pago === 'parcial' ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>' : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>';
-        const tr = document.createElement('tr');
-        tr.className = 'table-row transition-colors';
-        tr.innerHTML = `<td class="px-5 py-3 font-mono text-xs text-secondary">${v.id.substring(0,8)}...</td><td class="px-5 py-3 text-sm">${formatearFecha(v.created_at)}</td><td class="px-5 py-3 text-sm font-mono text-right font-bold">${formatearMoneda(v.total_venta)}</td><td class="px-5 py-3 text-sm font-mono text-right">${formatearMoneda(v.total_pagado)}</td><td class="px-5 py-3 text-sm font-mono text-right font-bold text-error">${formatearMoneda(pendiente)}</td><td class="px-5 py-3 text-center">${badgeEstado}</td><td class="px-5 py-3 text-center"><button onclick="abrirDetalleVenta('${v.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Ver detalle"><span class="material-symbols-outlined text-[16px]">receipt_long</span></button></td>`;
-        tbody.appendChild(tr);
-    });
 }
 function seleccionarTipoAbono(tipo) {
     tipoAbono = tipo;

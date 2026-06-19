@@ -144,21 +144,12 @@
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
-                    <thead class="bg-surface-container-low/50">
-                        <tr>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Hora</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Cliente</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Detalles</th>
-                        </tr>
-                    </thead>
                     <tbody id="tabla-reporte" class="divide-y divide-outline-variant text-sm">
                         <tr><td colspan="6" class="text-center py-10 text-secondary">Seleccione un período y genere el reporte.</td></tr>
                     </tbody>
                 </table>
             </div>
+            <div id="paginacion-reporte" class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center"></div>
         </div>
 
     </main>
@@ -201,12 +192,14 @@
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/notify.js"></script>
-<script src="js/layout.js"></script>
+<script src="js/layout.js?v=3"></script>
+<script src="js/table.js"></script>
 <script>
 // ======================== VARIABLES GLOBALES ========================
 let ventasLista = [];
 let ventaActual = null;
 let progressInterval = null;
+let ultimoResumen = null;
 
 function mostrarUsuario() {
     const nombre = localStorage.getItem('usuario') || 'Usuario';
@@ -373,7 +366,8 @@ async function cargarReporte() {
         });
 
         renderizarTabla();
-        actualizarResumen(data.resumen || {});
+        ultimoResumen = data.resumen || {};
+        actualizarResumen(ultimoResumen);
         document.getElementById('rango-fechas-label').textContent =
             `${formatearFecha(rango.inicio)} - ${formatearFecha(rango.fin)}`;
 
@@ -389,39 +383,54 @@ async function cargarReporte() {
 
 // ======================== RENDERIZAR TABLA (SIEMPRE INDIVIDUAL) ========================
 function renderizarTabla() {
-    const tbody = document.getElementById('tabla-reporte');
-
     if (ventasLista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-secondary">No hay ventas en este período.</td></tr>';
+        document.getElementById('tabla-reporte').innerHTML = '<tr><td colspan="6" class="text-center py-10 text-secondary">No hay ventas en este período.</td></tr>';
+        document.getElementById('paginacion-reporte').innerHTML = '';
         return;
     }
 
-    tbody.innerHTML = '';
-    ventasLista.forEach(v => {
-        const badge = v.estado === 'pagado' ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Pagado</span>' :
-                     v.estado === 'parcial' ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>' :
-                     '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>';
-        const tr = document.createElement('tr');
-        tr.className = 'table-row transition-colors cursor-pointer hover:bg-surface-container-low';
-        tr.innerHTML = `
-            <td class="px-5 py-3">${formatearFecha(v.fecha)}</td>
-            <td class="px-5 py-3">${formatearFechaHora(v.created_at)}</td>
-            <td class="px-5 py-3">${v.cliente || '—'}</td>
-            <td class="px-5 py-3 text-right font-mono font-bold">${formatearMoneda(v.total)}</td>
-            <td class="px-5 py-3 text-center">${badge}</td>
-            <td class="px-5 py-3 text-center">
-                <button onclick="verRecibo('${v.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Ver recibo">
-                    <span class="material-symbols-outlined text-[16px]">receipt_long</span>
-                </button>
-            </td>
-        `;
-        // Al hacer clic en la fila (excepto en el botón) abrir el recibo
-        tr.addEventListener('click', function(e) {
-            if (!e.target.closest('button')) {
-                verRecibo(v.id);
-            }
-        });
-        tbody.appendChild(tr);
+    const data = ventasLista.map(v => ({
+        id: v.id,
+        fecha: v.fecha,
+        created_at: v.created_at,
+        cliente: v.cliente || '—',
+        total: v.total,
+        estado: v.estado
+    }));
+
+    Table.init('tabla-reporte', {
+        columns: [
+            { key: 'fecha', label: 'Fecha', sortable: true },
+            { key: 'created_at', label: 'Hora', sortable: true },
+            { key: 'cliente', label: 'Cliente', sortable: true },
+            { key: 'total', label: 'Total', sortable: true, class: 'text-right' },
+            { key: 'estado', label: 'Estado', sortable: true, class: 'text-center' },
+            { key: 'detalle', label: 'Detalles', class: 'text-center' },
+        ],
+        data,
+        pageSize: 10,
+        sortBy: { key: 'created_at', dir: 'desc' },
+        paginationEl: '#paginacion-reporte',
+        onRow: (item) => {
+            const badge = item.estado === 'pagado'
+                ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Pagado</span>'
+                : item.estado === 'parcial'
+                ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>'
+                : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>';
+            return `
+                <td class="px-5 py-3">${formatearFecha(item.fecha)}</td>
+                <td class="px-5 py-3">${formatearFechaHora(item.created_at)}</td>
+                <td class="px-5 py-3">${item.cliente}</td>
+                <td class="px-5 py-3 text-right font-mono font-bold">${formatearMoneda(item.total)}</td>
+                <td class="px-5 py-3 text-center">${badge}</td>
+                <td class="px-5 py-3 text-center">
+                    <button onclick="verRecibo('${item.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Ver recibo">
+                        <span class="material-symbols-outlined text-[16px]">receipt_long</span>
+                    </button>
+                </td>
+            `;
+        },
+        onRender: actualizarResumenDesdeTabla
     });
 }
 
@@ -429,6 +438,14 @@ function actualizarResumen(resumen) {
     document.getElementById('total-ventas').textContent = formatearMoneda(resumen.total_ventas || 0);
     document.getElementById('total-transacciones').textContent = resumen.total_transacciones || 0;
     document.getElementById('total-productos').textContent = resumen.total_productos || 0;
+}
+
+function actualizarResumenDesdeTabla() {
+    if (!ultimoResumen) return;
+    const filtered = Table.getFiltered('tabla-reporte');
+    document.getElementById('total-ventas').textContent = formatearMoneda(filtered.reduce((s, v) => s + v.total, 0));
+    document.getElementById('total-transacciones').textContent = filtered.length;
+    document.getElementById('total-productos').textContent = ultimoResumen.total_productos || 0;
 }
 
 // ======================== MODAL RECIBO ========================

@@ -145,26 +145,10 @@
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
-                    <thead class="bg-surface-container-low/50">
-                        <tr>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Venta ID</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha / Hora</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Operador</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total Venta</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total Pagado</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Ver detalles</th>
-                        </tr>
-                    </thead>
                     <tbody id="tabla-historial" class="divide-y divide-outline-variant text-sm"></tbody>
                 </table>
             </div>
-            <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center">
-                <p id="info-historial" class="text-xs font-mono text-secondary">— transacciones</p>
-                <a href="libreria_cobros.html" class="text-xs font-mono text-primary hover:underline flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[14px]">payments</span> Registrar cobro
-                </a>
-            </div>
+            <div id="paginacion-historial" class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center"></div>
         </div>
 
     </main>
@@ -180,12 +164,14 @@
 <script src="js/utils.js"></script>
 <script src="js/libreria_shared.js"></script>
 <script src="js/notify.js"></script>
-<script src="js/layout.js"></script>
+<script src="js/layout.js?v=3"></script>
+<script src="js/table.js"></script>
 
 <script>
 let cacheClientes = [];
 let historialCompleto = [];
 let filtroActivo = 'todos';
+let historialTableInit = false;
 
 function mostrarUsuario() {
     const nombre = localStorage.getItem('usuario') || 'Usuario';
@@ -299,59 +285,71 @@ function filtrarHistorial(filtro) {
         (filtro === 'pendiente' ? historialCompleto.filter(v => v.estado_pago !== 'pagado') :
             historialCompleto.filter(v => v.estado_pago === 'pagado'));
 
-    document.getElementById('info-historial').textContent = `${filtrados.length} transacciones`;
     renderizarHistorial(filtrados);
 }
 
 function renderizarHistorial(ventas) {
-    const tbody = document.getElementById('tabla-historial');
-    if (ventas.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-center py-8 text-secondary text-sm">
-                    <span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">receipt_long</span>
-                    No hay transacciones con ese filtro.
-                </td>
-            </tr>
-        `;
-        return;
+    const mappedData = ventas.map(v => ({
+        id: v.id,
+        fecha: v.created_at,
+        nombre_operador: v.nombre_operador,
+        total_venta: v.total_venta,
+        total_pagado: v.total_pagado,
+        estado_pago: v.estado_pago
+    }));
+
+    if (!historialTableInit) {
+        Table.init('tabla-historial', {
+            columns: [
+                { key: 'id', label: 'Venta ID', sortable: true },
+                { key: 'fecha', label: 'Fecha / Hora', sortable: true },
+                { key: 'nombre_operador', label: 'Operador', sortable: true },
+                { key: 'total_venta', label: 'Total Venta', sortable: true, class: 'text-right' },
+                { key: 'total_pagado', label: 'Total Pagado', sortable: true, class: 'text-right' },
+                { key: 'estado_pago', label: 'Estado', sortable: true, class: 'text-center' },
+                { key: 'detalles', label: 'Ver detalles', sortable: false, class: 'text-center' }
+            ],
+            data: mappedData,
+            sortBy: { key: 'fecha', dir: 'desc' },
+            pageSize: 10,
+            paginationEl: '#paginacion-historial',
+            onRow: (item) => {
+                const badge = item.estado_pago === 'pagado'
+                    ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Pagado</span>'
+                    : (item.estado_pago === 'parcial'
+                        ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>'
+                        : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>');
+
+                const fechaHora = item.fecha
+                    ? new Date(item.fecha).toLocaleString('es-GT', {
+                        timeZone: 'America/Guatemala',
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })
+                    : '—';
+
+                return `
+                    <td class="px-5 py-3 font-mono text-xs text-secondary">${item.id.substring(0, 8)}...</td>
+                    <td class="px-5 py-3 text-sm">${fechaHora}</td>
+                    <td class="px-5 py-3 text-sm text-secondary">${item.nombre_operador || '—'}</td>
+                    <td class="px-5 py-3 text-sm font-mono font-bold text-right">${formatearMoneda(item.total_venta)}</td>
+                    <td class="px-5 py-3 text-sm font-mono text-right">${formatearMoneda(item.total_pagado)}</td>
+                    <td class="px-5 py-3 text-center">${badge}</td>
+                    <td class="px-5 py-3 text-center">
+                        <button onclick="verRecibo('${item.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Ver recibo">
+                            <span class="material-symbols-outlined text-[16px]">receipt_long</span>
+                        </button>
+                    </td>
+                `;
+            }
+        });
+        historialTableInit = true;
+    } else {
+        Table.setData('tabla-historial', mappedData);
     }
-
-    tbody.innerHTML = '';
-    ventas.forEach(v => {
-        const badge = v.estado_pago === 'pagado' ?
-            '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Pagado</span>' :
-            (v.estado_pago === 'parcial' ?
-                '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>' :
-                '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>');
-
-        const fechaHora = v.created_at ?
-            new Date(v.created_at).toLocaleString('es-GT', {
-                timeZone: 'America/Guatemala',
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            }) : '—';
-
-        const tr = document.createElement('tr');
-        tr.className = 'table-row transition-colors';
-        tr.innerHTML = `
-            <td class="px-5 py-3 font-mono text-xs text-secondary">${v.id.substring(0,8)}...</td>
-            <td class="px-5 py-3 text-sm">${fechaHora}</td>
-            <td class="px-5 py-3 text-sm text-secondary">${v.nombre_operador || '—'}</td>
-            <td class="px-5 py-3 text-sm font-mono font-bold text-right">${formatearMoneda(v.total_venta)}</td>
-            <td class="px-5 py-3 text-sm font-mono text-right">${formatearMoneda(v.total_pagado)}</td>
-            <td class="px-5 py-3 text-center">${badge}</td>
-            <td class="px-5 py-3 text-center">
-                <button onclick="verRecibo('${v.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Ver recibo">
-                    <span class="material-symbols-outlined text-[16px]">receipt_long</span>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
 }
 
 // ================ SIDEBAR TOGGLE ================

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Compras | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#755b00",
+                        "primary-container": "#C9A227",
+                        "on-primary": "#ffffff",
+                        "surface": "#F8FAFC",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#F1F5F9",
+                        "surface-container": "#E2E8F0",
+                        "surface-container-high": "#CBD5E1",
+                        "outline-variant": "#CBD5E1",
+                        "outline": "#94A3B8",
+                        "on-surface": "#1E293B",
+                        "on-surface-variant": "#475569",
+                        "secondary": "#64748B",
+                        "error": "#EF4444"
+                    },
+                    fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
+                    spacing: { "sidebar": "260px" }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-on-surface">
+
+<div id="main-content" class="min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div>
+                <h2 class="text-base font-bold text-on-surface leading-none">Mis Compras</h2>
+                <p class="text-xs text-secondary mt-0.5">Portal del Cliente</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block">
+                <p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p>
+                <p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize">Cliente</p>
+            </div>
+            <a href="mi_perfil.html" class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm hover:opacity-80 transition" title="Mi Perfil">
+                <span id="avatar-inicial">?</span>
+            </a>
+            <button onclick="cerrarSesion()" class="p-1.5 rounded-lg border border-outline-variant text-secondary hover:bg-surface-container transition" title="Cerrar sesión">
+                <span class="material-symbols-outlined text-[18px]">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 space-y-6">
+
+        <!-- KPIs -->
+        <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm">
+                <p class="text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-2">Total Compras</p>
+                <p id="metrica-compras" class="text-2xl font-bold text-on-surface font-mono mt-1">—</p>
+                <p id="metrica-compras-cantidad" class="text-xs text-secondary mt-1">— transacciones</p>
+            </div>
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm">
+                <p class="text-xs font-mono font-bold text-secondary uppercase tracking-wider mb-2">Total Pagado</p>
+                <p id="metrica-pagado" class="text-2xl font-bold text-on-surface font-mono mt-1">—</p>
+                <p class="text-xs text-secondary mt-1">Pagos completados</p>
+            </div>
+            <div class="bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm">
+                <p class="text-xs font-mono font-bold text-red-500 uppercase tracking-wider mb-2">Deuda Pendiente</p>
+                <p id="metrica-deuda" class="text-2xl font-bold text-error font-mono mt-1">—</p>
+                <p id="metrica-deuda-cantidad" class="text-xs text-error mt-1 font-bold">— ventas pendientes</p>
+            </div>
+        </section>
+
+        <!-- Tabla de compras -->
+        <section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+            <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/30">
+                <h3 class="text-sm font-bold text-on-surface">Historial de Compras</h3>
+                <div class="flex gap-2">
+                    <button onclick="filtrarHistorial('todos')" id="filtro-todos" class="text-xs font-mono px-3 py-1.5 bg-primary-container text-white rounded-lg transition">Todos</button>
+                    <button onclick="filtrarHistorial('pagado')" id="filtro-pagado" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary">Pagados</button>
+                    <button onclick="filtrarHistorial('pendiente')" id="filtro-pendiente" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary">Pendientes</button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-surface-container-low/50">
+                        <tr>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Venta ID</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha / Hora</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Operador</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total Venta</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total Pagado</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Recibo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-historial" class="divide-y divide-outline-variant text-sm"></tbody>
+                </table>
+            </div>
+            <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center">
+                <p id="info-historial" class="text-xs font-mono text-secondary">— transacciones</p>
+                <div class="flex items-center gap-2" id="paginacion">
+                    <button id="btn-prev" onclick="paginaAnterior()" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary disabled:opacity-40 disabled:cursor-not-allowed" disabled>Anterior</button>
+                    <span id="info-pagina" class="text-xs font-mono text-secondary">Pág. 1</span>
+                    <button id="btn-next" onclick="paginaSiguiente()" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary disabled:opacity-40 disabled:cursor-not-allowed" disabled>Siguiente</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="border-t border-outline-variant px-6 py-3 text-center">
+        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Portal del Cliente &copy; 2026</p>
+    </footer>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/libreria_shared.js"></script>
+<script src="js/notify.js"></script>
+
+<script>
+let historialCompleto = [];
+let filtroActivo = 'todos';
+let paginaActual = 1;
+const POR_PAGINA = 10;
+
+function cerrarSesion() {
+    Auth.cerrarSesion();
+}
+
+function mostrarUsuario() {
+    const nombre = localStorage.getItem('usuario') || 'Usuario';
+    document.getElementById('nombre-usuario').textContent = nombre;
+    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
+}
+
+// Sobrescribir inyectarModalRecibo para clientes (sin botón de enviar correo)
+function inyectarModalRecibo() {
+    if (document.getElementById('modal-recibo')) return;
+    const modal = document.createElement('div');
+    modal.id = 'modal-recibo';
+    modal.className = 'fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm';
+    modal.innerHTML = `
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="bg-primary px-5 py-4 flex justify-between items-center flex-shrink-0">
+                <div>
+                    <h3 class="text-base font-bold text-white">Detalle del Recibo</h3>
+                    <p id="modal-recibo-id" class="text-xs text-white/70 mt-0.5">Venta: —</p>
+                </div>
+                <button onclick="cerrarModalRecibo()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="overflow-y-auto flex-1 p-5 space-y-4">
+                <div id="recibo-contenido">
+                    <div class="text-center py-10 text-secondary">Cargando...</div>
+                </div>
+            </div>
+            <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center flex-shrink-0">
+                <button onclick="descargarPDFRecibo()" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[18px]">download</span> Descargar PDF
+                </button>
+                <button onclick="cerrarModalRecibo()" class="px-4 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cerrar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// ================ PAGINACIÓN ================
+function getPaginaActual() {
+    const filtrados = filtrarDatos();
+    const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
+    if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+    const inicio = (paginaActual - 1) * POR_PAGINA;
+    const fin = Math.min(inicio + POR_PAGINA, filtrados.length);
+    return { datos: filtrados.slice(inicio, fin), total: filtrados.length, inicio, fin, totalPaginas };
+}
+
+function actualizarPaginacion() {
+    const { total, inicio, fin, totalPaginas } = getPaginaActual();
+    document.getElementById('info-historial').textContent = `${total} transacciones — Mostrando ${inicio + 1}-${fin}`;
+    document.getElementById('info-pagina').textContent = `Pág. ${paginaActual} de ${totalPaginas}`;
+    document.getElementById('btn-prev').disabled = paginaActual <= 1;
+    document.getElementById('btn-next').disabled = paginaActual >= totalPaginas;
+}
+
+function paginaAnterior() {
+    if (paginaActual > 1) { paginaActual--; renderizarPagina(); }
+}
+
+function paginaSiguiente() {
+    const { totalPaginas } = getPaginaActual();
+    if (paginaActual < totalPaginas) { paginaActual++; renderizarPagina(); }
+}
+
+// ================ FILTROS ================
+function filtrarDatos() {
+    return filtroActivo === 'todos' ? historialCompleto :
+        (filtroActivo === 'pendiente' ? historialCompleto.filter(v => v.estado_pago !== 'pagado') :
+            historialCompleto.filter(v => v.estado_pago === 'pagado'));
+}
+
+function filtrarHistorial(filtro) {
+    filtroActivo = filtro;
+    paginaActual = 1;
+    ['todos', 'pagado', 'pendiente'].forEach(f => {
+        const btn = document.getElementById(`filtro-${f}`);
+        const esActivo = f === filtro;
+        btn.className = `text-xs font-mono px-3 py-1.5 rounded-lg transition ${esActivo ? 'bg-primary-container text-white' : 'border border-outline-variant hover:bg-surface-container text-secondary'}`;
+    });
+    renderizarPagina();
+}
+
+function renderizarPagina() {
+    const { datos } = getPaginaActual();
+    renderizarHistorial(datos);
+    actualizarPaginacion();
+}
+
+function renderizarHistorial(ventas) {
+    const tbody = document.getElementById('tabla-historial');
+    if (ventas.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-8 text-secondary text-sm">
+                    <span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">receipt_long</span>
+                    No hay transacciones con ese filtro.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    tbody.innerHTML = '';
+    ventas.forEach(v => {
+        const badge = v.estado_pago === 'pagado' ?
+            '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Pagado</span>' :
+            (v.estado_pago === 'parcial' ?
+                '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>' :
+                '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>');
+        const fechaHora = v.created_at ?
+            new Date(v.created_at).toLocaleString('es-GT', { timeZone: 'America/Guatemala', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+        const tr = document.createElement('tr');
+        tr.className = 'table-row transition-colors';
+        tr.innerHTML = `
+            <td class="px-5 py-3 font-mono text-xs text-secondary">${v.id.substring(0,8)}...</td>
+            <td class="px-5 py-3 text-sm">${fechaHora}</td>
+            <td class="px-5 py-3 text-sm text-secondary">${v.nombre_operador || '—'}</td>
+            <td class="px-5 py-3 text-sm font-mono font-bold text-right">${formatearMoneda(v.total_venta)}</td>
+            <td class="px-5 py-3 text-sm font-mono text-right">${formatearMoneda(v.total_pagado)}</td>
+            <td class="px-5 py-3 text-center">${badge}</td>
+            <td class="px-5 py-3 text-center">
+                <button onclick="verRecibo('${v.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Ver recibo">
+                    <span class="material-symbols-outlined text-[16px]">receipt_long</span>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// ================ INICIALIZACIÓN ================
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = 'index.html'; return; }
+    mostrarUsuario();
+    try {
+        const res = await API.get('/cliente/compras', true);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        historialCompleto = data.ventas || [];
+        for (const v of historialCompleto) {
+            if (v.digitado_por) {
+                v.nombre_operador = v.digitado_por;
+            }
+        }
+        const totalCompras = historialCompleto.reduce((acc, v) => acc + v.total_venta, 0);
+        const totalPagado = historialCompleto.reduce((acc, v) => acc + v.total_pagado, 0);
+        const totalDeuda = totalCompras - totalPagado;
+        const ventasPendientes = historialCompleto.filter(v => v.estado_pago !== 'pagado').length;
+        document.getElementById('metrica-compras').textContent = formatearMoneda(totalCompras);
+        document.getElementById('metrica-compras-cantidad').textContent = `${historialCompleto.length} transacciones`;
+        document.getElementById('metrica-pagado').textContent = formatearMoneda(totalPagado);
+        document.getElementById('metrica-deuda').textContent = formatearMoneda(totalDeuda);
+        document.getElementById('metrica-deuda-cantidad').textContent = `${ventasPendientes} ventas pendientes`;
+        filtrarHistorial('todos');
+    } catch (err) {
+        console.error('[Cliente] Error:', err);
+        notify.error('Error al cargar tus compras');
+        document.getElementById('tabla-historial').innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-8 text-secondary text-sm">
+                    <span class="material-symbols-outlined text-[28px] block mb-1 text-error">error</span>
+                    Error al cargar los datos. Intenta de nuevo más tarde.
+                </td>
+            </tr>`;
+    }
+});
+</script>
+</body>
+</html>

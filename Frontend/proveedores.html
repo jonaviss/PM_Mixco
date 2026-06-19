@@ -13,20 +13,11 @@
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#755b00",
-                        "primary-container": "#C9A227",
-                        "on-primary": "#ffffff",
-                        "surface": "#F8FAFC",
-                        "surface-container-lowest": "#ffffff",
-                        "surface-container-low": "#F1F5F9",
-                        "surface-container": "#E2E8F0",
-                        "surface-container-high": "#CBD5E1",
-                        "outline-variant": "#CBD5E1",
-                        "outline": "#94A3B8",
-                        "on-surface": "#1E293B",
-                        "on-surface-variant": "#475569",
-                        "secondary": "#64748B",
-                        "error": "#EF4444"
+                        "primary": "#755b00", "primary-container": "#C9A227", "on-primary": "#ffffff",
+                        "surface": "#F8FAFC", "surface-container-lowest": "#ffffff", "surface-container-low": "#F1F5F9",
+                        "surface-container": "#E2E8F0", "surface-container-high": "#CBD5E1", "outline-variant": "#CBD5E1",
+                        "outline": "#94A3B8", "on-surface": "#1E293B", "on-surface-variant": "#475569",
+                        "secondary": "#64748B", "error": "#EF4444"
                     },
                     fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
                     spacing: { "sidebar": "260px" }
@@ -38,8 +29,6 @@
 <body class="text-on-surface">
 
 <div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
-
-<!-- El sidebar se inyecta dinámicamente mediante layout.js -->
 
 <div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
 
@@ -64,20 +53,9 @@
         </div>
         <div class="bg-white border border-outline-variant rounded-xl overflow-hidden">
             <table class="w-full text-left">
-                <thead class="bg-surface-container-low/50">
-                    <tr>
-                        <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase">Nombre</th>
-                        <th class="px-5 py-3">Contacto</th>
-                        <th class="px-5 py-3">Teléfono</th>
-                        <th class="px-5 py-3">Email</th>
-                        <th class="px-5 py-3">Estado</th>
-                        <th class="px-5 py-3 text-center">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-proveedores" class="divide-y divide-outline-variant">
-                    <tr><td colspan="6" class="text-center py-6">Cargando...<\/td><\/tr>
-                </tbody>
+                <tbody id="tabla-proveedores" class="divide-y divide-outline-variant"></tbody>
             </table>
+            <div id="paginacion-proveedores" class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center"></div>
         </div>
     </main>
 </div>
@@ -119,11 +97,11 @@
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/notify.js"></script>
-<script src="js/layout.js"></script>
+<script src="js/layout.js?v=3"></script>
+<script src="js/table.js"></script>
 <script>
     let proveedores = [];
     let filtroActual = "activos";
-    let confirmacionCallback = null;
 
     function toggleSidebar() {
         const sidebar = document.getElementById('sidebar-dinamico');
@@ -132,221 +110,182 @@
         if (overlay) overlay.classList.toggle('hidden');
     }
 
-    function mostrarUsuario(){ 
-        const n=localStorage.getItem('usuario')||'Usuario'; 
-        document.getElementById('nombre-usuario').textContent=n; 
-        document.getElementById('rango-usuario').textContent=localStorage.getItem('rango')||''; 
-        document.getElementById('avatar-inicial').textContent=n.charAt(0).toUpperCase(); 
+    function mostrarUsuario(){
+        const n=localStorage.getItem('usuario')||'Usuario';
+        document.getElementById('nombre-usuario').textContent=n;
+        document.getElementById('rango-usuario').textContent=localStorage.getItem('rango')||'';
+        document.getElementById('avatar-inicial').textContent=n.charAt(0).toUpperCase();
     }
 
-    async function cargarProveedores() { 
-        try { 
-            const res = await API.get(`/libreria/compras/proveedores?estado=${filtroActual}`, true); 
-            if(res.ok) { 
-                proveedores = await res.json(); 
-                renderizarProveedores(); 
-            } else { 
-                console.error('Error al cargar proveedores:', res.status); 
+    async function cargarProveedores() {
+        try {
+            const res = await API.get(`/libreria/compras/proveedores?estado=${filtroActual}`, true);
+            if(res.ok) {
+                proveedores = await res.json();
+                renderizarProveedores();
+            } else {
                 notify.error('Error al cargar proveedores');
             }
-        } catch(e){ 
-            console.error(e); 
+        } catch(e){
             notify.error('Error de conexión');
         }
     }
 
-    function renderizarProveedores() { 
-        const tbody = document.getElementById('tabla-proveedores'); 
-        if(proveedores.length===0){ 
-            tbody.innerHTML='<td><td colspan="6" class="text-center py-6 text-secondary">No hay proveedores<\/td><\/tr>'; 
-            return; 
-        } 
-        tbody.innerHTML=''; 
-        proveedores.forEach(p => { 
-            const estadoBadge = p.activo 
-                ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Activo</span>' 
-                : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-700">Inactivo</span>';
-            
-            let botones = '';
-            if (p.activo) {
-                botones = `
-                    <button onclick="editarProveedor('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Editar">
-                        <span class="material-symbols-outlined text-[16px]">edit</span>
-                    <\/button>
-                    <button onclick="confirmarDesactivar('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-error hover:bg-red-50 transition ml-1" title="Desactivar">
-                        <span class="material-symbols-outlined text-[16px]">delete_forever</span>
-                    <\/button>
-                `;
-            } else {
-                botones = `
-                    <button onclick="editarProveedor('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Editar">
-                        <span class="material-symbols-outlined text-[16px]">edit</span>
-                    <\/button>
-                    <button onclick="confirmarReactivar('${p.id}')" class="p-1.5 rounded-lg border border-outline-variant text-green-600 hover:bg-green-50 transition ml-1" title="Reactivar">
-                        <span class="material-symbols-outlined text-[16px]">restore_from_trash</span>
-                    <\/button>
-                `;
-            }
-            const tr = document.createElement('tr'); 
-            tr.className = 'table-row transition-colors';
-            tr.innerHTML = `
-                <td class="px-5 py-3 font-bold">${p.nombre}<\/td>
-                <td class="px-5 py-3">${p.contacto||'—'}<\/td>
-                <td class="px-5 py-3">${p.telefono||'—'}<\/td>
-                <td class="px-5 py-3">${p.email||'—'}<\/td>
-                <td class="px-5 py-3 text-center">${estadoBadge}<\/td>
-                <td class="px-5 py-3 text-center">${botones}<\/td>
-            `; 
-            tbody.appendChild(tr); 
-        }); 
+    function renderizarProveedores() {
+        const data = proveedores.map(p => ({
+            id: p.id,
+            nombre: p.nombre,
+            contacto: p.contacto || '—',
+            telefono: p.telefono || '—',
+            email: p.email || '—',
+            activo: p.activo,
+            _raw: p
+        }));
+
+        const columns = [
+            { key: 'nombre', label: 'Nombre', sortable: true },
+            { key: 'contacto', label: 'Contacto', sortable: true },
+            { key: 'telefono', label: 'Teléfono', sortable: true },
+            { key: 'email', label: 'Email', sortable: true },
+            { key: 'activo', label: 'Estado', sortable: true, class: 'text-center' },
+            { key: 'acciones', label: 'Acciones', class: 'text-center' },
+        ];
+
+        const tableId = 'tabla-proveedores';
+
+        if (!Table._instances || !Table._instances[tableId]) {
+            Table.init(tableId, {
+                columns,
+                data,
+                pageSize: 10,
+                sortBy: { key: 'nombre', dir: 'asc' },
+                paginationEl: '#paginacion-proveedores',
+                onRow: (item) => {
+                    const estadoBadge = item.activo
+                        ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Activo</span>'
+                        : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-700">Inactivo</span>';
+                    const botones = item.activo
+                        ? `<button onclick="editarProveedor('${item.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Editar"><span class="material-symbols-outlined text-[16px]">edit</span></button><button onclick="confirmarDesactivar('${item.id}')" class="p-1.5 rounded-lg border border-outline-variant text-error hover:bg-red-50 transition ml-1" title="Desactivar"><span class="material-symbols-outlined text-[16px]">delete_forever</span></button>`
+                        : `<button onclick="editarProveedor('${item.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Editar"><span class="material-symbols-outlined text-[16px]">edit</span></button><button onclick="confirmarReactivar('${item.id}')" class="p-1.5 rounded-lg border border-outline-variant text-green-600 hover:bg-green-50 transition ml-1" title="Reactivar"><span class="material-symbols-outlined text-[16px]">restore_from_trash</span></button>`;
+                    return `
+                        <td class="px-5 py-3 font-bold">${item.nombre}</td>
+                        <td class="px-5 py-3">${item.contacto}</td>
+                        <td class="px-5 py-3">${item.telefono}</td>
+                        <td class="px-5 py-3">${item.email}</td>
+                        <td class="px-5 py-3 text-center">${estadoBadge}</td>
+                        <td class="px-5 py-3 text-center">${botones}</td>
+                    `;
+                }
+            });
+        } else {
+            Table.setData(tableId, data);
+        }
     }
 
     function cambiarFiltro(estado) {
         filtroActual = estado;
-        // Actualizar estilos de botones
-        document.getElementById('btn-activos').className = estado === 'activos' 
-            ? 'px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-primary-container text-white hover:opacity-90 transition'
-            : 'px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition';
-        document.getElementById('btn-inactivos').className = estado === 'inactivos' 
-            ? 'px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-primary-container text-white hover:opacity-90 transition'
-            : 'px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition';
-        document.getElementById('btn-todos').className = estado === 'todos' 
-            ? 'px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-primary-container text-white hover:opacity-90 transition'
-            : 'px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition';
+        ['btn-activos','btn-inactivos','btn-todos'].forEach(id => {
+            const el = document.getElementById(id);
+            el.className = id === `btn-${estado}`
+                ? 'px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-primary-container text-white hover:opacity-90 transition'
+                : 'px-3 py-1.5 rounded-md text-xs font-mono border border-outline-variant bg-white text-secondary hover:bg-surface-container transition';
+        });
         cargarProveedores();
     }
 
-    function abrirModalProveedor(){ 
-        document.getElementById('proveedor-id').value=''; 
-        document.getElementById('proveedor-nombre').value=''; 
-        document.getElementById('proveedor-contacto').value=''; 
-        document.getElementById('proveedor-telefono').value=''; 
-        document.getElementById('proveedor-email').value=''; 
-        document.getElementById('proveedor-direccion').value=''; 
+    function abrirModalProveedor(){
+        document.getElementById('proveedor-id').value='';
+        ['proveedor-nombre','proveedor-contacto','proveedor-telefono','proveedor-email','proveedor-direccion'].forEach(id => document.getElementById(id).value='');
         document.getElementById('modal-proveedor-titulo').textContent = 'Nuevo Proveedor';
-        document.getElementById('modal-proveedor').classList.remove('hidden'); 
-        document.getElementById('modal-proveedor').classList.add('flex'); 
+        document.getElementById('modal-proveedor').classList.remove('hidden');
+        document.getElementById('modal-proveedor').classList.add('flex');
     }
 
-    function cerrarModalProveedor(){ 
-        document.getElementById('modal-proveedor').classList.add('hidden'); 
+    function cerrarModalProveedor(){
+        document.getElementById('modal-proveedor').classList.add('hidden');
     }
 
-    async function editarProveedor(id){ 
-        const p = proveedores.find(p => p.id === id); 
-        if(!p) return; 
-        document.getElementById('proveedor-id').value = p.id; 
-        document.getElementById('proveedor-nombre').value = p.nombre; 
-        document.getElementById('proveedor-contacto').value = p.contacto||''; 
-        document.getElementById('proveedor-telefono').value = p.telefono||''; 
-        document.getElementById('proveedor-email').value = p.email||''; 
-        document.getElementById('proveedor-direccion').value = p.direccion||''; 
+    async function editarProveedor(id){
+        const p = proveedores.find(p => p.id === id);
+        if(!p) return;
+        document.getElementById('proveedor-id').value = p.id;
+        document.getElementById('proveedor-nombre').value = p.nombre;
+        document.getElementById('proveedor-contacto').value = p.contacto||'';
+        document.getElementById('proveedor-telefono').value = p.telefono||'';
+        document.getElementById('proveedor-email').value = p.email||'';
+        document.getElementById('proveedor-direccion').value = p.direccion||'';
         document.getElementById('modal-proveedor-titulo').textContent = 'Editar Proveedor';
-        document.getElementById('modal-proveedor').classList.remove('hidden'); 
-        document.getElementById('modal-proveedor').classList.add('flex'); 
+        document.getElementById('modal-proveedor').classList.remove('hidden');
+        document.getElementById('modal-proveedor').classList.add('flex');
     }
 
-    async function guardarProveedor(){ 
-        const id = document.getElementById('proveedor-id').value; 
-        const payload = { 
-            nombre: document.getElementById('proveedor-nombre').value, 
-            contacto: document.getElementById('proveedor-contacto').value, 
-            telefono: document.getElementById('proveedor-telefono').value, 
-            email: document.getElementById('proveedor-email').value, 
-            direccion: document.getElementById('proveedor-direccion').value 
-        }; 
-        if(!payload.nombre){ 
-            notify.warning('El nombre es obligatorio');
-            return; 
-        }
-        try{ 
-            let res; 
-            if(id) res = await API.put(`/libreria/compras/proveedores/${id}`, payload, true); 
-            else res = await API.post('/libreria/compras/proveedores', payload, true); 
-            if(res.ok){ 
-                cerrarModalProveedor(); 
-                cargarProveedores(); 
+    async function guardarProveedor(){
+        const id = document.getElementById('proveedor-id').value;
+        const payload = {
+            nombre: document.getElementById('proveedor-nombre').value,
+            contacto: document.getElementById('proveedor-contacto').value,
+            telefono: document.getElementById('proveedor-telefono').value,
+            email: document.getElementById('proveedor-email').value,
+            direccion: document.getElementById('proveedor-direccion').value
+        };
+        if(!payload.nombre){ notify.warning('El nombre es obligatorio'); return; }
+        try{
+            let res;
+            if(id) res = await API.put(`/libreria/compras/proveedores/${id}`, payload, true);
+            else res = await API.post('/libreria/compras/proveedores', payload, true);
+            if(res.ok){
+                cerrarModalProveedor();
+                cargarProveedores();
                 notify.success(id ? 'Proveedor actualizado' : 'Proveedor creado');
-            } else { 
-                const err = await res.json(); 
-                notify.error('Error: ' + (err.detail || 'No se pudo guardar')); 
-            } 
-        } catch(e){ 
-            notify.error('Error de conexión: ' + e.message); 
-        } 
+            } else {
+                const err = await res.json();
+                notify.error('Error: ' + (err.detail || 'No se pudo guardar'));
+            }
+        } catch(e){ notify.error('Error de conexión: ' + e.message); }
     }
 
-    // --- Funciones para desactivar/reactivar con modal de confirmación ---
     function mostrarModalConfirmacion(mensaje, accionCallback, tipoAccion) {
         const modal = document.getElementById('modal-confirmacion');
-        const mensajeEl = document.getElementById('confirmacion-mensaje');
+        document.getElementById('confirmacion-mensaje').textContent = mensaje;
         const btnAceptar = document.getElementById('confirmacion-aceptar');
         const header = document.getElementById('modal-confirmacion-header');
-        mensajeEl.textContent = mensaje;
-        if (tipoAccion === 'desactivar') {
-            btnAceptar.className = 'px-4 py-2 text-sm font-bold text-white bg-error rounded-lg hover:opacity-90 transition';
-            header.querySelector('h3').textContent = 'Desactivar proveedor';
-        } else {
-            btnAceptar.className = 'px-4 py-2 text-sm font-bold text-white bg-green-600 rounded-lg hover:opacity-90 transition';
-            header.querySelector('h3').textContent = 'Reactivar proveedor';
-        }
+        btnAceptar.className = tipoAccion === 'desactivar'
+            ? 'px-4 py-2 text-sm font-bold text-white bg-error rounded-lg hover:opacity-90 transition'
+            : 'px-4 py-2 text-sm font-bold text-white bg-green-600 rounded-lg hover:opacity-90 transition';
+        header.querySelector('h3').textContent = tipoAccion === 'desactivar' ? 'Desactivar proveedor' : 'Reactivar proveedor';
         const newBtn = btnAceptar.cloneNode(true);
         btnAceptar.parentNode.replaceChild(newBtn, btnAceptar);
-        newBtn.addEventListener('click', () => {
-            cerrarModalConfirmacion();
-            if (accionCallback) accionCallback();
-        });
+        newBtn.addEventListener('click', () => { cerrarModalConfirmacion(); if (accionCallback) accionCallback(); });
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }
 
-    function cerrarModalConfirmacion() {
-        const modal = document.getElementById('modal-confirmacion');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        confirmacionCallback = null;
-    }
+    function cerrarModalConfirmacion() { document.getElementById('modal-confirmacion').classList.add('hidden'); }
 
     function confirmarDesactivar(id) {
-        const proveedor = proveedores.find(p => p.id === id);
-        if (!proveedor) return;
-        mostrarModalConfirmacion(
-            `¿Está seguro que desea desactivar el proveedor "${proveedor.nombre}"? Los proveedores inactivos no aparecerán en los listados de compras.`,
-            () => toggleEstadoProveedor(id, false),
-            'desactivar'
-        );
+        const p = proveedores.find(p => p.id === id);
+        if (!p) return;
+        mostrarModalConfirmacion(`¿Está seguro que desea desactivar el proveedor "${p.nombre}"?`, () => toggleEstadoProveedor(id, false), 'desactivar');
     }
 
     function confirmarReactivar(id) {
-        const proveedor = proveedores.find(p => p.id === id);
-        if (!proveedor) return;
-        mostrarModalConfirmacion(
-            `¿Está seguro que desea reactivar el proveedor "${proveedor.nombre}"? Volverá a estar disponible para nuevas compras.`,
-            () => toggleEstadoProveedor(id, true),
-            'reactivar'
-        );
+        const p = proveedores.find(p => p.id === id);
+        if (!p) return;
+        mostrarModalConfirmacion(`¿Está seguro que desea reactivar el proveedor "${p.nombre}"?`, () => toggleEstadoProveedor(id, true), 'reactivar');
     }
 
     async function toggleEstadoProveedor(id, nuevoEstado) {
         try {
-            const payload = { activo: nuevoEstado };
-            const res = await API.put(`/libreria/compras/proveedores/${id}`, payload, true);
-            if (res.ok) {
-                cargarProveedores();
-                notify.success(nuevoEstado ? 'Proveedor reactivado' : 'Proveedor desactivado');
-            } else {
-                const err = await res.json();
-                notify.error('Error: ' + (err.detail || 'No se pudo cambiar el estado.'));
-            }
-        } catch (err) {
-            notify.error('Error de conexión.');
-        }
+            const res = await API.put(`/libreria/compras/proveedores/${id}`, { activo: nuevoEstado }, true);
+            if (res.ok) { cargarProveedores(); notify.success(nuevoEstado ? 'Proveedor reactivado' : 'Proveedor desactivado'); }
+            else { const err = await res.json(); notify.error('Error: ' + (err.detail || 'No se pudo cambiar el estado.')); }
+        } catch (err) { notify.error('Error de conexión.'); }
     }
 
-    document.addEventListener('DOMContentLoaded', ()=>{ 
-        if(!localStorage.getItem('token')) window.location.href='index.html'; 
-        mostrarUsuario(); 
-        cargarProveedores(); 
+    document.addEventListener('DOMContentLoaded', ()=>{
+        if(!localStorage.getItem('token')) window.location.href='index.html';
+        mostrarUsuario();
+        cargarProveedores();
     });
 </script>
 

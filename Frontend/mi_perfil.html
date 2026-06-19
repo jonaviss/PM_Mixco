@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#755b00",
+                        "primary-container": "#C9A227",
+                        "on-primary": "#ffffff",
+                        "surface": "#F8FAFC",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#F1F5F9",
+                        "surface-container": "#E2E8F0",
+                        "outline-variant": "#CBD5E1",
+                        "outline": "#94A3B8",
+                        "on-surface": "#1E293B",
+                        "on-surface-variant": "#475569",
+                        "secondary": "#64748B",
+                        "error": "#EF4444"
+                    },
+                    fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
+                    spacing: { "sidebar": "260px" }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-on-surface">
+
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            <div>
+                <h2 class="text-base font-bold text-on-surface leading-none">Mi Perfil</h2>
+                <p class="text-xs text-secondary mt-0.5">Información personal y seguridad</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block">
+                <p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p>
+                <p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p>
+            </div>
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm">
+                <span id="avatar-inicial">?</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 max-w-2xl mx-auto w-full space-y-6">
+
+        <!-- Datos personales -->
+        <section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm">
+            <h3 class="text-sm font-bold text-on-surface mb-5 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[20px]">person</span> Datos Personales
+            </h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">CUI</label>
+                    <p id="perfil-cui" class="text-sm font-mono text-on-surface bg-surface-container-low rounded-lg px-3 py-2.5">—</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Nombre Completo</label>
+                    <input type="text" id="field-nombre" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Correo</label>
+                    <input type="email" id="field-correo" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="correo@ejemplo.com">
+                </div>
+                <button onclick="guardarPerfil()" id="btn-guardar-perfil" class="px-5 py-2.5 text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition">Guardar Cambios</button>
+            </div>
+        </section>
+
+        <!-- Cambiar contraseña -->
+        <section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm">
+            <h3 class="text-sm font-bold text-on-surface mb-5 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[20px]">lock</span> Cambiar Contraseña
+            </h3>
+            <div class="space-y-4">
+                <div class="relative">
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Contraseña Actual</label>
+                    <input type="password" id="field-pass-actual" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm font-mono pr-10 focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="••••••••">
+                    <button type="button" onclick="togglePass('field-pass-actual', this)" class="absolute right-3 top-[34px] text-secondary hover:text-primary transition" tabindex="-1">
+                        <span class="material-symbols-outlined text-[18px]">visibility_off</span>
+                    </button>
+                </div>
+                <div class="relative">
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Nueva Contraseña</label>
+                    <input type="password" id="field-pass-nueva" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm font-mono pr-10 focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="Mínimo 6 caracteres">
+                    <button type="button" onclick="togglePass('field-pass-nueva', this)" class="absolute right-3 top-[34px] text-secondary hover:text-primary transition" tabindex="-1">
+                        <span class="material-symbols-outlined text-[18px]">visibility_off</span>
+                    </button>
+                </div>
+                <button onclick="cambiarPassword()" id="btn-cambiar-pass" class="px-5 py-2.5 text-sm font-bold border border-primary-container text-primary rounded-lg hover:bg-primary-container hover:text-white transition">Cambiar Contraseña</button>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="border-t border-outline-variant px-6 py-3 text-center">
+        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Perfil &copy; 2026</p>
+    </footer>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/notify.js"></script>
+<script src="js/layout.js?v=3"></script>
+
+<script>
+function mostrarUsuario() {
+    const nombre = localStorage.getItem('usuario') || 'Usuario';
+    const rango = localStorage.getItem('rango') || '';
+    document.getElementById('nombre-usuario').textContent = nombre;
+    document.getElementById('rango-usuario').textContent = rango;
+    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar-dinamico');
+    if (sidebar) sidebar.classList.toggle('open');
+    const overlay = document.getElementById('overlay');
+    if (overlay) overlay.classList.toggle('hidden');
+}
+
+function togglePass(id, btn) {
+    const input = document.getElementById(id);
+    const icon = btn.querySelector('.material-symbols-outlined');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = 'visibility';
+    } else {
+        input.type = 'password';
+        icon.textContent = 'visibility_off';
+    }
+}
+
+async function guardarPerfil() {
+    const nombre = document.getElementById('field-nombre').value.trim();
+    const correo = document.getElementById('field-correo').value.trim();
+    if (!nombre) { notify.error('El nombre es obligatorio.'); return; }
+    const btn = document.getElementById('btn-guardar-perfil');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+    try {
+        const payload = { nombre_completo: nombre };
+        if (correo) payload.correo = correo;
+        const res = await API.put('/usuario/perfil', payload, true);
+        if (res.ok) {
+            localStorage.setItem('usuario', nombre);
+            document.getElementById('nombre-usuario').textContent = nombre;
+            document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
+            notify.success('Perfil actualizado correctamente');
+        } else {
+            const d = await res.json();
+            notify.error(API.mensajeError(d));
+        }
+    } catch (err) {
+        notify.error('Error de conexión.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Guardar Cambios';
+    }
+}
+
+async function cambiarPassword() {
+    const actual = document.getElementById('field-pass-actual').value;
+    const nueva = document.getElementById('field-pass-nueva').value;
+    if (!actual) { notify.error('Ingresa tu contraseña actual.'); return; }
+    if (!nueva || nueva.length < 6) { notify.error('La nueva contraseña debe tener al menos 6 caracteres.'); return; }
+    const btn = document.getElementById('btn-cambiar-pass');
+    btn.disabled = true;
+    btn.textContent = 'Cambiando...';
+    try {
+        const res = await API.put('/usuario/cambiar-contrasena', { contrasena_actual: actual, contrasena_nueva: nueva }, true);
+        if (res.ok) {
+            notify.success('Contraseña actualizada correctamente');
+            document.getElementById('field-pass-actual').value = '';
+            document.getElementById('field-pass-nueva').value = '';
+        } else {
+            const d = await res.json();
+            notify.error(API.mensajeError(d));
+        }
+    } catch (err) {
+        notify.error('Error de conexión.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Cambiar Contraseña';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = 'index.html'; return; }
+    mostrarUsuario();
+    document.getElementById('btnCerrarSesion').addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.clear();
+        window.location.href = 'index.html';
+    });
+    document.getElementById('perfil-cui').textContent = localStorage.getItem('cui') || '—';
+    document.getElementById('field-nombre').value = localStorage.getItem('usuario') || '';
+});
+</script>
+</body>
+</html>

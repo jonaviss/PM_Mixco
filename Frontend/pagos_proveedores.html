@@ -38,19 +38,10 @@
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
-                    <thead class="bg-surface-container-low/50">
-                        <tr>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase">Proveedor</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase text-right">Total Comprado</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase text-right">Total Pagado</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase text-right">Saldo Pendiente</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resumen-deuda" class="divide-y divide-outline-variant">
-                        <tr><td colspan="4" class="text-center py-6 text-secondary">Cargando...<\/td><\/tr>
-                    </tbody>
+                    <tbody id="resumen-deuda" class="divide-y divide-outline-variant"></tbody>
                 </table>
             </div>
+            <div id="paginacion-resumen" class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center"></div>
         </div>
 
         <!-- Filtros y lista de compras -->
@@ -65,21 +56,10 @@
         <div class="bg-white border border-outline-variant rounded-xl overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
-                    <thead class="bg-surface-container-low/50">
-                        <tr>
-                            <th class="px-5 py-3">Proveedor</th>
-                            <th class="px-5 py-3">Fecha Compra</th>
-                            <th class="px-5 py-3">Factura</th>
-                            <th class="px-5 py-3 text-right">Total</th>
-                            <th class="px-5 py-3 text-right">Pagado</th>
-                            <th class="px-5 py-3 text-right">Saldo</th>
-                            <th class="px-5 py-3">Estado</th>
-                            <th class="px-5 py-3">Acciones</th>
-                        </tr>
-                    </thead>
                     <tbody id="tabla-compras"></tbody>
                 </table>
             </div>
+            <div id="paginacion-compras" class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center"></div>
         </div>
     </main>
 </div>
@@ -164,7 +144,8 @@
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/notify.js"></script>
-<script src="js/layout.js"></script>
+<script src="js/layout.js?v=3"></script>
+<script src="js/table.js"></script>
 <script>
     let compras = [];
     let proveedores = [];
@@ -230,53 +211,88 @@
     }
 
     function renderizarResumen() {
-        const tbody = document.getElementById('resumen-deuda');
-        if (resumenDeuda.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-secondary">No hay datos de compras. </td></tr>';
-            return;
-        }
-        tbody.innerHTML = '';
-        resumenDeuda.forEach(r => {
-            const tr = document.createElement('tr');
-            tr.className = 'table-row transition-colors';
-            tr.innerHTML = `
-                <td class="px-5 py-3 font-medium">${r.nombre}</td>
-                <td class="px-5 py-3 text-right font-mono">${formatearMoneda(r.total_comprado)}</td>
-                <td class="px-5 py-3 text-right font-mono">${formatearMoneda(r.total_pagado)}</td>
-                <td class="px-5 py-3 text-right font-mono font-bold ${r.saldo > 0 ? 'text-error' : 'text-green-600'}">${formatearMoneda(r.saldo)}</td>
-            `;
-            tbody.appendChild(tr);
+        const data = resumenDeuda.map(r => ({
+            nombre: r.nombre,
+            total_comprado: r.total_comprado,
+            total_pagado: r.total_pagado,
+            saldo: r.saldo
+        }));
+        Table.init('resumen-deuda', {
+            columns: [
+                { key: 'nombre', label: 'Proveedor', sortable: true },
+                { key: 'total_comprado', label: 'Total Comprado', sortable: true, class: 'text-right' },
+                { key: 'total_pagado', label: 'Total Pagado', sortable: true, class: 'text-right' },
+                { key: 'saldo', label: 'Saldo Pendiente', sortable: true, class: 'text-right' }
+            ],
+            data,
+            pageSize: 10,
+            sortBy: { key: 'nombre', dir: 'asc' },
+            paginationEl: '#paginacion-resumen',
+            onRow: (item) => {
+                const saldoClass = item.saldo > 0 ? 'text-error' : 'text-green-600';
+                return `
+                    <td class="px-5 py-3 font-medium">${item.nombre}</td>
+                    <td class="px-5 py-3 text-right font-mono">${formatearMoneda(item.total_comprado)}</td>
+                    <td class="px-5 py-3 text-right font-mono">${formatearMoneda(item.total_pagado)}</td>
+                    <td class="px-5 py-3 text-right font-mono font-bold ${saldoClass}">${formatearMoneda(item.saldo)}</td>
+                `;
+            }
         });
     }
 
-    function renderizarCompras(){ 
-        const tbody = document.getElementById('tabla-compras'); 
-        if(compras.length === 0){ 
-            tbody.innerHTML='<tr><td colspan="8" class="text-center py-6">No hay compras<\/td><\/tr>'; 
-            return; 
-        } 
-        tbody.innerHTML = ''; 
-        compras.forEach(c => { 
-            const saldo = c.total_compra - c.total_pagado; 
-            const badge = c.estado === 'pagado' ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Pagado</span>' : (c.estado === 'parcial' ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>' : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>'); 
-            const tr = document.createElement('tr'); 
-            tr.className = 'table-row transition-colors';
-            tr.innerHTML = `
-                <td class="px-5 py-3">${c.proveedores?.nombre || '-'}<\/td>
-                <td class="px-5 py-3">${new Date(c.fecha_compra).toLocaleDateString()}<\/td>
-                <td class="px-5 py-3">${c.factura || '—'}<\/td>
-                <td class="px-5 py-3 text-right font-mono">${formatearMoneda(c.total_compra)}<\/td>
-                <td class="px-5 py-3 text-right font-mono">${formatearMoneda(c.total_pagado)}<\/td>
-                <td class="px-5 py-3 text-right font-mono font-bold ${saldo > 0 ? 'text-error' : 'text-green-600'}">${formatearMoneda(saldo)}<\/td>
-                <td class="px-5 py-3 text-center">${badge}<\/td>
-                <td class="px-5 py-3">
-                    <button onclick="verDetalleCompra('${c.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Ver detalle / Pagar">
-                        <span class="material-symbols-outlined text-[16px]">receipt_long</span>
-                    <\/button>
-                 <\/td>
-            `;
-            tbody.appendChild(tr); 
-        }); 
+    function renderizarCompras() {
+        const data = compras.map(c => {
+            const total = parseFloat(c.total_compra);
+            const pagado = parseFloat(c.total_pagado || 0);
+            return {
+                proveedor: c.proveedores?.nombre || '-',
+                fecha_compra: c.fecha_compra,
+                factura: c.factura || '—',
+                total,
+                pagado,
+                saldo: total - pagado,
+                estado: c.estado,
+                id: c.id
+            };
+        });
+        Table.init('tabla-compras', {
+            columns: [
+                { key: 'proveedor', label: 'Proveedor', sortable: true },
+                { key: 'fecha_compra', label: 'Fecha Compra', sortable: true },
+                { key: 'factura', label: 'Factura', sortable: true },
+                { key: 'total', label: 'Total', sortable: true, class: 'text-right' },
+                { key: 'pagado', label: 'Pagado', sortable: true, class: 'text-right' },
+                { key: 'saldo', label: 'Saldo', sortable: true, class: 'text-right' },
+                { key: 'estado', label: 'Estado', sortable: true, class: 'text-center' },
+                { key: 'acciones', label: 'Acciones', class: 'text-center' }
+            ],
+            data,
+            pageSize: 10,
+            sortBy: { key: 'fecha_compra', dir: 'desc' },
+            paginationEl: '#paginacion-compras',
+            onRow: (item) => {
+                const badge = item.estado === 'pagado'
+                    ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Pagado</span>'
+                    : item.estado === 'parcial'
+                    ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>'
+                    : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>';
+                const saldoClass = item.saldo > 0 ? 'text-error' : 'text-green-600';
+                return `
+                    <td class="px-5 py-3">${item.proveedor}</td>
+                    <td class="px-5 py-3">${new Date(item.fecha_compra).toLocaleDateString()}</td>
+                    <td class="px-5 py-3">${item.factura}</td>
+                    <td class="px-5 py-3 text-right font-mono">${formatearMoneda(item.total)}</td>
+                    <td class="px-5 py-3 text-right font-mono">${formatearMoneda(item.pagado)}</td>
+                    <td class="px-5 py-3 text-right font-mono font-bold ${saldoClass}">${formatearMoneda(item.saldo)}</td>
+                    <td class="px-5 py-3 text-center">${badge}</td>
+                    <td class="px-5 py-3">
+                        <button onclick="verDetalleCompra('${item.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Ver detalle / Pagar">
+                            <span class="material-symbols-outlined text-[16px]">receipt_long</span>
+                        </button>
+                    </td>
+                `;
+            }
+        });
     }
 
     async function verDetalleCompra(compraId) {
