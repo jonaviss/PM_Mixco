@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancelar Venta | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#755b00",
+                        "primary-container": "#C9A227",
+                        "on-primary": "#ffffff",
+                        "surface": "#F8FAFC",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#F1F5F9",
+                        "surface-container": "#E2E8F0",
+                        "surface-container-high": "#CBD5E1",
+                        "outline-variant": "#CBD5E1",
+                        "outline": "#94A3B8",
+                        "on-surface": "#1E293B",
+                        "on-surface-variant": "#475569",
+                        "secondary": "#64748B",
+                        "error": "#EF4444"
+                    },
+                    fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
+                    spacing: { "sidebar": "260px" }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-on-surface">
+
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            <div>
+                <h2 class="text-base font-bold text-on-surface leading-none">Cancelar Venta</h2>
+                <p class="text-xs text-secondary mt-0.5">Buscar y anular transacciones</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block">
+                <p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p>
+                <p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p>
+            </div>
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm">
+                <span id="avatar-inicial">?</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 space-y-6">
+
+        <!-- Buscador predictivo por nombre o CUI -->
+        <section class="max-w-2xl mx-auto">
+            <div class="relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+                <input type="text" id="buscador-cliente" autocomplete="off"
+                    placeholder="Buscar por nombre o CUI del comprador..."
+                    class="w-full pl-12 pr-4 py-3.5 text-sm bg-surface-container-lowest border border-outline-variant rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-container shadow-sm transition">
+                <div id="resultados-busqueda" class="hidden absolute z-20 w-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xl max-h-60 overflow-y-auto divide-y divide-outline-variant"></div>
+            </div>
+        </section>
+
+        <!-- Estado inicial -->
+        <div id="estado-inicial" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-12 text-center">
+            <span class="material-symbols-outlined text-[48px] text-outline-variant block mb-3">person_search</span>
+            <p class="text-base font-bold text-secondary">Busca un comprador para ver sus ventas</p>
+            <p class="text-sm text-secondary mt-1">Ingresa el CUI o nombre en el buscador de arriba</p>
+        </div>
+
+        <!-- Lista de ventas del comprador -->
+        <div id="ventas-section" class="hidden space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 id="cliente-seleccionado" class="text-base font-bold"></h3>
+                    <p id="cliente-cui" class="text-xs font-mono text-secondary"></p>
+                </div>
+                <button onclick="limpiarBusqueda()" class="text-xs font-mono text-secondary hover:text-error transition flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">close</span> Limpiar
+                </button>
+            </div>
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+                <div class="px-5 py-3 border-b border-outline-variant bg-surface-container-low/30 flex justify-between items-center">
+                    <p class="text-sm font-bold text-on-surface">Ventas</p>
+                    <span id="ventas-count" class="text-xs font-mono text-secondary"></span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-surface-container-low/50">
+                            <tr>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Venta ID</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha / Hora</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
+                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-ventas" class="divide-y divide-outline-variant text-sm"></tbody>
+                    </table>
+                </div>
+                <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30">
+                    <p id="ventas-info" class="text-xs font-mono text-secondary"></p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="border-t border-outline-variant px-6 py-3 text-center">
+        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Cancelar Venta &copy; 2026</p>
+    </footer>
+</div>
+
+<!-- MODAL RECIBO -->
+<div id="modal-recibo" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div class="bg-primary px-5 py-4 flex justify-between items-center flex-shrink-0" style="background-color:#755b00;">
+            <div>
+                <h3 class="text-base font-bold text-white">Detalle del Recibo</h3>
+                <p id="modal-recibo-id" class="text-xs text-white/70 mt-0.5">Venta: —</p>
+            </div>
+            <button onclick="cerrarModalRecibo()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="overflow-y-auto flex-1 p-5 space-y-4">
+            <div id="recibo-contenido"><div class="text-center py-10 text-secondary">Cargando...</div></div>
+        </div>
+        <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center flex-shrink-0">
+            <button id="btn-cancelar-recibo" onclick="abrirModalCancelacion()" class="px-4 py-2 text-sm font-bold bg-error text-white rounded-lg hover:opacity-90 transition flex items-center gap-1 hidden">
+                <span class="material-symbols-outlined text-[18px]">cancel</span> Cancelar Venta
+            </button>
+            <button onclick="cerrarModalRecibo()" class="px-4 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CONFIRMAR CANCELACIÓN -->
+<div id="modal-cancelar" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div class="bg-error px-5 py-4 flex justify-between items-center" style="background-color:#EF4444;">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <span class="material-symbols-outlined">warning</span> Cancelar Venta
+            </h3>
+            <button onclick="cerrarModalCancelacion()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-5 space-y-4">
+            <p class="text-sm text-on-surface">¿Estás seguro de cancelar esta venta? Se restaurará el stock y se liberará la deuda del comprador. Esta acción no se puede deshacer.</p>
+            <div>
+                <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Motivo de cancelación <span class="text-error">*</span></label>
+                <textarea id="campo-motivo" rows="3" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-error transition resize-none" placeholder="Ej: Error en la venta, devolución del producto, etc."></textarea>
+            </div>
+        </div>
+        <div class="px-5 py-3 border-t border-outline-variant bg-gray-50 flex justify-end gap-2">
+            <button onclick="cerrarModalCancelacion()" class="px-4 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Volver</button>
+            <button id="btn-confirmar" onclick="ejecutarCancelacion()" class="px-4 py-2 text-sm font-bold bg-error text-white rounded-lg hover:opacity-90 transition flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">check</span> Confirmar Cancelación
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/notify.js"></script>
+<script src="js/layout.js"></script>
+
+<script>
+let cacheClientes = [];
+let ventasCliente = [];
+let ventaIdActual = null;
+
+function mostrarUsuario() {
+    const nombre = localStorage.getItem('usuario') || 'Usuario';
+    const rango = localStorage.getItem('rango') || '';
+    document.getElementById('nombre-usuario').textContent = nombre;
+    document.getElementById('rango-usuario').textContent = rango;
+    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar-dinamico');
+    if (sidebar) sidebar.classList.toggle('open');
+    const overlay = document.getElementById('overlay');
+    if (overlay) overlay.classList.toggle('hidden');
+}
+
+async function cargarClientes() {
+    try {
+        const res = await API.get('/libreria/clientes', true);
+        if (res.ok) cacheClientes = await res.json();
+    } catch (err) {
+        console.error('[Cancelar] Error al cargar clientes:', err);
+    }
+}
+
+function configurarBuscador() {
+    const input = document.getElementById('buscador-cliente');
+    const results = document.getElementById('resultados-busqueda');
+    let debounce;
+    input.addEventListener('input', (e) => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => {
+            const query = e.target.value.toLowerCase().trim();
+            results.innerHTML = '';
+            if (!query) { results.classList.add('hidden'); return; }
+            const filtrados = cacheClientes.filter(c =>
+                (c.nombre_completo || '').toLowerCase().includes(query) ||
+                (c.cui || '').includes(query)
+            );
+            if (filtrados.length === 0) {
+                results.innerHTML = '<div class="p-4 text-sm text-secondary text-center">Cliente no encontrado.</div>';
+            } else {
+                filtrados.slice(0, 8).forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = 'p-3 cursor-pointer hover:bg-surface-container-low transition';
+                    div.innerHTML = `
+                        <p class="text-sm font-bold text-on-surface">${c.nombre_completo}</p>
+                        <p class="text-xs font-mono text-secondary">CUI: ${c.cui}</p>
+                    `;
+                    div.onclick = () => {
+                        cargarVentasCliente(c);
+                        input.value = c.nombre_completo;
+                        results.classList.add('hidden');
+                    };
+                    results.appendChild(div);
+                });
+            }
+            results.classList.remove('hidden');
+        }, 300);
+    });
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !results.contains(e.target)) {
+            results.classList.add('hidden');
+        }
+    });
+}
+
+async function cargarVentasCliente(cliente) {
+    document.getElementById('cliente-seleccionado').textContent = cliente.nombre_completo;
+    document.getElementById('cliente-cui').textContent = `CUI: ${cliente.cui}`;
+    document.getElementById('estado-inicial').classList.add('hidden');
+    document.getElementById('ventas-section').classList.remove('hidden');
+
+    try {
+        const res = await API.get(`/libreria/ventas/buscar?q=${cliente.cui}`, true);
+        if (!res.ok) { const d = await res.json(); notify.error(API.mensajeError(d)); return; }
+        ventasCliente = await res.json();
+        renderizarVentas();
+    } catch (err) {
+        console.error('[Cancelar] Error:', err);
+        notify.error('Error al cargar ventas');
+    }
+}
+
+function renderizarVentas() {
+    const tbody = document.getElementById('tabla-ventas');
+    const count = document.getElementById('ventas-count');
+    const info = document.getElementById('ventas-info');
+
+    count.textContent = `${ventasCliente.length} venta(s)`;
+    info.textContent = `${ventasCliente.length} transacción(es)`;
+
+    if (ventasCliente.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-secondary text-sm"><span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">receipt_long</span>No hay ventas registradas.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = '';
+    ventasCliente.forEach(v => {
+        const esCancelada = v.estado === 'cancelada';
+        let badge;
+        if (esCancelada) {
+            badge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Cancelada</span>';
+        } else if (v.estado_pago === 'pagado') {
+            badge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Pagado</span>';
+        } else if (v.estado_pago === 'parcial') {
+            badge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>';
+        } else {
+            badge = '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>';
+        }
+
+        const fecha = v.created_at ? new Date(v.created_at).toLocaleString('es-GT', {
+            timeZone: 'America/Guatemala',
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        }) : '—';
+
+        const tr = document.createElement('tr');
+        tr.className = 'table-row transition-colors';
+        tr.innerHTML = `
+            <td class="px-5 py-3 font-mono text-xs text-secondary">${v.id.substring(0,8)}...</td>
+            <td class="px-5 py-3 text-sm">${fecha}</td>
+            <td class="px-5 py-3 text-sm font-mono font-bold text-right">${formatearMoneda(v.total_venta)}</td>
+            <td class="px-5 py-3 text-center">${badge}</td>
+            <td class="px-5 py-3 text-center">
+                <button onclick="verRecibo('${v.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Ver recibo">
+                    <span class="material-symbols-outlined text-[16px]">receipt_long</span>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function limpiarBusqueda() {
+    document.getElementById('buscador-cliente').value = '';
+    document.getElementById('ventas-section').classList.add('hidden');
+    document.getElementById('estado-inicial').classList.remove('hidden');
+    ventasCliente = [];
+    ventaIdActual = null;
+}
+
+async function verRecibo(ventaId) {
+    ventaIdActual = ventaId;
+    document.getElementById('modal-recibo-id').textContent = `Venta: ${ventaId.substring(0,8)}...`;
+    document.getElementById('recibo-contenido').innerHTML = '<div class="text-center py-10 text-secondary">Cargando detalle...</div>';
+    document.getElementById('modal-recibo').classList.remove('hidden');
+    document.getElementById('modal-recibo').classList.add('flex');
+
+    try {
+        const res = await API.get(`/libreria/ventas/${ventaId}/detalle`, true);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderizarRecibo(data);
+    } catch (err) {
+        console.error('[Recibo] Error:', err);
+        document.getElementById('recibo-contenido').innerHTML = '<div class="text-center py-10 text-error">Error al cargar el recibo.</div>';
+        notify.error('Error al cargar el detalle');
+    }
+}
+
+function renderizarRecibo(data) {
+    const venta = data.venta;
+    const productos = data.productos || [];
+    const pagos = data.pagos || [];
+    const esCancelada = venta.estado === 'cancelada';
+
+    let html = `
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <p class="text-xs font-mono text-gray-500">Total Venta</p>
+                <p class="text-lg font-bold font-mono">${formatearMoneda(venta.total_venta)}</p>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <p class="text-xs font-mono text-gray-500">Total Pagado</p>
+                <p class="text-lg font-bold font-mono">${formatearMoneda(venta.total_pagado)}</p>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <p class="text-xs font-mono text-gray-500">Estado</p>
+                <p class="text-lg font-bold ${esCancelada ? 'text-red-600' : venta.estado_pago === 'pagado' ? 'text-green-600' : 'text-red-600'}">${esCancelada ? 'CANCELADA' : venta.estado_pago.toUpperCase()}</p>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <p class="text-xs font-mono text-gray-500">Operador</p>
+                <p class="text-lg font-bold">${venta.operador || '—'}</p>
+            </div>
+        </div>
+        <div class="mb-4">
+            <p class="text-xs font-mono text-gray-500">Cliente</p>
+            <p class="font-bold">${venta.comprador_nombre || venta.comprador_cui}</p>
+        </div>
+    `;
+
+    if (esCancelada && venta.motivo_cancelacion) {
+        html += `
+            <div class="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <p class="text-xs font-bold text-amber-700 uppercase tracking-wider">Motivo de cancelación</p>
+                <p class="text-sm text-amber-800 mt-1">${venta.motivo_cancelacion}</p>
+            </div>
+        `;
+    }
+
+    html += `
+        <div class="mb-4">
+            <h4 class="text-xs font-mono font-bold text-gray-500 uppercase tracking-wider mb-2">Productos</h4>
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase">Producto</th>
+                            <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-center">Cant.</th>
+                            <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-right">Precio Unit.</th>
+                            <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-right">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-sm">
+    `;
+    if (productos.length === 0) {
+        html += '<tr><td colspan="4" class="text-center py-4 text-gray-500">Sin productos.</td></tr>';
+    } else {
+        productos.forEach(p => {
+            html += `
+                <tr>
+                    <td class="px-4 py-2.5">${p.nombre}</td>
+                    <td class="px-4 py-2.5 text-center">${p.cantidad}</td>
+                    <td class="px-4 py-2.5 text-right font-mono">${formatearMoneda(p.precio_unitario)}</td>
+                    <td class="px-4 py-2.5 text-right font-mono font-bold">${formatearMoneda(p.subtotal)}</td>
+                </tr>
+            `;
+        });
+    }
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+    if (pagos.length > 0) {
+        html += `
+            <div>
+                <h4 class="text-xs font-mono font-bold text-gray-500 uppercase tracking-wider mb-2">Pagos</h4>
+                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase">Fecha</th>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-right">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm">
+        `;
+        pagos.forEach(p => {
+            html += `
+                <tr>
+                    <td class="px-4 py-2.5">${formatearFechaHora(p.fecha_pago)}</td>
+                    <td class="px-4 py-2.5 text-right font-mono font-bold text-green-700">${formatearMoneda(p.monto_abonado)}</td>
+                </tr>
+            `;
+        });
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    document.getElementById('recibo-contenido').innerHTML = html;
+
+    const btnCancelar = document.getElementById('btn-cancelar-recibo');
+    if (esCancelada) {
+        btnCancelar.classList.add('hidden');
+    } else {
+        btnCancelar.classList.remove('hidden');
+    }
+}
+
+function cerrarModalRecibo() {
+    document.getElementById('modal-recibo').classList.add('hidden');
+    document.getElementById('modal-recibo').classList.remove('flex');
+    ventaIdActual = null;
+}
+
+function abrirModalCancelacion() {
+    document.getElementById('campo-motivo').value = '';
+    document.getElementById('btn-confirmar').disabled = false;
+    document.getElementById('btn-confirmar').innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> Confirmar Cancelación';
+    document.getElementById('modal-cancelar').classList.remove('hidden');
+    document.getElementById('modal-cancelar').classList.add('flex');
+}
+
+function cerrarModalCancelacion() {
+    document.getElementById('modal-cancelar').classList.add('hidden');
+    document.getElementById('modal-cancelar').classList.remove('flex');
+}
+
+async function ejecutarCancelacion() {
+    if (!ventaIdActual) return;
+    const motivo = document.getElementById('campo-motivo').value.trim();
+    if (!motivo) { notify.warning('Debes ingresar un motivo de cancelación.'); return; }
+
+    const btn = document.getElementById('btn-confirmar');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">hourglass_top</span> Cancelando...';
+
+    try {
+        const res = await API.delete(`/libreria/ventas/${ventaIdActual}?motivo=${encodeURIComponent(motivo)}`, true);
+        if (res.ok) {
+            notify.success('Venta cancelada — stock restaurado y deuda liberada');
+            cerrarModalCancelacion();
+            await verRecibo(ventaIdActual);
+            const cui = document.getElementById('cliente-cui').textContent.replace('CUI: ', '');
+            const cliente = cacheClientes.find(c => c.cui === cui);
+            if (cliente) await cargarVentasCliente(cliente);
+        } else {
+            const d = await res.json();
+            notify.error(API.mensajeError(d));
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> Confirmar Cancelación';
+        }
+    } catch (err) {
+        notify.error('Error al cancelar la venta');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> Confirmar Cancelación';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = 'index.html'; return; }
+    mostrarUsuario();
+    configurarBuscador();
+    await cargarClientes();
+});
+</script>
+</body>
+</html>

@@ -7,6 +7,12 @@ Soporte para ventas con múltiples productos en una sola transacción.
 
 import os
 import base64
+import asyncio
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 import httpx
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Depends, Query
 from database import supabase
@@ -60,12 +66,38 @@ async def consumir_lote_fifo(producto_id: str, cantidad_vendida: int) -> float:
     return costo_total
 
 # ======================== NOTIFICACIONES ASÍNCRONAS ========================
-async def despachar_correo_libreria(datos: dict):
-    """Genera PDF y envía correo (código existente)"""
-    api_key = os.getenv("RESEND_API_KEY")
-    if not api_key:
-        logger.warning("RESEND_API_KEY no configurada. Correo abortado.")
+def _enviar_smtp(destinatario: str, asunto: str, html: str, pdf_bytes: bytes, pdf_filename: str):
+    gmail_user = os.getenv("GMAIL_SMTP_USER", "jonathanvisoni@gmail.com")
+    gmail_pass = os.getenv("GMAIL_SMTP_PASSWORD")
+    if not gmail_pass:
+        logger.warning("GMAIL_SMTP_PASSWORD no configurada. Correo abortado.")
         return
+
+    msg = MIMEMultipart("mixed")
+    msg["From"] = f"Libreria PM Mixco <{gmail_user}>"
+    msg["To"] = destinatario
+    msg["Subject"] = asunto
+
+    msg.attach(MIMEText(html, "html"))
+
+    if pdf_bytes:
+        part = MIMEBase("application", "pdf")
+        part.set_payload(pdf_bytes)
+        encoders.encode_base64(part)
+        part.add_header("Content-Disposition", "attachment", filename=pdf_filename)
+        msg.attach(part)
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(gmail_user, gmail_pass)
+            server.sendmail(gmail_user, destinatario, msg.as_string())
+        logger.info(f"Correo enviado a {destinatario}")
+    except Exception as e:
+        logger.error(f"Falla al enviar correo via Gmail SMTP: {e}")
+
+async def despachar_correo_libreria(datos: dict):
+    """Genera PDF y envía correo por Gmail SMTP"""
     tipo = datos.get("tipo_notificacion", "venta_contado")
     if tipo == "venta_credito":
         titulo_recibo = "Notificacion de Cargo a Credito"
@@ -76,17 +108,12 @@ async def despachar_correo_libreria(datos: dict):
     monto = datos.get("monto", 0)
     hermano = datos.get("hermano", {})
     nombre_hermano = hermano.get("nombre_completo", "Hermano")
+    pdf_bytes = None
+    pdf_filename = f"comprobante_{datos.get('id_transaccion', 'tx')[:8]}.pdf"
     try:
         pdf_bytes = generar_pdf_comprobante(datos)
-        pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
-        adjunto = [{
-            "filename": f"comprobante_{datos.get('id_transaccion', 'tx')[:8]}.pdf",
-            "content": pdf_base64,
-            "type": "application/pdf"
-        }]
     except Exception as e:
         logger.error(f"Falla al generar PDF: {e}")
-        adjunto = []
     html_content = f"""
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 24px;
                 border: 1px solid #e8e4d9; border-radius: 12px; background-color: #fafaf8;">
@@ -110,19 +137,10 @@ async def despachar_correo_libreria(datos: dict):
         </div>
     </div>
     """
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     correo_destino = datos.get("hermano", {}).get("correo") or "jonathanvisoni@gmail.com"
-    payload_correo = {
-        "from": "Libreria PM Mixco <onboarding@resend.dev>",
-        "to": [correo_destino],
-        "subject": f"{titulo_recibo} — Q{monto:.2f} — PM Mixco",
-        "html": html_content,
-        "attachments": adjunto
-    }
-    async with httpx.AsyncClient() as client:
-        respuesta = await client.post("https://api.resend.com/emails", json=payload_correo, headers=headers)
-        if respuesta.status_code != 200:
-            logger.error(f"Falla al despachar correo via Resend: {respuesta.text}")
+    asunto = f"{titulo_recibo} — Q{monto:.2f} — PM Mixco"
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _enviar_smtp, correo_destino, asunto, html_content, pdf_bytes, pdf_filename)
 
 # ======================== GESTIÓN DE INVENTARIO Y CLIENTES ========================
 @router.get("/productos")
@@ -467,6 +485,131 @@ async def registrar_venta_multiple(
 
         return {"mensaje": "Venta registrada exitosamente", "venta_id": venta_id, "total": total_venta}
 
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ======================== BÚSQUEDA Y DETALLE DE VENTAS ========================
+@router.get("/ventas/buscar")
+async def buscar_ventas(
+    q: str = Query("", min_length=0),
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    """Busca ventas por ID, CUI del comprador o nombre del comprador."""
+    try:
+        cui_filtro = None
+        if q:
+            if q.count("-") == 4 and len(q) == 36:
+                query = supabase.table("libreria_ventas") \
+                    .select("*, usuarios!libreria_ventas_comprador_cui_fkey(nombre_completo, correo)") \
+                    .eq("id", q)
+            elif q.isdigit():
+                query = supabase.table("libreria_ventas") \
+                    .select("*, usuarios!libreria_ventas_comprador_cui_fkey(nombre_completo, correo)") \
+                    .eq("comprador_cui", q)
+            else:
+                res_usuarios = supabase.table("usuarios") \
+                    .select("cui") \
+                    .ilike("nombre_completo", f"%{q}%") \
+                    .execute()
+                cuis = [u["cui"] for u in (res_usuarios.data or [])]
+                if cuis:
+                    query = supabase.table("libreria_ventas") \
+                        .select("*, usuarios!libreria_ventas_comprador_cui_fkey(nombre_completo, correo)") \
+                        .in_("comprador_cui", cuis)
+                else:
+                    return []
+        else:
+            query = supabase.table("libreria_ventas") \
+                .select("*, usuarios!libreria_ventas_comprador_cui_fkey(nombre_completo, correo)")
+
+        res = query.order("created_at", desc=True).limit(30).execute()
+        ventas = res.data or []
+
+        for v in ventas:
+            res_det = supabase.table("libreria_ventas_detalle") \
+                .select("*, inventario_libreria!inner(nombre)") \
+                .eq("venta_id", v["id"]) \
+                .execute()
+            v["productos"] = res_det.data or []
+
+        return ventas
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/ventas/{venta_id}")
+async def obtener_venta(
+    venta_id: str,
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    """Obtiene detalle completo de una venta por ID."""
+    try:
+        res = supabase.table("libreria_ventas").select("*, usuarios!libreria_ventas_comprador_cui_fkey(nombre_completo, correo)").eq("id", venta_id).execute()
+        if not res.data:
+            raise HTTPException(404, "Venta no encontrada")
+        venta = res.data[0]
+
+        res_det = supabase.table("libreria_ventas_detalle") \
+            .select("*, inventario_libreria!inner(nombre)") \
+            .eq("venta_id", venta_id) \
+            .execute()
+        venta["productos"] = res_det.data or []
+
+        res_pagos = supabase.table("libreria_pagos").select("*").eq("venta_id", venta_id).execute()
+        venta["pagos"] = res_pagos.data or []
+
+        return venta
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ======================== CANCELACIÓN DE VENTAS ========================
+@router.delete("/ventas/{venta_id}", status_code=status.HTTP_200_OK)
+async def cancelar_venta(
+    venta_id: str,
+    motivo: str = Query("", min_length=0, max_length=500),
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    """Cancela una venta activa: restaura stock, libera deuda y registra motivo."""
+    try:
+        res_venta = supabase.table("libreria_ventas").select("*").eq("id", venta_id).execute()
+        if not res_venta.data:
+            raise HTTPException(404, "Venta no encontrada")
+        venta = res_venta.data[0]
+        if venta.get("estado") == "cancelada":
+            raise HTTPException(400, "La venta ya fue cancelada anteriormente")
+
+        res_detalle = supabase.table("libreria_ventas_detalle") \
+            .select("producto_id, cantidad") \
+            .eq("venta_id", venta_id) \
+            .execute()
+        detalles = res_detalle.data or []
+
+        for det in detalles:
+            producto_id = det["producto_id"]
+            cantidad = det["cantidad"]
+            res_prod = supabase.table("inventario_libreria") \
+                .select("stock") \
+                .eq("id", producto_id) \
+                .execute()
+            if res_prod.data:
+                stock_actual = res_prod.data[0]["stock"]
+                supabase.table("inventario_libreria") \
+                    .update({"stock": stock_actual + cantidad}) \
+                    .eq("id", producto_id) \
+                    .execute()
+
+        update_data = {"estado": "cancelada", "estado_pago": "cancelada"}
+        if motivo:
+            update_data["motivo_cancelacion"] = motivo
+        supabase.table("libreria_ventas") \
+            .update(update_data) \
+            .eq("id", venta_id) \
+            .execute()
+
+        return {"mensaje": "Venta cancelada exitosamente — stock restaurado y deuda liberada", "venta_id": venta_id}
     except HTTPException:
         raise
     except Exception as e:
