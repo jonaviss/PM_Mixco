@@ -138,6 +138,37 @@ input:focus, select:focus, textarea:focus {
 /* ============================================
    UTILIDADES RESPONSIVE PARA SIDEBAR
    ============================================ */
+/* ============================================
+   SIDEBAR COLAPSABLE
+   ============================================ */
+#sidebar-dinamico {
+    width: 260px;
+    transition: width 0.25s ease;
+    overflow: hidden;
+}
+
+#sidebar-dinamico.collapsed {
+    width: 64px;
+}
+
+#sidebar-dinamico.collapsed .sidebar-text {
+    display: none;
+}
+
+#sidebar-dinamico.collapsed .nav-item {
+    justify-content: center;
+    padding: 0.6rem 0;
+}
+
+#sidebar-dinamico.collapsed ~ #main-content,
+body.sidebar-collapsed #main-content {
+    margin-left: 64px;
+}
+
+#main-content {
+    transition: margin-left 0.25s ease;
+}
+
 @media (max-width: 768px) {
     #sidebar {
         transform: translateX(-100%);

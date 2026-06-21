@@ -46,6 +46,9 @@
             <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary">
                 <span class="material-symbols-outlined">menu</span>
             </button>
+            <a href="admin_configuracion.html" class="p-1.5 rounded-lg hover:bg-surface-container text-secondary" title="Regresar a Configuración">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </a>
             <div>
                 <h2 class="text-base font-bold text-on-surface leading-none">Administrar Usuarios</h2>
                 <p class="text-xs text-secondary mt-0.5">Gestión de cuentas, roles y permisos</p>
@@ -112,6 +115,7 @@
             <button onclick="cerrarModal()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="overflow-y-auto flex-1 p-5 space-y-4">
+            <div id="msg-modal" class="hidden px-4 py-2 rounded-lg text-sm font-bold bg-red-100 text-red-700"></div>
             <input type="hidden" id="edit-cui-original">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="sm:col-span-2">

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#755b00", "primary-container": "#C9A227", "on-primary": "#ffffff",
+                        "surface": "#F8FAFC", "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#F1F5F9", "surface-container": "#E2E8F0",
+                        "outline-variant": "#CBD5E1", "secondary": "#64748B", "error": "#EF4444"
+                    },
+                    fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
+                    spacing: { "sidebar": "260px" }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-on-surface">
+
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            <div>
+                <h2 class="text-base font-bold text-on-surface leading-none">Configuración</h2>
+                <p class="text-xs text-secondary mt-0.5">Administrar catálogos y ajustes del sistema</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block">
+                <p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p>
+                <p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p>
+            </div>
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm">
+                <span id="avatar-inicial">?</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 space-y-6">
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+            <a href="admin_tipos_producto.html" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm hover:shadow-md transition flex flex-col items-center text-center gap-3">
+                <span class="material-symbols-outlined text-[36px] text-primary">category</span>
+                <h3 class="text-sm font-bold">Tipos de Producto</h3>
+                <p class="text-xs text-secondary">Gestionar categorías de productos</p>
+            </a>
+
+            <a href="admin_metodos_pago.html" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm hover:shadow-md transition flex flex-col items-center text-center gap-3">
+                <span class="material-symbols-outlined text-[36px] text-primary">payments</span>
+                <h3 class="text-sm font-bold">Métodos de Pago</h3>
+                <p class="text-xs text-secondary">Gestionar formas de pago</p>
+            </a>
+
+            <a href="admin_configuracion_correo.html" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm hover:shadow-md transition flex flex-col items-center text-center gap-3">
+                <span class="material-symbols-outlined text-[36px] text-primary">mail</span>
+                <h3 class="text-sm font-bold">Correo Electrónico</h3>
+                <p class="text-xs text-secondary">Configurar remitente de correos</p>
+            </a>
+
+            <a href="admin_usuarios.html" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm hover:shadow-md transition flex flex-col items-center text-center gap-3">
+                <span class="material-symbols-outlined text-[36px] text-primary">admin_panel_settings</span>
+                <h3 class="text-sm font-bold">Usuarios</h3>
+                <p class="text-xs text-secondary">Administrar cuentas y roles</p>
+            </a>
+
+            <a href="proveedores.html" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm hover:shadow-md transition flex flex-col items-center text-center gap-3">
+                <span class="material-symbols-outlined text-[36px] text-primary">local_shipping</span>
+                <h3 class="text-sm font-bold">Proveedores</h3>
+                <p class="text-xs text-secondary">Gestionar proveedores</p>
+            </a>
+
+        </section>
+    </main>
+
+    <footer class="border-t border-outline-variant px-6 py-3 text-center">
+        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Configuración &copy; 2026</p>
+    </footer>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/notify.js"></script>
+<script src="js/layout.js"></script>
+<script>
+function mostrarUsuario() {
+    const nombre = localStorage.getItem('usuario') || 'Usuario';
+    const rango = localStorage.getItem('rango') || '';
+    document.getElementById('nombre-usuario').textContent = nombre;
+    document.getElementById('rango-usuario').textContent = rango;
+    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
+}
+function toggleSidebar() {
+    const s = document.getElementById('sidebar-dinamico'); if (s) s.classList.toggle('open');
+    const o = document.getElementById('overlay'); if (o) o.classList.toggle('hidden');
+}
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!localStorage.getItem('token')) { window.location.href = 'index.html'; return; }
+    mostrarUsuario();
+});
+</script>
+</body>
+</html>

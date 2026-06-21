@@ -66,11 +66,9 @@ async def consumir_lote_fifo(producto_id: str, cantidad_vendida: int) -> float:
     return costo_total
 
 # ======================== NOTIFICACIONES ASÍNCRONAS ========================
-def _enviar_smtp(destinatario: str, asunto: str, html: str, pdf_bytes: bytes, pdf_filename: str):
-    gmail_user = os.getenv("GMAIL_SMTP_USER", "jonathanvisoni@gmail.com")
-    gmail_pass = os.getenv("GMAIL_SMTP_PASSWORD")
-    if not gmail_pass:
-        logger.warning("GMAIL_SMTP_PASSWORD no configurada. Correo abortado.")
+def _enviar_smtp(destinatario: str, asunto: str, html: str, pdf_bytes: bytes, pdf_filename: str, gmail_user: str, gmail_pass: str):
+    if not gmail_user or not gmail_pass:
+        logger.warning("Credenciales de correo no configuradas. Correo abortado.")
         return
 
     msg = MIMEMultipart("mixed")
@@ -137,10 +135,22 @@ async def despachar_correo_libreria(datos: dict):
         </div>
     </div>
     """
-    correo_destino = datos.get("hermano", {}).get("correo") or "jonathanvisoni@gmail.com"
+    correo_destino = datos.get("hermano", {}).get("correo") or os.getenv("GMAIL_SMTP_USER")
     asunto = f"{titulo_recibo} — Q{monto:.2f} — PM Mixco"
+
+    gmail_user = os.getenv("GMAIL_SMTP_USER")
+    gmail_pass = os.getenv("GMAIL_SMTP_PASSWORD")
+    try:
+        res_config = supabase.table("configuracion_correo").select("*").limit(1).execute()
+        if res_config.data:
+            cfg = res_config.data[0]
+            gmail_user = cfg.get("smtp_user") or gmail_user
+            gmail_pass = cfg.get("smtp_password") or gmail_pass
+    except Exception:
+        pass
+
     loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _enviar_smtp, correo_destino, asunto, html_content, pdf_bytes, pdf_filename)
+    await loop.run_in_executor(None, _enviar_smtp, correo_destino, asunto, html_content, pdf_bytes, pdf_filename, gmail_user, gmail_pass)
 
 # ======================== GESTIÓN DE INVENTARIO Y CLIENTES ========================
 @router.get("/productos")
@@ -335,7 +345,9 @@ async def registrar_venta(
             "hermano": comprador,
             "deuda_hermano": {"total": deuda_total, "cantidad": len(deuda_data)}
         })
-        return {"mensaje": "Transacción completada exitosamente", "venta_id": venta_id}
+        sin_correo = not comprador.get("correo")
+        mensaje_extra = " El comprador no tiene correo registrado, no se envió comprobante." if sin_correo else ""
+        return {"mensaje": f"Transacción completada exitosamente.{mensaje_extra}", "venta_id": venta_id, "sin_correo": sin_correo}
     except HTTPException:
         raise
     except Exception as e:
@@ -483,7 +495,9 @@ async def registrar_venta_multiple(
             "deuda_hermano": {"total": deuda_total, "cantidad": len(deuda_data)}
         })
 
-        return {"mensaje": "Venta registrada exitosamente", "venta_id": venta_id, "total": total_venta}
+        sin_correo = not comprador.get("correo")
+        mensaje_extra = " El comprador no tiene correo registrado, no se envió comprobante." if sin_correo else ""
+        return {"mensaje": f"Venta registrada exitosamente.{mensaje_extra}", "venta_id": venta_id, "total": total_venta, "sin_correo": sin_correo}
 
     except HTTPException:
         raise
@@ -535,6 +549,107 @@ async def buscar_ventas(
             v["productos"] = res_det.data or []
 
         return ventas
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ======================== REPORTE DE VENTAS ========================
+@router.get("/ventas/reporte")
+async def reporte_ventas(
+    inicio: str,
+    fin: str,
+    operador_cui: Optional[str] = None,
+    cliente_cui: Optional[str] = None,
+    estado: Optional[str] = None,
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    """
+    Genera un reporte de ventas agrupado por día en el rango de fechas especificado.
+    Filtros opcionales: operador_cui, cliente_cui, estado.
+    """
+    try:
+        query = supabase.table("libreria_ventas") \
+            .select("id, comprador_cui, total_venta, total_pagado, estado_pago, created_at, digitado_por") \
+            .gte("created_at", inicio) \
+            .lte("created_at", fin)
+
+        if operador_cui:
+            query = query.eq("digitado_por", operador_cui)
+        if cliente_cui:
+            query = query.eq("comprador_cui", cliente_cui)
+        if estado:
+            query = query.eq("estado_pago", estado)
+
+        res = query.order("created_at", desc=False).execute()
+        ventas = res.data or []
+
+        ventas_con_detalle = []
+        for v in ventas:
+            res_detalle = supabase.table("libreria_ventas_detalle") \
+                .select("producto_id, cantidad, precio_unitario, subtotal, inventario_libreria(nombre)") \
+                .eq("venta_id", v["id"]) \
+                .execute()
+
+            productos = []
+            for d in (res_detalle.data or []):
+                productos.append({
+                    "nombre": d.get("inventario_libreria", {}).get("nombre", "Producto no disponible"),
+                    "cantidad": d["cantidad"],
+                    "precio_unitario": d["precio_unitario"],
+                    "subtotal": d["subtotal"]
+                })
+
+            res_cliente = supabase.table("usuarios") \
+                .select("nombre_completo") \
+                .eq("cui", v["comprador_cui"]) \
+                .execute()
+
+            cliente = res_cliente.data[0]["nombre_completo"] if res_cliente.data else "—"
+
+            ventas_con_detalle.append({
+                "id": v["id"],
+                "cliente": cliente,
+                "total": v["total_venta"],
+                "pagado": v["total_pagado"],
+                "estado": v["estado_pago"],
+                "created_at": v["created_at"],
+                "productos": productos
+            })
+
+        dias = {}
+        for v in ventas_con_detalle:
+            fecha = v["created_at"].split("T")[0]
+            if fecha not in dias:
+                dias[fecha] = {
+                    "fecha": fecha,
+                    "cantidad": 0,
+                    "total": 0.0,
+                    "productos": 0,
+                    "ventas": []
+                }
+            dias[fecha]["cantidad"] += 1
+            dias[fecha]["total"] += v["total"]
+            dias[fecha]["productos"] += sum(p["cantidad"] for p in v["productos"])
+            dias[fecha]["ventas"].append(v)
+
+        dias_ordenados = sorted(dias.values(), key=lambda x: x["fecha"])
+
+        resumen = {
+            "total_ventas": sum(d["total"] for d in dias_ordenados),
+            "total_transacciones": sum(d["cantidad"] for d in dias_ordenados),
+            "total_productos": sum(d["productos"] for d in dias_ordenados)
+        }
+
+        detalle = {d["fecha"]: d["ventas"] for d in dias_ordenados}
+
+        for d in dias_ordenados:
+            del d["ventas"]
+
+        return {
+            "dias": dias_ordenados,
+            "detalle": detalle,
+            "resumen": resumen
+        }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -820,110 +935,6 @@ async def obtener_detalle_venta(venta_id: str, usuario_actual=Depends(obtener_us
         raise
     except Exception as e:
         raise HTTPException(500, detail=str(e))
-
-# ======================== REPORTE DE VENTAS ========================
-@router.get("/ventas/reporte")
-async def reporte_ventas(
-    inicio: str,
-    fin: str,
-    operador_cui: Optional[str] = None,
-    cliente_cui: Optional[str] = None,
-    estado: Optional[str] = None,
-    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
-):
-    """
-    Genera un reporte de ventas agrupado por día en el rango de fechas especificado.
-    Filtros opcionales: operador_cui, cliente_cui, estado.
-    """
-    try:
-        query = supabase.table("libreria_ventas") \
-            .select("id, comprador_cui, total_venta, total_pagado, estado_pago, created_at, digitado_por") \
-            .gte("created_at", inicio) \
-            .lte("created_at", fin)
-
-        if operador_cui:
-            query = query.eq("digitado_por", operador_cui)
-        if cliente_cui:
-            query = query.eq("comprador_cui", cliente_cui)
-        if estado:
-            query = query.eq("estado_pago", estado)
-
-        res = query.order("created_at", desc=False).execute()
-        ventas = res.data or []
-
-        # Obtener detalles de cada venta (productos)
-        ventas_con_detalle = []
-        for v in ventas:
-            res_detalle = supabase.table("libreria_ventas_detalle") \
-                .select("producto_id, cantidad, precio_unitario, subtotal, inventario_libreria(nombre)") \
-                .eq("venta_id", v["id"]) \
-                .execute()
-
-            productos = []
-            for d in (res_detalle.data or []):
-                productos.append({
-                    "nombre": d.get("inventario_libreria", {}).get("nombre", "Producto no disponible"),
-                    "cantidad": d["cantidad"],
-                    "precio_unitario": d["precio_unitario"],
-                    "subtotal": d["subtotal"]
-                })
-
-            # Obtener nombre del cliente
-            res_cliente = supabase.table("usuarios") \
-                .select("nombre_completo") \
-                .eq("cui", v["comprador_cui"]) \
-                .execute()
-
-            cliente = res_cliente.data[0]["nombre_completo"] if res_cliente.data else "—"
-
-            ventas_con_detalle.append({
-                "id": v["id"],
-                "cliente": cliente,
-                "total": v["total_venta"],
-                "pagado": v["total_pagado"],
-                "estado": v["estado_pago"],
-                "created_at": v["created_at"],
-                "productos": productos
-            })
-
-        # Agrupar por día
-        dias = {}
-        for v in ventas_con_detalle:
-            fecha = v["created_at"].split("T")[0]
-            if fecha not in dias:
-                dias[fecha] = {
-                    "fecha": fecha,
-                    "cantidad": 0,
-                    "total": 0.0,
-                    "productos": 0,
-                    "ventas": []
-                }
-            dias[fecha]["cantidad"] += 1
-            dias[fecha]["total"] += v["total"]
-            dias[fecha]["productos"] += sum(p["cantidad"] for p in v["productos"])
-            dias[fecha]["ventas"].append(v)
-
-        dias_ordenados = sorted(dias.values(), key=lambda x: x["fecha"])
-
-        resumen = {
-            "total_ventas": sum(d["total"] for d in dias_ordenados),
-            "total_transacciones": sum(d["cantidad"] for d in dias_ordenados),
-            "total_productos": sum(d["productos"] for d in dias_ordenados)
-        }
-
-        detalle = {d["fecha"]: d["ventas"] for d in dias_ordenados}
-
-        for d in dias_ordenados:
-            del d["ventas"]
-
-        return {
-            "dias": dias_ordenados,
-            "detalle": detalle,
-            "resumen": resumen
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 # ======================== USUARIOS VENDEDORES ========================
 @router.get("/usuarios/vendedores")

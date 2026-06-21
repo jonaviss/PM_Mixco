@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tipos de Producto | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script>tailwind.config={theme:{extend:{colors:{"primary":"#755b00","primary-container":"#C9A227", "on-primary":"#ffffff","surface":"#F8FAFC","surface-container-lowest":"#ffffff","surface-container-low":"#F1F5F9","surface-container":"#E2E8F0","outline-variant":"#CBD5E1","secondary":"#64748B","error":"#EF4444"},fontFamily:{"sora":["Sora"],"mono":["JetBrains Mono"]},spacing:{"sidebar":"260px"}}}}</script>
+</head>
+<body class="text-on-surface">
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary"><span class="material-symbols-outlined">menu</span></button>
+            <a href="admin_configuracion.html" class="p-1.5 rounded-lg hover:bg-surface-container text-secondary" title="Regresar a Configuración"><span class="material-symbols-outlined">arrow_back</span></a>
+            <div><h2 class="text-base font-bold text-on-surface leading-none">Tipos de Producto</h2><p class="text-xs text-secondary mt-0.5">Catálogo de categorías</p></div>
+        </div>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block"><p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p><p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p></div>
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm"><span id="avatar-inicial">?</span></div>
+        </div>
+    </header>
+    <main class="flex-1 p-6 space-y-6">
+        <section class="flex justify-between items-center">
+            <p id="total-registros" class="text-sm font-mono text-secondary">Cargando...</p>
+            <button onclick="abrirModalCrear()" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">add</span> Nuevo Tipo</button>
+        </section>
+        <section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-surface-container-low/50">
+                        <tr><th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Nombre</th><th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th><th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Acciones</th></tr>
+                    </thead>
+                    <tbody id="tabla-registros" class="divide-y divide-outline-variant text-sm"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+    <footer class="border-t border-outline-variant px-6 py-3 text-center"><p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Tipos de Producto &copy; 2026</p></footer>
+</div>
+<div id="modal-item" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="px-5 py-4 flex justify-between items-center" style="background-color:#C9A227;">
+            <h3 id="modal-titulo" class="text-base font-bold text-white">Nuevo Tipo de Producto</h3>
+            <button onclick="cerrarModal()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-5 space-y-4">
+            <input type="hidden" id="edit-id">
+            <div>
+                <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Nombre</label>
+                <input type="text" id="field-nombre" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="Ej: Biblia, Himnario, Libro">
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="field-activo" class="accent-primary-container" checked>
+                <label for="field-activo" class="text-sm text-on-surface">Activo</label>
+            </div>
+        </div>
+        <div class="px-5 py-3 border-t border-outline-variant bg-gray-50 flex justify-end gap-2">
+            <button onclick="cerrarModal()" class="px-4 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cancelar</button>
+            <button id="btn-guardar" onclick="guardar()" class="px-4 py-2 text-sm font-bold text-white rounded-lg hover:opacity-90 transition" style="background-color:#C9A227;">Guardar</button>
+        </div>
+    </div>
+</div>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/notify.js"></script>
+<script src="js/layout.js"></script>
+<script>
+let items = []; let editando = false;
+function mostrarUsuario(){const n=localStorage.getItem('usuario')||'Usuario',r=localStorage.getItem('rango')||'';document.getElementById('nombre-usuario').textContent=n;document.getElementById('rango-usuario').textContent=r;document.getElementById('avatar-inicial').textContent=n.charAt(0).toUpperCase();}
+function toggleSidebar(){const s=document.getElementById('sidebar-dinamico');if(s)s.classList.toggle('open');const o=document.getElementById('overlay');if(o)o.classList.toggle('hidden');}
+async function cargarItems(){try{const r=await API.get('/configuracion/tipos-producto',!0);if(!r.ok)throw Error();items=await r.json();document.getElementById('total-registros').textContent=`${items.length} tipo(s)`;renderizar()}catch(e){notify.error('Error al cargar')}}
+function renderizar(){const t=document.getElementById('tabla-registros');if(items.length===0){t.innerHTML='<tr><td colspan="3" class="text-center py-8 text-secondary text-sm"><span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">category</span>No hay tipos de producto.</td></tr>';return}
+t.innerHTML='';items.forEach(i=>{const a=i.activo?'<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Activo</span>':'<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Inactivo</span>';const tr=document.createElement('tr');tr.className='table-row transition-colors';tr.innerHTML=`<td class="px-5 py-3 text-sm font-bold">${i.nombre}</td><td class="px-5 py-3 text-center">${a}</td><td class="px-5 py-3 text-center"><div class="flex items-center justify-center gap-1"><button onclick="editarItem(${i.id})" class="p-1.5 rounded-lg border border-outline-variant text-secondary hover:bg-primary-container hover:text-white transition" title="Editar"><span class="material-symbols-outlined text-[16px]">edit</span></button><button onclick="eliminarItem(${i.id})" class="p-1.5 rounded-lg border border-outline-variant text-error hover:bg-error hover:text-white transition" title="Eliminar"><span class="material-symbols-outlined text-[16px]">delete</span></button></div></td>`;t.appendChild(tr)})}
+function abrirModalCrear(){editando=!1;document.getElementById('modal-titulo').textContent='Nuevo Tipo de Producto';document.getElementById('btn-guardar').textContent='Guardar';document.getElementById('edit-id').value='';document.getElementById('field-nombre').value='';document.getElementById('field-activo').checked=!0;document.getElementById('modal-item').classList.remove('hidden');document.getElementById('modal-item').classList.add('flex')}
+function editarItem(id){const i=items.find(x=>x.id===id);if(!i)return;editando=!0;document.getElementById('modal-titulo').textContent='Editar Tipo de Producto';document.getElementById('btn-guardar').textContent='Actualizar';document.getElementById('edit-id').value=id;document.getElementById('field-nombre').value=i.nombre;document.getElementById('field-activo').checked=i.activo;document.getElementById('modal-item').classList.remove('hidden');document.getElementById('modal-item').classList.add('flex')}
+function cerrarModal(){document.getElementById('modal-item').classList.add('hidden');document.getElementById('modal-item').classList.remove('flex')}
+async function guardar(){const nombre=document.getElementById('field-nombre').value.trim();if(!nombre){notify.warning('El nombre es obligatorio');return}
+const activo=document.getElementById('field-activo').checked;const id=document.getElementById('edit-id').value;const btn=document.getElementById('btn-guardar');btn.disabled=!0;btn.textContent='Guardando...'
+try{if(editando){const r=await API.put(`/configuracion/tipos-producto/${id}`,{nombre,activo},!0);if(!r.ok){const d=await r.json();notify.error(API.mensajeError(d));btn.disabled=!1;btn.textContent='Actualizar';return}}else{const r=await API.post('/configuracion/tipos-producto',{nombre},!0);if(!r.ok){const d=await r.json();notify.error(API.mensajeError(d));btn.disabled=!1;btn.textContent='Guardar';return}}
+notify.success(editando?'Tipo actualizado':'Tipo creado');cerrarModal();await cargarItems()}catch(e){notify.error('Error de conexión')}finally{btn.disabled=!1;btn.textContent=editando?'Actualizar':'Guardar'}}
+async function eliminarItem(id){if(!confirm('¿Eliminar este tipo de producto?'))return;try{const r=await API.delete(`/configuracion/tipos-producto/${id}`,!0);if(r.ok){notify.success('Tipo eliminado');await cargarItems()}else{const d=await r.json();notify.error(API.mensajeError(d))}}catch(e){notify.error('Error al eliminar')}}
+document.addEventListener('DOMContentLoaded',async()=>{if(!localStorage.getItem('token')){window.location.href='index.html';return};mostrarUsuario();await cargarItems()});
+</script>
+</body>
+</html>

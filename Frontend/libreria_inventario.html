@@ -319,13 +319,7 @@
             </div>
             <div>
                 <label class="block text-xs font-bold text-secondary uppercase mb-1">Categoría *</label>
-                <select id="np-categoria" class="w-full border rounded-lg px-3 py-2">
-                    <option value="Biblia">Biblia</option>
-                    <option value="Libro">Libro</option>
-                    <option value="Material">Material de Estudio</option>
-                    <option value="Accesorio">Accesorio</option>
-                    <option value="Otro">Otro</option>
-                </select>
+                <select id="np-categoria" class="w-full border rounded-lg px-3 py-2"></select>
             </div>
             <div>
                 <label class="block text-xs font-bold text-secondary uppercase mb-1">Costo de Referencia (Q) <span class="font-light text-secondary">(opcional)</span></label>
@@ -370,12 +364,7 @@
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Categoría <span class="text-error">*</span></label>
-                    <select id="prod-tipo" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary-container transition">
-                        <option value="Biblia">Biblia</option>
-                        <option value="Libro">Libro</option>
-                        <option value="Material">Material de Estudio</option>
-                        <option value="Accesorio">Accesorio</option>
-                    </select>
+                    <select id="prod-tipo" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary-container transition"></select>
                 </div>
                 <div class="col-span-2">
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Nombre del Producto <span class="text-error">*</span></label>
@@ -428,7 +417,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/layout.js?v=3"></script>
+<script src="js/layout.js"></script>
 <script src="js/notify.js"></script>
 <script>
 // ======================== VARIABLES GLOBALES ========================
@@ -686,7 +675,7 @@ function cambiarPagina(direccion) {
 // ======================== MODAL NUEVO PRODUCTO ========================
 function abrirModalNuevoProducto() {
     document.getElementById('np-nombre').value = '';
-    document.getElementById('np-categoria').value = 'Biblia';
+    llenarSelectCategorias('np-categoria');
     document.getElementById('np-costo').value = '';
     document.getElementById('np-precio').value = '';
     document.getElementById('np-stock').value = '0';
@@ -759,7 +748,7 @@ async function editarProducto(id) {
     if (!producto) return;
     document.getElementById('modal-titulo').textContent = 'Editar Producto';
     document.getElementById('producto-id-editar').value = producto.id;
-    document.getElementById('prod-tipo').value = producto.tipo_producto;
+    llenarSelectCategorias('prod-tipo', producto.tipo_producto);
     document.getElementById('prod-nombre').value = producto.nombre;
     document.getElementById('prod-desc').value = producto.descripcion || '';
     document.getElementById('prod-precio').value = producto.precio.toFixed(2);
@@ -884,6 +873,31 @@ function toggleSidebar() {
     if (overlay) overlay.classList.toggle('hidden');
 }
 
+// ======================== CATÁLOGO DE CATEGORÍAS ========================
+let categoriasCatalogo = [];
+
+async function cargarCategoriasCatalogo() {
+    try {
+        const res = await API.get('/configuracion/tipos-producto', true);
+        if (res.ok) categoriasCatalogo = await res.json();
+    } catch (e) {
+        console.error('[Inventario] Error al cargar categorías:', e);
+    }
+}
+
+function llenarSelectCategorias(selectId, valorSeleccionado) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    sel.innerHTML = '';
+    categoriasCatalogo.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.nombre;
+        opt.textContent = c.nombre;
+        if (c.nombre === valorSeleccionado) opt.selected = true;
+        sel.appendChild(opt);
+    });
+}
+
 // ======================== INICIALIZACIÓN ========================
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
@@ -914,6 +928,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 300);
     });
 
+    await cargarCategoriasCatalogo();
     await cargarProveedoresSelect();
     await cargarProductos();
     setOrden('nombre', 'asc');
