@@ -37,10 +37,15 @@
 </head>
 <body class="text-on-surface">
 
-<div id="main-content" class="min-h-screen flex flex-col">
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
 
     <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
         <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
             <div>
                 <h2 class="text-base font-bold text-on-surface leading-none">Mis Compras</h2>
                 <p class="text-xs text-secondary mt-0.5">Portal del Cliente</p>
@@ -49,14 +54,11 @@
         <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
             <div class="text-right hidden sm:block">
                 <p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p>
-                <p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize">Cliente</p>
+                <p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p>
             </div>
-            <a href="mi_perfil.html" class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm hover:opacity-80 transition" title="Mi Perfil">
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm">
                 <span id="avatar-inicial">?</span>
-            </a>
-            <button onclick="cerrarSesion()" class="p-1.5 rounded-lg border border-outline-variant text-secondary hover:bg-surface-container transition" title="Cerrar sesión">
-                <span class="material-symbols-outlined text-[18px]">logout</span>
-            </button>
+            </div>
         </div>
     </header>
 
@@ -129,6 +131,7 @@
 <script src="js/utils.js"></script>
 <script src="js/libreria_shared.js"></script>
 <script src="js/notify.js"></script>
+<script src="js/layout.js"></script>
 
 <script>
 let historialCompleto = [];
@@ -136,13 +139,22 @@ let filtroActivo = 'todos';
 let paginaActual = 1;
 const POR_PAGINA = 10;
 
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar-dinamico');
+    if (sidebar) sidebar.classList.toggle('open');
+    const overlay = document.getElementById('overlay');
+    if (overlay) overlay.classList.toggle('hidden');
+}
+
 function cerrarSesion() {
     Auth.cerrarSesion();
 }
 
 function mostrarUsuario() {
     const nombre = localStorage.getItem('usuario') || 'Usuario';
+    const rango = localStorage.getItem('rango') || '';
     document.getElementById('nombre-usuario').textContent = nombre;
+    document.getElementById('rango-usuario').textContent = rango;
     document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
 }
 

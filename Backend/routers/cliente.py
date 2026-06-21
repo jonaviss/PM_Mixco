@@ -21,23 +21,28 @@ async def mis_compras(usuario_actual: Dict[str, Any] = Depends(obtener_usuario_a
         if cuis_operadores:
             res_usuarios = supabase.table("usuarios").select("cui, nombre_completo").in_("cui", cuis_operadores).execute()
             nombres = {u["cui"]: u["nombre_completo"] for u in (res_usuarios.data or [])}
-        for v in ventas:
-            v["nombre_operador"] = nombres.get(v.get("digitado_por"), v.get("digitado_por", "—"))
-            res_detalle = supabase.table("libreria_ventas_detalle") \
-                .select("cantidad, precio_unitario, subtotal, inventario_libreria(nombre, tipo_producto)") \
-                .eq("venta_id", v["id"]) \
+        venta_ids = [v["id"] for v in ventas]
+        detalles_por_venta = {}
+        if venta_ids:
+            res_detalles = supabase.table("libreria_ventas_detalle") \
+                .select("venta_id, cantidad, precio_unitario, subtotal, inventario_libreria(nombre, tipo_producto)") \
+                .in_("venta_id", venta_ids) \
                 .execute()
-            productos = []
-            for d in (res_detalle.data or []):
+            for d in (res_detalles.data or []):
+                vid = d["venta_id"]
+                if vid not in detalles_por_venta:
+                    detalles_por_venta[vid] = []
                 prod_info = d.get("inventario_libreria") or {}
-                productos.append({
+                detalles_por_venta[vid].append({
                     "nombre": prod_info.get("nombre", "Producto"),
                     "tipo_producto": prod_info.get("tipo_producto", "—"),
                     "cantidad": d["cantidad"],
                     "precio_unitario": float(d["precio_unitario"]),
                     "subtotal": float(d["subtotal"])
                 })
-            v["productos"] = productos
+        for v in ventas:
+            v["nombre_operador"] = nombres.get(v.get("digitado_por"), v.get("digitado_por", "—"))
+            v["productos"] = detalles_por_venta.get(v["id"], [])
         return {"ventas": ventas, "ok": True}
     except Exception as e:
         raise HTTPException(500, detail=str(e))
