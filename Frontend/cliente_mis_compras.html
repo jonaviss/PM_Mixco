@@ -91,13 +91,13 @@
                     <button onclick="filtrarHistorial('todos')" id="filtro-todos" class="text-xs font-mono px-3 py-1.5 bg-primary-container text-white rounded-lg transition">Todos</button>
                     <button onclick="filtrarHistorial('pagado')" id="filtro-pagado" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary">Pagados</button>
                     <button onclick="filtrarHistorial('pendiente')" id="filtro-pendiente" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary">Pendientes</button>
+                    <button onclick="filtrarHistorial('cancelada')" id="filtro-cancelada" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary">Canceladas</button>
                 </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead class="bg-surface-container-low/50">
                         <tr>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Venta ID</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha / Hora</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Operador</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total Venta</th>
@@ -139,23 +139,8 @@ let filtroActivo = 'todos';
 let paginaActual = 1;
 const POR_PAGINA = 10;
 
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar-dinamico');
-    if (sidebar) sidebar.classList.toggle('open');
-    const overlay = document.getElementById('overlay');
-    if (overlay) overlay.classList.toggle('hidden');
-}
-
 function cerrarSesion() {
     Auth.cerrarSesion();
-}
-
-function mostrarUsuario() {
-    const nombre = localStorage.getItem('usuario') || 'Usuario';
-    const rango = localStorage.getItem('rango') || '';
-    document.getElementById('nombre-usuario').textContent = nombre;
-    document.getElementById('rango-usuario').textContent = rango;
-    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
 }
 
 // Sobrescribir inyectarModalRecibo para clientes (sin botón de enviar correo)
@@ -218,15 +203,16 @@ function paginaSiguiente() {
 
 // ================ FILTROS ================
 function filtrarDatos() {
-    return filtroActivo === 'todos' ? historialCompleto :
-        (filtroActivo === 'pendiente' ? historialCompleto.filter(v => v.estado_pago !== 'pagado') :
-            historialCompleto.filter(v => v.estado_pago === 'pagado'));
+    if (filtroActivo === 'todos') return historialCompleto;
+    if (filtroActivo === 'cancelada') return historialCompleto.filter(v => v.estado_pago === 'cancelada');
+    if (filtroActivo === 'pendiente') return historialCompleto.filter(v => v.estado_pago !== 'pagado' && v.estado_pago !== 'cancelada');
+    return historialCompleto.filter(v => v.estado_pago === 'pagado');
 }
 
 function filtrarHistorial(filtro) {
     filtroActivo = filtro;
     paginaActual = 1;
-    ['todos', 'pagado', 'pendiente'].forEach(f => {
+    ['todos', 'pagado', 'pendiente', 'cancelada'].forEach(f => {
         const btn = document.getElementById(`filtro-${f}`);
         const esActivo = f === filtro;
         btn.className = `text-xs font-mono px-3 py-1.5 rounded-lg transition ${esActivo ? 'bg-primary-container text-white' : 'border border-outline-variant hover:bg-surface-container text-secondary'}`;
@@ -245,7 +231,7 @@ function renderizarHistorial(ventas) {
     if (ventas.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center py-8 text-secondary text-sm">
+                <td colspan="6" class="text-center py-8 text-secondary text-sm">
                     <span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">receipt_long</span>
                     No hay transacciones con ese filtro.
                 </td>
@@ -255,17 +241,18 @@ function renderizarHistorial(ventas) {
     }
     tbody.innerHTML = '';
     ventas.forEach(v => {
-        const badge = v.estado_pago === 'pagado' ?
-            '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Pagado</span>' :
-            (v.estado_pago === 'parcial' ?
-                '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>' :
-                '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>');
+        const badge = v.estado_pago === 'cancelada' ?
+            '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-600 line-through">Cancelada</span>' :
+            (v.estado_pago === 'pagado' ?
+                '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Pagado</span>' :
+                (v.estado_pago === 'parcial' ?
+                    '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>' :
+                    '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>'));
         const fechaHora = v.created_at ?
             new Date(v.created_at).toLocaleString('es-GT', { timeZone: 'America/Guatemala', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
         const tr = document.createElement('tr');
         tr.className = 'table-row transition-colors';
         tr.innerHTML = `
-            <td class="px-5 py-3 font-mono text-xs text-secondary">${v.id.substring(0,8)}...</td>
             <td class="px-5 py-3 text-sm">${fechaHora}</td>
             <td class="px-5 py-3 text-sm text-secondary">${v.nombre_operador || '—'}</td>
             <td class="px-5 py-3 text-sm font-mono font-bold text-right">${formatearMoneda(v.total_venta)}</td>
@@ -296,10 +283,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 v.nombre_operador = v.digitado_por;
             }
         }
-        const totalCompras = historialCompleto.reduce((acc, v) => acc + v.total_venta, 0);
-        const totalPagado = historialCompleto.reduce((acc, v) => acc + v.total_pagado, 0);
+        const activas = historialCompleto.filter(v => v.estado_pago !== 'cancelada');
+        const totalCompras = activas.reduce((acc, v) => acc + v.total_venta, 0);
+        const totalPagado = activas.reduce((acc, v) => acc + v.total_pagado, 0);
         const totalDeuda = totalCompras - totalPagado;
-        const ventasPendientes = historialCompleto.filter(v => v.estado_pago !== 'pagado').length;
+        const ventasPendientes = activas.filter(v => v.estado_pago !== 'pagado').length;
         document.getElementById('metrica-compras').textContent = formatearMoneda(totalCompras);
         document.getElementById('metrica-compras-cantidad').textContent = `${historialCompleto.length} transacciones`;
         document.getElementById('metrica-pagado').textContent = formatearMoneda(totalPagado);
@@ -311,7 +299,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         notify.error('Error al cargar tus compras');
         document.getElementById('tabla-historial').innerHTML = `
             <tr>
-                <td colspan="7" class="text-center py-8 text-secondary text-sm">
+                <td colspan="6" class="text-center py-8 text-secondary text-sm">
                     <span class="material-symbols-outlined text-[28px] block mb-1 text-error">error</span>
                     Error al cargar los datos. Intenta de nuevo más tarde.
                 </td>

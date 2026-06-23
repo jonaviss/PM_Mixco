@@ -102,7 +102,6 @@
                     <table class="w-full text-left">
                         <thead class="bg-surface-container-low/50">
                             <tr>
-                                <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Venta ID</th>
                                 <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha / Hora</th>
                                 <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Total</th>
                                 <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
@@ -187,21 +186,6 @@ let clienteActual = null;
 let ventaIdActual = null;
 let paginaActual = 1;
 const VENTAS_POR_PAGINA = 10;
-
-function mostrarUsuario() {
-    const nombre = localStorage.getItem('usuario') || 'Usuario';
-    const rango = localStorage.getItem('rango') || '';
-    document.getElementById('nombre-usuario').textContent = nombre;
-    document.getElementById('rango-usuario').textContent = rango;
-    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
-}
-
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar-dinamico');
-    if (sidebar) sidebar.classList.toggle('open');
-    const overlay = document.getElementById('overlay');
-    if (overlay) overlay.classList.toggle('hidden');
-}
 
 async function cargarClientes() {
     try {
@@ -290,7 +274,7 @@ function renderizarVentas() {
     info.textContent = total > 0 ? `${inicio}–${fin} de ${total} transacción(es)` : `0 transacciones`;
 
     if (total === 0 || ventasCliente.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-secondary text-sm"><span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">receipt_long</span>No hay ventas registradas.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-secondary text-sm"><span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">receipt_long</span>No hay ventas registradas.</td></tr>`;
         pagEl.innerHTML = '';
         return;
     }
@@ -318,7 +302,6 @@ function renderizarVentas() {
         const tr = document.createElement('tr');
         tr.className = 'table-row transition-colors';
         tr.innerHTML = `
-            <td class="px-5 py-3 font-mono text-xs text-secondary">${v.id.substring(0,8)}...</td>
             <td class="px-5 py-3 text-sm">${fecha}</td>
             <td class="px-5 py-3 text-sm font-mono font-bold text-right">${formatearMoneda(v.total_venta)}</td>
             <td class="px-5 py-3 text-center">${badge}</td>
@@ -540,7 +523,7 @@ async function ejecutarCancelacion() {
         if (res.ok) {
             notify.success('Venta cancelada — stock restaurado y deuda liberada');
             cerrarModalCancelacion();
-            await verRecibo(ventaIdActual);
+            cerrarModalRecibo();
             const cui = document.getElementById('cliente-cui').textContent.replace('CUI: ', '');
             const cliente = cacheClientes.find(c => c.cui === cui);
             if (cliente) await cargarVentasCliente(cliente);

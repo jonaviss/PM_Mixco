@@ -73,13 +73,6 @@
 <script src="js/layout.js?v=3"></script>
 <script src="js/table.js"></script>
 <script>
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar-dinamico');
-        if (sidebar) sidebar.classList.toggle('open');
-        const overlay = document.getElementById('overlay');
-        if (overlay) overlay.classList.toggle('hidden');
-    }
-
     async function cargarLotes() {
         try {
             const res = await API.get('/libreria/compras/lotes/pendientes', true);

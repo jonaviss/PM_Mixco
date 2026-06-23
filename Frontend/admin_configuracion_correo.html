@@ -53,8 +53,6 @@
 <script src="js/notify.js"></script>
 <script src="js/layout.js"></script>
 <script>
-function mostrarUsuario(){const n=localStorage.getItem('usuario')||'Usuario',r=localStorage.getItem('rango')||'';document.getElementById('nombre-usuario').textContent=n;document.getElementById('rango-usuario').textContent=r;document.getElementById('avatar-inicial').textContent=n.charAt(0).toUpperCase();}
-function toggleSidebar(){const s=document.getElementById('sidebar-dinamico');if(s)s.classList.toggle('open');const o=document.getElementById('overlay');if(o)o.classList.toggle('hidden');}
 function togglePass(){const p=document.getElementById('field-pass'),i=document.getElementById('pass-icon');if(p.type==='password'){p.type='text';i.textContent='visibility'}else{p.type='password';i.textContent='visibility_off'}}
 async function cargarConfig(){try{const r=await API.get('/configuracion/correo',!0);if(!r.ok)return;const d=await r.json();if(d.smtp_user)document.getElementById('field-user').value=d.smtp_user}catch(e){console.error(e)}}
 async function guardar(){const user=document.getElementById('field-user').value.trim(),pass=document.getElementById('field-pass').value.trim();if(!user||!pass){notify.warning('Completa ambos campos');return}

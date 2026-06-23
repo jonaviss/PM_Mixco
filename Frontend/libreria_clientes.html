@@ -173,14 +173,6 @@ let historialCompleto = [];
 let filtroActivo = 'todos';
 let historialTableInit = false;
 
-function mostrarUsuario() {
-    const nombre = localStorage.getItem('usuario') || 'Usuario';
-    const rango = localStorage.getItem('rango') || '';
-    document.getElementById('nombre-usuario').textContent = nombre;
-    document.getElementById('rango-usuario').textContent = rango;
-    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
-}
-
 // ================ CLIENTES ================
 async function cargarClientes() {
     try {
@@ -301,7 +293,6 @@ function renderizarHistorial(ventas) {
     if (!historialTableInit) {
         Table.init('tabla-historial', {
             columns: [
-                { key: 'id', label: 'Venta ID', sortable: true },
                 { key: 'fecha', label: 'Fecha / Hora', sortable: true },
                 { key: 'nombre_operador', label: 'Operador', sortable: true },
                 { key: 'total_venta', label: 'Total Venta', sortable: true, class: 'text-right' },
@@ -332,7 +323,6 @@ function renderizarHistorial(ventas) {
                     : '—';
 
                 return `
-                    <td class="px-5 py-3 font-mono text-xs text-secondary">${item.id.substring(0, 8)}...</td>
                     <td class="px-5 py-3 text-sm">${fechaHora}</td>
                     <td class="px-5 py-3 text-sm text-secondary">${item.nombre_operador || '—'}</td>
                     <td class="px-5 py-3 text-sm font-mono font-bold text-right">${formatearMoneda(item.total_venta)}</td>
@@ -350,14 +340,6 @@ function renderizarHistorial(ventas) {
     } else {
         Table.setData('tabla-historial', mappedData);
     }
-}
-
-// ================ SIDEBAR TOGGLE ================
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar-dinamico');
-    if (sidebar) sidebar.classList.toggle('open');
-    const overlay = document.getElementById('overlay');
-    if (overlay) overlay.classList.toggle('hidden');
 }
 
 // ================ INICIALIZACIÓN ================

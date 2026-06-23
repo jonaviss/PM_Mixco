@@ -152,15 +152,6 @@
     let resumenDeuda = [];
     let compraActual = null;
 
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar-dinamico');
-        if (sidebar) sidebar.classList.toggle('open');
-        const overlay = document.getElementById('overlay');
-        if (overlay) overlay.classList.toggle('hidden');
-    }
-
-    function mostrarUsuario(){ const n=localStorage.getItem('usuario')||'Usuario'; document.getElementById('nombre-usuario').textContent=n; document.getElementById('rango-usuario').textContent=localStorage.getItem('rango')||''; document.getElementById('avatar-inicial').textContent=n.charAt(0).toUpperCase(); }
-
     async function cargarProveedores(){ 
         try{ 
             const res = await API.get('/libreria/compras/proveedores?estado=activos', true); 

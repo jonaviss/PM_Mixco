@@ -158,7 +158,6 @@
                 <table class="w-full text-left">
                     <thead class="bg-surface-container-low/50">
                         <tr>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Venta ID</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha</th>
                             <th id="col-operador" class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Operador</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Cliente</th>
@@ -167,7 +166,7 @@
                         </tr>
                     </thead>
                     <tbody id="tabla-actividad" class="divide-y divide-outline-variant text-sm">
-                        <tr><td colspan="6" class="text-center py-10 text-secondary">
+                        <tr><td colspan="5" class="text-center py-10 text-secondary">
                             <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">hourglass_empty</span>
                             Cargando actividad...
                         </td></tr>
@@ -281,7 +280,7 @@ async function cargarKPIs() {
 
 async function cargarActividad() {
     const tbody = document.getElementById('tabla-actividad');
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-secondary">
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-secondary">
         <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">hourglass_empty</span>
         Cargando...
     </td></tr>`;
@@ -299,7 +298,7 @@ async function cargarActividad() {
         document.getElementById('btn-anterior').disabled = !data.paginacion?.tiene_anterior;
         document.getElementById('btn-siguiente').disabled = !data.paginacion?.tiene_siguiente;
         if (ventas.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-secondary">
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-secondary">
                 <span class="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">receipt_long</span>
                 No hay actividad reciente.
             </td></tr>`;
@@ -310,10 +309,9 @@ async function cargarActividad() {
             const tr = document.createElement('tr');
             tr.className = 'table-row transition-colors';
             tr.innerHTML = `
-                <td class="px-5 py-3 font-mono text-xs text-secondary">${v.id.substring(0,8)}...</td>
                 <td class="px-5 py-3 text-sm">${formatearFechaHora(v.created_at)}</td>
-                <td class="px-5 py-3 text-sm font-mono text-secondary" id="col-op-${v.id}">${v.digitado_por || '—'}</td>
-                <td class="px-5 py-3 text-sm font-medium">${v.comprador_cui || '—'}</td>
+                <td class="px-5 py-3 text-sm font-medium text-secondary" id="col-op-${v.id}">${v.nombre_operador || v.digitado_por || '—'}</td>
+                <td class="px-5 py-3 text-sm font-medium">${v.nombre_cliente || v.comprador_cui || '—'}</td>
                 <td class="px-5 py-3 text-sm font-bold text-right font-mono">${formatearMoneda(v.total_venta)}</td>
                 <td class="px-5 py-3 text-center">${badgeEstado(v.estado_pago)}</td>
             `;
@@ -325,7 +323,7 @@ async function cargarActividad() {
     } catch (err) {
         console.error('[Dashboard] Error al cargar actividad:', err);
         notify.error('Error al cargar la actividad reciente');
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-error font-bold">Error al cargar la actividad.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-error font-bold">Error al cargar la actividad.</td></tr>`;
     }
 }
 
@@ -363,13 +361,6 @@ function cambiarPagina(direccion) {
 async function recargarDashboard() {
     paginaActual = 1;
     await Promise.all([cargarKPIs(), cargarActividad()]);
-}
-
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar-dinamico');
-    if (sidebar) sidebar.classList.toggle('open');
-    const overlay = document.getElementById('overlay');
-    if (overlay) overlay.classList.toggle('hidden');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

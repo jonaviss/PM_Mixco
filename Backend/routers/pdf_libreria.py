@@ -134,8 +134,12 @@ def generar_pdf_comprobante(datos: dict) -> bytes:
     venta = datos.get("venta", {})
     productos = datos.get("productos", [])
     hermano = datos.get("hermano", {})
+    motivo_cancelacion = datos.get("motivo_cancelacion")
 
-    if tipo == "venta_credito":
+    if tipo == "cancelacion":
+        titulo_doc = "NOTIFICACION DE CANCELACION"
+        color_tipo = COLOR_EXITO
+    elif tipo == "venta_credito":
         titulo_doc = "NOTIFICACION DE CARGO A CREDITO"
         color_tipo = COLOR_ERROR
     else:
@@ -194,6 +198,8 @@ def generar_pdf_comprobante(datos: dict) -> bytes:
         ["Nombre:", hermano.get("nombre_completo", "—")],
         ["CUI:", hermano.get("cui", "—")],
     ]
+    if tipo == "cancelacion" and motivo_cancelacion:
+        datos_hermano.append(["Motivo:", motivo_cancelacion])
 
     tabla_hermano = Table(datos_hermano, colWidths=[35*mm, 135*mm])
     tabla_hermano.setStyle(TableStyle([
@@ -250,15 +256,22 @@ def generar_pdf_comprobante(datos: dict) -> bytes:
 
     total_venta   = float(venta.get("total_venta", 0))
     total_pagado  = float(venta.get("total_pagado", 0))
-    saldo         = float(venta.get("saldo_pendiente", 0))
 
-    datos_resumen = [
-        ["Total de la Venta:", formatear_moneda(total_venta)],
-        ["Total Pagado:",      formatear_moneda(total_pagado)],
-        ["Saldo Pendiente:",   formatear_moneda(saldo)],
-    ]
-
-    color_saldo = COLOR_ERROR if saldo > 0 else COLOR_EXITO
+    if tipo == "cancelacion":
+        datos_resumen = [
+            ["Total de la Venta:", formatear_moneda(total_venta)],
+            ["Total Pagado:",      formatear_moneda(total_pagado)],
+            ["Estado:",            "CANCELADA — DEUDA LIBERADA"],
+        ]
+        color_saldo = COLOR_EXITO
+    else:
+        saldo = float(venta.get("saldo_pendiente", 0))
+        datos_resumen = [
+            ["Total de la Venta:", formatear_moneda(total_venta)],
+            ["Total Pagado:",      formatear_moneda(total_pagado)],
+            ["Saldo Pendiente:",   formatear_moneda(saldo)],
+        ]
+        color_saldo = COLOR_ERROR if saldo > 0 else COLOR_EXITO
 
     tabla_resumen = Table(datos_resumen, colWidths=[100*mm, 70*mm])
     tabla_resumen.setStyle(TableStyle([

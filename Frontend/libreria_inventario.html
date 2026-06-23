@@ -397,28 +397,12 @@
     </div>
 </div>
 
-<!-- MODAL DE CONFIRMACIÓN -->
-<div id="modal-confirmacion" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center" id="modal-confirmacion-header">
-            <h3 class="text-base font-bold text-on-surface">Confirmar acción</h3>
-            <button onclick="cerrarModalConfirmacion()" class="text-secondary hover:text-error transition-colors"><span class="material-symbols-outlined">close</span></button>
-        </div>
-        <div class="p-5">
-            <p id="confirmacion-mensaje" class="text-sm text-on-surface mb-5">¿Está seguro de realizar esta acción?</p>
-            <div class="flex justify-end gap-3">
-                <button onclick="cerrarModalConfirmacion()" class="px-4 py-2 text-sm font-bold text-secondary border border-outline-variant rounded-lg hover:bg-surface-container transition">Cancelar</button>
-                <button id="confirmacion-aceptar" class="px-4 py-2 text-sm font-bold text-white rounded-lg transition">Aceptar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/layout.js"></script>
 <script src="js/notify.js"></script>
+<script src="js/confirm.js"></script>
 <script>
 // ======================== VARIABLES GLOBALES ========================
 let todosLosProductos = [];
@@ -426,23 +410,11 @@ let categoriaActiva = 'todos';
 let busquedaActiva = '';
 let paginaActual = 1;
 const POR_PAGINA = 15;
-let confirmacionCallback = null;
 let listaProveedores = [];
 
 // Variables de ordenamiento
 let ordenActual = 'nombre';
 let direccionActual = 'asc';
-
-function mostrarUsuario() {
-    const nombre = localStorage.getItem('usuario') || 'Usuario';
-    const rango = localStorage.getItem('rango') || '';
-    const elNombre = document.getElementById('nombre-usuario');
-    const elRango = document.getElementById('rango-usuario');
-    const elAvatar = document.getElementById('avatar-inicial');
-    if (elNombre) elNombre.textContent = nombre;
-    if (elRango) elRango.textContent = rango;
-    if (elAvatar) elAvatar.textContent = nombre.charAt(0).toUpperCase();
-}
 
 // Configurar campos de precio
 function configurarCampoPrecio(input) {
@@ -816,50 +788,26 @@ async function guardarEditarProducto() {
     }
 }
 
-// ======================== CONFIRMACIÓN ========================
-function mostrarModalConfirmacion(mensaje, accionCallback, tipoAccion) {
-    const modal = document.getElementById('modal-confirmacion');
-    const mensajeEl = document.getElementById('confirmacion-mensaje');
-    const btnAceptar = document.getElementById('confirmacion-aceptar');
-    const header = document.getElementById('modal-confirmacion-header');
-    mensajeEl.textContent = mensaje;
-    if (tipoAccion === 'desactivar') {
-        btnAceptar.className = 'px-4 py-2 text-sm font-bold text-white bg-error rounded-lg hover:opacity-90 transition';
-        header.querySelector('h3').textContent = 'Desactivar producto';
-    } else if (tipoAccion === 'reactivar') {
-        btnAceptar.className = 'px-4 py-2 text-sm font-bold text-white bg-green-600 rounded-lg hover:opacity-90 transition';
-        header.querySelector('h3').textContent = 'Reactivar producto';
-    } else {
-        btnAceptar.className = 'px-4 py-2 text-sm font-bold text-white bg-primary-container rounded-lg hover:opacity-90 transition';
-        header.querySelector('h3').textContent = 'Confirmar acción';
-    }
-    const newBtn = btnAceptar.cloneNode(true);
-    btnAceptar.parentNode.replaceChild(newBtn, btnAceptar);
-    newBtn.addEventListener('click', () => {
-        cerrarModalConfirmacion();
-        if (accionCallback) accionCallback();
-    });
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-}
-
-function cerrarModalConfirmacion() {
-    const modal = document.getElementById('modal-confirmacion');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    confirmacionCallback = null;
-}
-
 function confirmarDesactivar(id) {
     const producto = todosLosProductos.find(p => p.id === id);
     if (!producto) return;
-    mostrarModalConfirmacion(`¿Está seguro que desea desactivar el producto "${producto.nombre}"? Dejará de aparecer en el catálogo.`, () => toggleEstadoProducto(id, false), 'desactivar');
+    confirmar(`¿Está seguro que desea desactivar el producto "${producto.nombre}"? Dejará de aparecer en el catálogo.`, () => toggleEstadoProducto(id, false), {
+        titulo: 'Desactivar producto',
+        btnAceptar: 'Desactivar',
+        colorAceptar: 'bg-error',
+        colorHeader: 'bg-error'
+    });
 }
 
 function confirmarReactivar(id) {
     const producto = todosLosProductos.find(p => p.id === id);
     if (!producto) return;
-    mostrarModalConfirmacion(`¿Está seguro que desea reactivar el producto "${producto.nombre}"? Volverá a estar disponible en el catálogo.`, () => toggleEstadoProducto(id, true), 'reactivar');
+    confirmar(`¿Está seguro que desea reactivar el producto "${producto.nombre}"? Volverá a estar disponible en el catálogo.`, () => toggleEstadoProducto(id, true), {
+        titulo: 'Reactivar producto',
+        btnAceptar: 'Reactivar',
+        colorAceptar: 'bg-green-600',
+        colorHeader: 'bg-green-600'
+    });
 }
 
 async function toggleEstadoProducto(id, nuevoEstado) {
@@ -874,13 +822,6 @@ async function toggleEstadoProducto(id, nuevoEstado) {
     } catch (err) {
         notify.error('Error de conexión.');
     }
-}
-
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar-dinamico');
-    if (sidebar) sidebar.classList.toggle('open');
-    const overlay = document.getElementById('overlay');
-    if (overlay) overlay.classList.toggle('hidden');
 }
 
 // ======================== CATÁLOGO DE CATEGORÍAS ========================

@@ -39,7 +39,10 @@ def _enviar_smtp(destinatario: str, asunto: str, html: str, pdf_bytes: bytes, pd
 
 async def despachar_correo_libreria(datos: dict):
     tipo = datos.get("tipo_notificacion", "venta_contado")
-    if tipo == "venta_credito":
+    if tipo == "cancelacion":
+        titulo_recibo = "Notificacion de Cancelacion y Liberacion de Deuda"
+        motivo = datos.get("motivo_cancelacion", "")
+    elif tipo == "venta_credito":
         titulo_recibo = "Notificacion de Cargo a Credito"
     elif tipo == "venta_contado":
         titulo_recibo = "Comprobante de Compra en Efectivo"
@@ -57,29 +60,55 @@ async def despachar_correo_libreria(datos: dict):
     except Exception as e:
         logger.error(f"Falla al generar PDF: {e}")
 
-    html_content = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 24px;
-                border: 1px solid #e8e4d9; border-radius: 12px; background-color: #fafaf8;">
-        <h2 style="color: #755b00; text-align: center; margin-bottom: 4px;">PALABRA MIEL MIXCO</h2>
-        <p style="text-align: center; color: #7a7565; font-size: 13px; margin-top: 0;">{titulo_recibo}</p>
-        <hr style="border: none; border-top: 2px solid #C9A227; margin: 16px 0;">
-        <p style="font-size: 14px; color: #1c1c1a;">Estimado(a) <strong>{nombre_hermano}</strong>,</p>
-        <p style="font-size: 14px; color: #4d4635; margin-top: 8px;">
-            Se ha registrado una transacción en el módulo de Librería por un monto de
-            <strong style="color: #755b00;">Q{monto:.2f}</strong>.
-        </p>
-        <p style="font-size: 14px; color: #4d4635; margin-top: 8px;">
-            Adjunto encontrará el comprobante en formato PDF con el detalle completo
-            de la transacción y el estado de su cuenta.
-        </p>
-        <div style="background: #f0edea; border-radius: 8px; padding: 12px; margin-top: 16px;
-                    text-align: center; border: 1px solid #d1c5af;">
-            <p style="font-size: 11px; color: #7a7565; margin: 0;">
-                PM Mixco ERP v2.0.0 — Módulo Librería — Documento generado automáticamente
+    if tipo == "cancelacion":
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 24px;
+                    border: 1px solid #e8e4d9; border-radius: 12px; background-color: #fafaf8;">
+            <h2 style="color: #755b00; text-align: center; margin-bottom: 4px;">PALABRA MIEL MIXCO</h2>
+            <p style="text-align: center; color: #7a7565; font-size: 13px; margin-top: 0;">{titulo_recibo}</p>
+            <hr style="border: none; border-top: 2px solid #C9A227; margin: 16px 0;">
+            <p style="font-size: 14px; color: #1c1c1a;">Estimado(a) <strong>{nombre_hermano}</strong>,</p>
+            <p style="font-size: 14px; color: #4d4635; margin-top: 8px;">
+                Le informamos que la venta por un monto de
+                <strong style="color: #15803d;">Q{monto:.2f}</strong> ha sido <strong>cancelada</strong>
+                y su deuda ha sido <strong>liberada</strong>.
             </p>
+            {f'<p style="font-size: 14px; color: #ba1a1a; margin-top: 8px;">Motivo: {motivo}</p>' if motivo else ''}
+            <p style="font-size: 14px; color: #4d4635; margin-top: 8px;">
+                Adjunto encontrará el comprobante de cancelación en formato PDF.
+            </p>
+            <div style="background: #f0edea; border-radius: 8px; padding: 12px; margin-top: 16px;
+                        text-align: center; border: 1px solid #d1c5af;">
+                <p style="font-size: 11px; color: #7a7565; margin: 0;">
+                    PM Mixco ERP v2.0.0 — Módulo Librería — Documento generado automáticamente
+                </p>
+            </div>
         </div>
-    </div>
-    """
+        """
+    else:
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 24px;
+                    border: 1px solid #e8e4d9; border-radius: 12px; background-color: #fafaf8;">
+            <h2 style="color: #755b00; text-align: center; margin-bottom: 4px;">PALABRA MIEL MIXCO</h2>
+            <p style="text-align: center; color: #7a7565; font-size: 13px; margin-top: 0;">{titulo_recibo}</p>
+            <hr style="border: none; border-top: 2px solid #C9A227; margin: 16px 0;">
+            <p style="font-size: 14px; color: #1c1c1a;">Estimado(a) <strong>{nombre_hermano}</strong>,</p>
+            <p style="font-size: 14px; color: #4d4635; margin-top: 8px;">
+                Se ha registrado una transacción en el módulo de Librería por un monto de
+                <strong style="color: #755b00;">Q{monto:.2f}</strong>.
+            </p>
+            <p style="font-size: 14px; color: #4d4635; margin-top: 8px;">
+                Adjunto encontrará el comprobante en formato PDF con el detalle completo
+                de la transacción y el estado de su cuenta.
+            </p>
+            <div style="background: #f0edea; border-radius: 8px; padding: 12px; margin-top: 16px;
+                        text-align: center; border: 1px solid #d1c5af;">
+                <p style="font-size: 11px; color: #7a7565; margin: 0;">
+                    PM Mixco ERP v2.0.0 — Módulo Librería — Documento generado automáticamente
+                </p>
+            </div>
+        </div>
+        """
 
     correo_destino = datos.get("hermano", {}).get("correo") or os.getenv("GMAIL_SMTP_USER")
     asunto = f"{titulo_recibo} — Q{monto:.2f} — PM Mixco"

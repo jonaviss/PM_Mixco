@@ -69,11 +69,10 @@
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/notify.js"></script>
+<script src="js/confirm.js"></script>
 <script src="js/layout.js"></script>
 <script>
 let items = []; let editando = false;
-function mostrarUsuario(){const n=localStorage.getItem('usuario')||'Usuario',r=localStorage.getItem('rango')||'';document.getElementById('nombre-usuario').textContent=n;document.getElementById('rango-usuario').textContent=r;document.getElementById('avatar-inicial').textContent=n.charAt(0).toUpperCase();}
-function toggleSidebar(){const s=document.getElementById('sidebar-dinamico');if(s)s.classList.toggle('open');const o=document.getElementById('overlay');if(o)o.classList.toggle('hidden');}
 async function cargarItems(){try{const r=await API.get('/configuracion/metodos-pago',!0);if(!r.ok)throw Error();items=await r.json();document.getElementById('total-registros').textContent=`${items.length} método(s)`;renderizar()}catch(e){notify.error('Error al cargar')}}
 function renderizar(){const t=document.getElementById('tabla-registros');if(items.length===0){t.innerHTML='<tr><td colspan="3" class="text-center py-8 text-secondary text-sm"><span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">payments</span>No hay métodos de pago.</td></tr>';return}
 t.innerHTML='';items.forEach(i=>{const a=i.activo?'<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Activo</span>':'<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Inactivo</span>';const tr=document.createElement('tr');tr.className='table-row transition-colors';tr.innerHTML=`<td class="px-5 py-3 text-sm font-bold">${i.nombre}</td><td class="px-5 py-3 text-center">${a}</td><td class="px-5 py-3 text-center"><div class="flex items-center justify-center gap-1"><button onclick="editarItem(${i.id})" class="p-1.5 rounded-lg border border-outline-variant text-secondary hover:bg-primary-container hover:text-white transition" title="Editar"><span class="material-symbols-outlined text-[16px]">edit</span></button><button onclick="eliminarItem(${i.id})" class="p-1.5 rounded-lg border border-outline-variant text-error hover:bg-error hover:text-white transition" title="Eliminar"><span class="material-symbols-outlined text-[16px]">delete</span></button></div></td>`;t.appendChild(tr)})}
@@ -84,7 +83,7 @@ async function guardar(){const nombre=document.getElementById('field-nombre').va
 const activo=document.getElementById('field-activo').checked;const id=document.getElementById('edit-id').value;const btn=document.getElementById('btn-guardar');btn.disabled=!0;btn.textContent='Guardando...'
 try{if(editando){const r=await API.put(`/configuracion/metodos-pago/${id}`,{nombre,activo},!0);if(!r.ok){const d=await r.json();notify.error(API.mensajeError(d));btn.disabled=!1;btn.textContent='Actualizar';return}}else{const r=await API.post('/configuracion/metodos-pago',{nombre},!0);if(!r.ok){const d=await r.json();notify.error(API.mensajeError(d));btn.disabled=!1;btn.textContent='Guardar';return}}
 notify.success(editando?'Método actualizado':'Método creado');cerrarModal();await cargarItems()}catch(e){notify.error('Error de conexión')}finally{btn.disabled=!1;btn.textContent=editando?'Actualizar':'Guardar'}}
-async function eliminarItem(id){if(!confirm('¿Eliminar este método de pago?'))return;try{const r=await API.delete(`/configuracion/metodos-pago/${id}`,!0);if(r.ok){notify.success('Método eliminado');await cargarItems()}else{const d=await r.json();notify.error(API.mensajeError(d))}}catch(e){notify.error('Error al eliminar')}}
+async function eliminarItem(id){confirmar('¿Eliminar este método de pago?',async()=>{try{const r=await API.delete(`/configuracion/metodos-pago/${id}`,!0);if(r.ok){notify.success('Método eliminado');await cargarItems()}else{const d=await r.json();notify.error(API.mensajeError(d))}}catch(e){notify.error('Error al eliminar')}})}
 document.addEventListener('DOMContentLoaded',async()=>{if(!localStorage.getItem('token')){window.location.href='index.html';return};mostrarUsuario();await cargarItems()});
 </script>
 </body>

@@ -183,11 +183,12 @@ async def obtener_venta(
 @router.delete("/ventas/{venta_id}", status_code=status.HTTP_200_OK)
 async def cancelar_venta_endpoint(
     venta_id: str,
+    background_tasks: BackgroundTasks,
     motivo: str = Query("", min_length=0, max_length=500),
     usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
 ):
     try:
-        return await cancelar_venta(venta_id, motivo)
+        return await cancelar_venta(venta_id, motivo, background_tasks)
     except HTTPException:
         raise
     except Exception as e:

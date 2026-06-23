@@ -14,7 +14,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 from routers import auth, libreria, dashboard_libreria
-from routers import compras, cliente, admin, usuario, configuracion
+from routers import compras, cliente, admin, usuario, configuracion, gastos
 
 app = FastAPI(title="PM Mixco ERP API", version="2.0.0")
 
@@ -45,6 +45,7 @@ app.include_router(cliente.router)
 app.include_router(admin.router)
 app.include_router(usuario.router)
 app.include_router(configuracion.router)
+app.include_router(gastos.router)
 
 @app.get("/health")
 def health_check():

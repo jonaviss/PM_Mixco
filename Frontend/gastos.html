@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gastos | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script>tailwind.config={theme:{extend:{colors:{"primary":"#755b00","primary-container":"#C9A227", "on-primary":"#ffffff","surface":"#F8FAFC","surface-container-lowest":"#ffffff","surface-container-low":"#F1F5F9","surface-container":"#E2E8F0","outline-variant":"#CBD5E1","secondary":"#64748B","error":"#EF4444"},fontFamily:{"sora":["Sora"],"mono":["JetBrains Mono"]},spacing:{"sidebar":"260px"}}}}</script>
+</head>
+<body class="text-on-surface">
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary"><span class="material-symbols-outlined">menu</span></button>
+            <div><h2 class="text-base font-bold text-on-surface leading-none">Gastos de Librería</h2><p class="text-xs text-secondary mt-0.5">Control de egresos</p></div>
+        </div>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block"><p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p><p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p></div>
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm"><span id="avatar-inicial">?</span></div>
+        </div>
+    </header>
+    <main class="flex-1 p-6 space-y-6">
+        <section class="grid grid-cols-1 md:grid-cols-4 gap-4" id="resumen-gastos">
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm">
+                <p class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Total Hoy</p>
+                <p id="total-hoy" class="text-2xl font-bold text-on-surface font-mono mt-1">—</p>
+            </div>
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm">
+                <p class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Total Este Mes</p>
+                <p id="total-mes" class="text-2xl font-bold text-on-surface font-mono mt-1">—</p>
+            </div>
+        </section>
+        <section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+            <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/30">
+                <h3 class="text-sm font-bold text-on-surface">Registrar Gasto</h3>
+            </div>
+            <div class="p-5">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                    <input type="text" id="campo-descripcion" class="border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="Descripción del gasto">
+                    <input type="number" id="campo-monto" step="0.01" min="0.01" class="border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="Monto (Q)">
+                    <input type="text" id="campo-categoria" class="border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="Categoría (ej: Papelería)">
+                    <input type="date" id="campo-fecha" class="border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition">
+                    <button id="btn-registrar" onclick="registrarGasto()" class="px-4 py-2.5 text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-[18px]">add</span> Registrar
+                    </button>
+                </div>
+            </div>
+        </section>
+        <section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+            <div class="px-5 py-4 border-b border-outline-variant flex items-center gap-3 bg-surface-container-low/30">
+                <label class="text-xs font-mono font-bold text-secondary uppercase">Filtrar:</label>
+                <input type="date" id="filtro-inicio" class="border border-outline-variant rounded-lg px-3 py-1.5 text-sm">
+                <span class="text-secondary text-xs">a</span>
+                <input type="date" id="filtro-fin" class="border border-outline-variant rounded-lg px-3 py-1.5 text-sm">
+                <button onclick="cargarGastos()" class="px-3 py-1.5 text-xs font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition">Filtrar</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-surface-container-low/50">
+                        <tr>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Fecha</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Descripción</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Categoría</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-right">Monto</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-gastos" class="divide-y divide-outline-variant text-sm">
+                        <tr><td colspan="5" class="text-center py-8 text-secondary text-sm"><span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">receipt</span>Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center">
+                <p id="info-gastos" class="text-xs font-mono text-secondary">— registros</p>
+                <div class="flex items-center gap-2" id="paginacion">
+                    <button id="btn-prev" onclick="paginaAnterior()" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary disabled:opacity-40 disabled:cursor-not-allowed" disabled>Anterior</button>
+                    <span id="info-pagina" class="text-xs font-mono text-secondary">Pág. 1</span>
+                    <button id="btn-next" onclick="paginaSiguiente()" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary disabled:opacity-40 disabled:cursor-not-allowed" disabled>Siguiente</button>
+                </div>
+            </div>
+        </section>
+    </main>
+    <footer class="border-t border-outline-variant px-6 py-3 text-center"><p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Gastos &copy; 2026</p></footer>
+</div>
+<div id="modal-editar" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="px-5 py-4 flex justify-between items-center" style="background-color:#C9A227;">
+            <h3 class="text-base font-bold text-white">Editar Gasto</h3>
+            <button onclick="cerrarModalEditar()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-5 space-y-4">
+            <input type="hidden" id="edit-id">
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Descripción</label><input type="text" id="edit-descripcion" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Monto (Q)</label><input type="number" id="edit-monto" step="0.01" min="0.01" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Categoría</label><input type="text" id="edit-categoria" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition"></div>
+            <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Fecha</label><input type="date" id="edit-fecha" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition"></div>
+        </div>
+        <div class="px-5 py-3 border-t border-outline-variant bg-gray-50 flex justify-end gap-2">
+            <button onclick="cerrarModalEditar()" class="px-4 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cancelar</button>
+            <button id="btn-guardar-editar" onclick="guardarEditar()" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition">Actualizar</button>
+        </div>
+    </div>
+</div>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/notify.js"></script>
+<script src="js/confirm.js"></script>
+<script src="js/layout.js"></script>
+<script>
+let gastos = [];
+let paginaActual = 1;
+let totalRegistros = 0;
+const POR_PAGINA = 15;
+
+function formatearFecha(iso) {
+    if (!iso) return '—';
+    return new Date(iso + 'T00:00:00').toLocaleDateString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function formatearMoneda(val) { return 'Q' + parseFloat(val || 0).toFixed(2); }
+
+async function cargarGastos() {
+    paginaActual = 1;
+    await recargarGastos();
+}
+
+async function recargarGastos() {
+    const inicio = document.getElementById('filtro-inicio').value || '1900-01-01';
+    const fin = document.getElementById('filtro-fin').value || '2100-12-31';
+    try {
+        const res = await API.get(`/libreria/gastos?inicio=${inicio}&fin=${fin}&pagina=${paginaActual}&por_pagina=${POR_PAGINA}`, true);
+        if (!res.ok) throw Error();
+        const data = await res.json();
+        gastos = data.data || [];
+        totalRegistros = data.total || 0;
+        renderizar();
+    } catch (e) { notify.error('Error al cargar gastos'); }
+}
+
+function renderizar() {
+    const tbody = document.getElementById('tabla-gastos');
+    if (gastos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-secondary text-sm"><span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">receipt</span>No hay gastos registrados.</td></tr>';
+    } else {
+        tbody.innerHTML = '';
+        gastos.forEach(g => {
+            const tr = document.createElement('tr');
+            tr.className = 'table-row transition-colors';
+            tr.innerHTML = `
+                <td class="px-5 py-3 font-mono text-xs text-secondary">${formatearFecha(g.fecha_gasto)}</td>
+                <td class="px-5 py-3 text-sm">${g.descripcion}</td>
+                <td class="px-5 py-3 text-sm"><span class="px-2 py-0.5 bg-surface-container text-secondary rounded text-xs font-mono">${g.categoria}</span></td>
+                <td class="px-5 py-3 text-sm font-mono font-bold text-right">${formatearMoneda(g.monto)}</td>
+                <td class="px-5 py-3 text-center"><div class="flex items-center justify-center gap-1">
+                    <button onclick="abrirEditar('${g.id}')" class="p-1.5 rounded-lg border border-outline-variant text-secondary hover:bg-primary-container hover:text-white transition" title="Editar"><span class="material-symbols-outlined text-[16px]">edit</span></button>
+                    <button onclick="eliminarGasto('${g.id}')" class="p-1.5 rounded-lg border border-outline-variant text-error hover:bg-error hover:text-white transition" title="Eliminar"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+                </div></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    const totalPaginas = Math.max(Math.ceil(totalRegistros / POR_PAGINA), 1);
+    document.getElementById('info-gastos').textContent = `${totalRegistros} registro(s)`;
+    document.getElementById('info-pagina').textContent = `Pág. ${paginaActual} de ${totalPaginas}`;
+    document.getElementById('btn-prev').disabled = paginaActual <= 1;
+    document.getElementById('btn-next').disabled = paginaActual >= totalPaginas;
+    calcularResumen();
+}
+
+function paginaAnterior() { if (paginaActual > 1) { paginaActual--; recargarGastos(); } }
+function paginaSiguiente() { if (paginaActual < Math.ceil(totalRegistros / POR_PAGINA)) { paginaActual++; recargarGastos(); } }
+
+async function calcularResumen() {
+    try {
+        const hoy = new Date().toISOString().split('T')[0];
+        const mes = new Date().toISOString().slice(0, 7) + '-01';
+        const [resHoy, resMes] = await Promise.all([
+            API.get(`/libreria/gastos?inicio=${hoy}&fin=${hoy}&por_pagina=1000`, true),
+            API.get(`/libreria/gastos?inicio=${mes}&fin=2100-12-31&por_pagina=1000`, true)
+        ]);
+        if (resHoy.ok) {
+            const d = await resHoy.json();
+            const total = (d.data || []).reduce((a, g) => a + parseFloat(g.monto || 0), 0);
+            document.getElementById('total-hoy').textContent = formatearMoneda(total);
+        }
+        if (resMes.ok) {
+            const d = await resMes.json();
+            const total = (d.data || []).reduce((a, g) => a + parseFloat(g.monto || 0), 0);
+            document.getElementById('total-mes').textContent = formatearMoneda(total);
+        }
+    } catch (e) {}
+}
+
+async function registrarGasto() {
+    const descripcion = document.getElementById('campo-descripcion').value.trim();
+    const monto = parseFloat(document.getElementById('campo-monto').value);
+    const categoria = document.getElementById('campo-categoria').value.trim() || 'Otro';
+    const fecha = document.getElementById('campo-fecha').value || new Date().toISOString().split('T')[0];
+    if (!descripcion) { notify.warning('Ingresa una descripción'); return; }
+    if (!monto || monto <= 0) { notify.warning('Ingresa un monto válido'); return; }
+    const btn = document.getElementById('btn-registrar');
+    btn.disabled = true; btn.innerHTML = 'Guardando...';
+    try {
+        const res = await API.post('/libreria/gastos', { descripcion, monto, categoria, fecha_gasto: fecha }, true);
+        if (res.ok) {
+            notify.success('Gasto registrado');
+            document.getElementById('campo-descripcion').value = '';
+            document.getElementById('campo-monto').value = '';
+            document.getElementById('campo-categoria').value = '';
+            document.getElementById('campo-fecha').value = new Date().toISOString().split('T')[0];
+            await recargarGastos();
+        } else { const d = await res.json(); notify.error(API.mensajeError(d)); }
+    } catch (e) { notify.error('Error de conexión'); }
+    finally { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">add</span> Registrar'; }
+}
+
+function abrirEditar(id) {
+    const g = gastos.find(x => x.id === id);
+    if (!g) return;
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-descripcion').value = g.descripcion;
+    document.getElementById('edit-monto').value = g.monto;
+    document.getElementById('edit-categoria').value = g.categoria;
+    document.getElementById('edit-fecha').value = g.fecha_gasto;
+    document.getElementById('modal-editar').classList.remove('hidden');
+    document.getElementById('modal-editar').classList.add('flex');
+}
+
+function cerrarModalEditar() {
+    document.getElementById('modal-editar').classList.add('hidden');
+    document.getElementById('modal-editar').classList.remove('flex');
+}
+
+async function guardarEditar() {
+    const id = document.getElementById('edit-id').value;
+    const descripcion = document.getElementById('edit-descripcion').value.trim();
+    const monto = parseFloat(document.getElementById('edit-monto').value);
+    const categoria = document.getElementById('edit-categoria').value.trim() || 'Otro';
+    const fecha = document.getElementById('edit-fecha').value;
+    if (!descripcion) { notify.warning('Ingresa una descripción'); return; }
+    if (!monto || monto <= 0) { notify.warning('Ingresa un monto válido'); return; }
+    const btn = document.getElementById('btn-guardar-editar');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    try {
+        const res = await API.put(`/libreria/gastos/${id}`, { descripcion, monto, categoria, fecha_gasto: fecha }, true);
+        if (res.ok) { notify.success('Gasto actualizado'); cerrarModalEditar(); await recargarGastos(); }
+        else { const d = await res.json(); notify.error(API.mensajeError(d)); }
+    } catch (e) { notify.error('Error de conexión'); }
+    finally { btn.disabled = false; btn.textContent = 'Actualizar'; }
+}
+
+function eliminarGasto(id) {
+    confirmar('¿Eliminar este gasto?', async () => {
+        try {
+            const res = await API.delete(`/libreria/gastos/${id}`, true);
+            if (res.ok) { notify.success('Gasto eliminado'); await recargarGastos(); }
+            else { const d = await res.json(); notify.error(API.mensajeError(d)); }
+        } catch (e) { notify.error('Error al eliminar'); }
+    }, { titulo: 'Eliminar gasto', btnAceptar: 'Eliminar' });
+}
+
+async function mostrarUsuario() {
+    const n = localStorage.getItem('usuario') || 'Usuario';
+    document.getElementById('nombre-usuario').textContent = n;
+    document.getElementById('rango-usuario').textContent = localStorage.getItem('rango') || '';
+    document.getElementById('avatar-inicial').textContent = n.charAt(0).toUpperCase();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!localStorage.getItem('token')) { window.location.href = 'index.html'; return; }
+    mostrarUsuario();
+    document.getElementById('campo-fecha').valueAsDate = new Date();
+    document.getElementById('filtro-inicio').valueAsDate = new Date(new Date().setDate(1));
+    document.getElementById('filtro-fin').valueAsDate = new Date();
+    await recargarGastos();
+});
+</script>
+</body>
+</html>

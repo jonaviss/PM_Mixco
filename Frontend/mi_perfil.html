@@ -117,21 +117,6 @@
 <script src="js/layout.js"></script>
 
 <script>
-function mostrarUsuario() {
-    const nombre = localStorage.getItem('usuario') || 'Usuario';
-    const rango = localStorage.getItem('rango') || '';
-    document.getElementById('nombre-usuario').textContent = nombre;
-    document.getElementById('rango-usuario').textContent = rango;
-    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
-}
-
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar-dinamico');
-    if (sidebar) sidebar.classList.toggle('open');
-    const overlay = document.getElementById('overlay');
-    if (overlay) overlay.classList.toggle('hidden');
-}
-
 async function guardarPerfil() {
     const nombre = document.getElementById('field-nombre').value.trim();
     const correo = document.getElementById('field-correo').value.trim();

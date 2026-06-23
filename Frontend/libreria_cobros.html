@@ -124,13 +124,6 @@ let ventasPendientes = [];
 let clienteSeleccionado = null;
 let tipoAbono = 'total';
 
-function mostrarUsuario() {
-    const nombre = localStorage.getItem('usuario') || 'Usuario';
-    const rango = localStorage.getItem('rango') || '';
-    document.getElementById('nombre-usuario').textContent = nombre;
-    document.getElementById('rango-usuario').textContent = rango;
-    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
-}
 async function cargarClientes() {
     try {
         const res = await API.get('/libreria/clientes', true);
@@ -194,7 +187,6 @@ async function cargarDeudas(cui) {
 
         Table.init('tabla-deudas', {
             columns: [
-                { key: 'id', label: 'Venta ID', sortable: true },
                 { key: 'fecha', label: 'Fecha', sortable: true },
                 { key: 'total', label: 'Total', sortable: true, class: 'text-right' },
                 { key: 'pagado', label: 'Pagado', sortable: true, class: 'text-right' },
@@ -211,7 +203,6 @@ async function cargarDeudas(cui) {
                     ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Parcial</span>'
                     : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>';
                 return `
-                    <td class="px-5 py-3 font-mono text-xs text-secondary">${item.id.substring(0,8)}...</td>
                     <td class="px-5 py-3 text-sm">${formatearFecha(item.fecha)}</td>
                     <td class="px-5 py-3 text-sm font-mono text-right font-bold">${formatearMoneda(item.total)}</td>
                     <td class="px-5 py-3 text-sm font-mono text-right">${formatearMoneda(item.pagado)}</td>
@@ -271,12 +262,6 @@ function cerrarModalExito() {
     document.getElementById('modal-exito').classList.remove('flex');
     document.getElementById('msg-cobro').classList.add('hidden');
     document.getElementById('monto-abono').value = '';
-}
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar-dinamico');
-    if (sidebar) sidebar.classList.toggle('open');
-    const overlay = document.getElementById('overlay');
-    if (overlay) overlay.classList.toggle('hidden');
 }
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');

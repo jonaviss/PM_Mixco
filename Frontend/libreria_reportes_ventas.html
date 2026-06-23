@@ -201,14 +201,6 @@ let ventaActual = null;
 let progressInterval = null;
 let ultimoResumen = null;
 
-function mostrarUsuario() {
-    const nombre = localStorage.getItem('usuario') || 'Usuario';
-    const rango = localStorage.getItem('rango') || '';
-    document.getElementById('nombre-usuario').textContent = nombre;
-    document.getElementById('rango-usuario').textContent = rango;
-    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
-}
-
 // ======================== BARRA DE PROGRESO ========================
 function mostrarProgreso() {
     const container = document.getElementById('progress-container');
@@ -632,14 +624,6 @@ function exportarCSV() {
     link.download = `ventas_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     URL.revokeObjectURL(link.href);
-}
-
-// ======================== TOGGLE SIDEBAR ========================
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar-dinamico');
-    if (sidebar) sidebar.classList.toggle('open');
-    const overlay = document.getElementById('overlay');
-    if (overlay) overlay.classList.toggle('hidden');
 }
 
 // ======================== INICIALIZACIÓN ========================

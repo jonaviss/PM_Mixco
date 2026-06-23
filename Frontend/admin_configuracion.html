@@ -97,17 +97,6 @@
 <script src="js/notify.js"></script>
 <script src="js/layout.js"></script>
 <script>
-function mostrarUsuario() {
-    const nombre = localStorage.getItem('usuario') || 'Usuario';
-    const rango = localStorage.getItem('rango') || '';
-    document.getElementById('nombre-usuario').textContent = nombre;
-    document.getElementById('rango-usuario').textContent = rango;
-    document.getElementById('avatar-inicial').textContent = nombre.charAt(0).toUpperCase();
-}
-function toggleSidebar() {
-    const s = document.getElementById('sidebar-dinamico'); if (s) s.classList.toggle('open');
-    const o = document.getElementById('overlay'); if (o) o.classList.toggle('hidden');
-}
 document.addEventListener('DOMContentLoaded', async () => {
     if (!localStorage.getItem('token')) { window.location.href = 'index.html'; return; }
     mostrarUsuario();

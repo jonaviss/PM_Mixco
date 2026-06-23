@@ -330,7 +330,7 @@ async def obtener_detalle_venta_completo(venta_id: str) -> Tuple[dict, list, lis
     return venta, productos, pagos, cliente, correo, operador
 
 
-async def cancelar_venta(venta_id: str, motivo: str) -> dict:
+async def cancelar_venta(venta_id: str, motivo: str, background_tasks: BackgroundTasks) -> dict:
     venta = find_venta_by_id(venta_id)
     if not venta:
         raise HTTPException(404, "Venta no encontrada")
@@ -348,4 +348,39 @@ async def cancelar_venta(venta_id: str, motivo: str) -> dict:
         update_data["motivo_cancelacion"] = motivo
     update_venta(venta_id, update_data)
 
-    return {"mensaje": "Venta cancelada exitosamente — stock restaurado y deuda liberada", "venta_id": venta_id}
+    comprador = find_usuario_basico(venta["comprador_cui"]) or {"cui": venta["comprador_cui"], "nombre_completo": "—", "correo": ""}
+    detalle = find_detalle_completo(venta_id)
+    productos = []
+    for d in detalle:
+        prod_info = d.get("inventario_libreria") or {}
+        productos.append({
+            "nombre": prod_info.get("nombre", "Producto"),
+            "tipo_producto": prod_info.get("tipo_producto", "—"),
+            "cantidad": d["cantidad"],
+            "precio_unitario": float(d["precio_unitario"]),
+            "subtotal": float(d["subtotal"])
+        })
+
+    background_tasks.add_task(despachar_correo_libreria, {
+        "id_transaccion": venta_id,
+        "tipo_notificacion": "cancelacion",
+        "monto": float(venta["total_venta"]),
+        "motivo_cancelacion": motivo or "—",
+        "venta": {
+            "id": venta_id,
+            "comprador_cui": venta["comprador_cui"],
+            "total_venta": float(venta["total_venta"]),
+            "total_pagado": float(venta["total_pagado"]),
+            "saldo_pendiente": 0,
+            "estado_pago": "cancelada",
+            "created_at": venta["created_at"],
+            "operador": "—"
+        },
+        "productos": productos,
+        "pagos": [],
+        "hermano": comprador,
+        "deuda_hermano": {"total": 0, "cantidad": 0}
+    })
+
+    sin_correo = not comprador.get("correo")
+    return {"mensaje": f"Venta cancelada exitosamente — stock restaurado y deuda liberada{' (sin correo del comprador, no se envió notificación)' if sin_correo else ''}", "venta_id": venta_id}

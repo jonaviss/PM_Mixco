@@ -162,13 +162,7 @@
         <div class="p-5 space-y-4">
             <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Nombre *</label><input type="text" id="nuevo-nombre" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: Biblia RVR 1960"></div>
             <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Categoría *</label>
-                <select id="nuevo-tipo" class="w-full border rounded-lg px-3 py-2">
-                    <option value="Biblia">Biblia</option>
-                    <option value="Libro">Libro</option>
-                    <option value="Material">Material de Estudio</option>
-                    <option value="Accesorio">Accesorio</option>
-                    <option value="Otro">Otro</option>
-                </select>
+                <select id="nuevo-tipo" class="w-full border rounded-lg px-3 py-2"></select>
             </div>
             <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Descripción</label><input type="text" id="nuevo-descripcion" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: Tapa dura, índice"></div>
             <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Costo Unitario de Compra (Q) *</label>
@@ -199,13 +193,7 @@
             <input type="hidden" id="edit-producto-id">
             <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Nombre *</label><input type="text" id="edit-nombre" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: Biblia RVR 1960"></div>
             <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Categoría *</label>
-                <select id="edit-tipo" class="w-full border rounded-lg px-3 py-2">
-                    <option value="Biblia">Biblia</option>
-                    <option value="Libro">Libro</option>
-                    <option value="Material">Material de Estudio</option>
-                    <option value="Accesorio">Accesorio</option>
-                    <option value="Otro">Otro</option>
-                </select>
+                <select id="edit-tipo" class="w-full border rounded-lg px-3 py-2"></select>
             </div>
             <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Descripción</label><input type="text" id="edit-descripcion" class="w-full border rounded-lg px-3 py-2" placeholder="Ej: Tapa dura, índice"></div>
             <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Precio de Venta (Q) *</label>
@@ -225,26 +213,11 @@
 </div>
 
 <!-- MODAL DE CONFIRMACIÓN PERSONALIZADO PARA ELIMINAR -->
-<div id="modal-confirmacion" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div class="bg-primary px-5 py-4 flex justify-between items-center">
-            <h3 class="text-base font-bold text-white">Confirmar eliminación</h3>
-            <button onclick="cerrarModalConfirmacion()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
-        </div>
-        <div class="p-5">
-            <p id="confirmacion-mensaje" class="text-sm text-on-surface mb-5">¿Estás seguro de eliminar este producto de la compra?</p>
-            <div class="flex justify-end gap-3">
-                <button onclick="cerrarModalConfirmacion()" class="px-4 py-2 text-sm font-bold text-secondary border border-outline-variant rounded-lg hover:bg-surface-container transition">Cancelar</button>
-                <button id="confirmacion-aceptar" class="px-4 py-2 text-sm font-bold bg-error text-white rounded-lg hover:opacity-90 transition">Eliminar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/notify.js"></script>
+<script src="js/confirm.js"></script>
 <script src="js/layout.js?v=3"></script>
 <script>
     // ---------- VARIABLES GLOBALES ----------
@@ -252,8 +225,6 @@
     let detalles = [];
     let nextTempId = 1;
     let productoEnEdicion = null;
-    let confirmacionCallback = null;
-
     // ---------- FUNCIONES AUXILIARES ----------
     function escapeHtml(str) {
         if (!str) return '';
@@ -295,23 +266,7 @@
         });
     }
 
-    // ---------- MODAL DE CONFIRMACIÓN PERSONALIZADO ----------
-    function mostrarModalConfirmacion(mensaje, callback) {
-        document.getElementById('confirmacion-mensaje').textContent = mensaje;
-        confirmacionCallback = callback;
-        const modal = document.getElementById('modal-confirmacion');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    }
-
-    function cerrarModalConfirmacion() {
-        const modal = document.getElementById('modal-confirmacion');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        confirmacionCallback = null;
-    }
-
-    // ---------- RENDERIZAR TABLA ----------
+        // ---------- RENDERIZAR TABLA ----------
     function renderizarTabla() {
         const tbody = document.getElementById('detalles-body');
         if (!detalles.length) {
@@ -372,22 +327,44 @@
                 const item = detalles.find(d => d.id_temp === id);
                 if (item) {
                     const mensaje = `¿Estás seguro de eliminar "${item.nombre}" de la compra? Esta acción no se puede deshacer.`;
-                    mostrarModalConfirmacion(mensaje, () => {
+                    confirmar(mensaje, () => {
                         detalles = detalles.filter(d => d.id_temp !== id);
                         renderizarTabla();
                         notify.success(`Producto "${item.nombre}" eliminado de la compra.`);
-                    });
+                    }, { titulo: 'Confirmar eliminación', btnAceptar: 'Eliminar', colorAceptar: 'bg-error', colorHeader: 'bg-error' });
                 }
             });
         });
 
-        // Asignar evento al botón de confirmación del modal
-        document.getElementById('confirmacion-aceptar').onclick = function() {
-            if (confirmacionCallback) {
-                confirmacionCallback();
-                cerrarModalConfirmacion();
-            }
-        };
+    }
+
+    // ---------- CATEGORÍAS DINÁMICAS ----------
+    let categoriasCatalogo = [];
+
+    async function cargarCategorias() {
+        try {
+            const res = await API.get('/configuracion/tipos-producto', true);
+            if (res.ok) categoriasCatalogo = await res.json();
+        } catch (e) { console.error('[Compras] Error al cargar categorías:', e); }
+    }
+
+    function llenarSelectCategorias(selectId, valorSeleccionado) {
+        const sel = document.getElementById(selectId);
+        if (!sel) return;
+        sel.innerHTML = '';
+        categoriasCatalogo.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.nombre;
+            opt.textContent = c.nombre;
+            if (c.nombre === valorSeleccionado) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    }
+
+    async function llenarSelectsCategorias() {
+        await cargarCategorias();
+        llenarSelectCategorias('nuevo-tipo');
+        llenarSelectCategorias('edit-tipo');
     }
 
     // ---------- CARGAR PROVEEDORES ----------
@@ -410,7 +387,7 @@
             return;
         }
         document.getElementById('nuevo-nombre').value = '';
-        document.getElementById('nuevo-tipo').value = 'Biblia';
+        llenarSelectCategorias('nuevo-tipo');
         document.getElementById('nuevo-descripcion').value = '';
         document.getElementById('nuevo-costo').value = '';
         document.getElementById('nuevo-precio-venta').value = '';
@@ -493,7 +470,7 @@
         document.getElementById('edit-id-temp').value = item.id_temp;
         document.getElementById('edit-producto-id').value = item.producto_id;
         document.getElementById('edit-nombre').value = item.nombre;
-        document.getElementById('edit-tipo').value = item.categoria;
+        llenarSelectCategorias('edit-tipo', item.categoria);
         document.getElementById('edit-descripcion').value = item.descripcion || '';
         document.getElementById('edit-precio-venta').value = item.precio_venta.toFixed(2);
         document.getElementById('edit-costo-compra').value = item.costo_unitario.toFixed(2);
@@ -615,24 +592,11 @@
     }
 
     // ---------- INICIALIZACIÓN ----------
-    function mostrarUsuario() {
-        const n = localStorage.getItem('usuario') || 'Usuario';
-        document.getElementById('nombre-usuario').textContent = n;
-        document.getElementById('rango-usuario').textContent = localStorage.getItem('rango') || '';
-        document.getElementById('avatar-inicial').textContent = n.charAt(0).toUpperCase();
-    }
-
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar-dinamico');
-        if (sidebar) sidebar.classList.toggle('open');
-        const overlay = document.getElementById('overlay');
-        if (overlay) overlay.classList.toggle('hidden');
-    }
-
     document.addEventListener('DOMContentLoaded', async () => {
         if (!localStorage.getItem('token')) window.location.href = 'index.html';
         mostrarUsuario();
         await cargarProveedores();
+        await llenarSelectsCategorias();
         document.getElementById('fecha-compra').valueAsDate = new Date();
 
         // Configurar campos de precio para que acepten decimales correctamente
@@ -659,11 +623,6 @@
         });
         document.getElementById('modal-editar-producto').addEventListener('click', (e) => {
             if (e.target === document.getElementById('modal-editar-producto')) cerrarModalEditar();
-        });
-
-        // Cerrar modal de confirmación al hacer clic fuera
-        document.getElementById('modal-confirmacion').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('modal-confirmacion')) cerrarModalConfirmacion();
         });
 
         renderizarTabla();

@@ -4,6 +4,7 @@ Módulo de Esquemas de Datos (DTC)
 
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
+from datetime import date
 
 class LoginRequest(BaseModel):
     cui: str = Field(..., description="CUI de 13 dígitos")
@@ -89,3 +90,44 @@ class PerfilUpdate(BaseModel):
 class PasswordChange(BaseModel):
     contrasena_actual: str
     contrasena_nueva: str = Field(..., min_length=6)
+
+
+class ProveedorCreate(BaseModel):
+    nombre: str
+    contacto: Optional[str] = None
+    telefono: Optional[str] = None
+    email: Optional[str] = None
+    direccion: Optional[str] = None
+
+
+class ProveedorUpdate(BaseModel):
+    nombre: Optional[str] = None
+    contacto: Optional[str] = None
+    telefono: Optional[str] = None
+    email: Optional[str] = None
+    direccion: Optional[str] = None
+    activo: Optional[bool] = None
+
+
+class CompraDetalleCreate(BaseModel):
+    producto_id: str
+    cantidad: int = Field(..., gt=0)
+    costo_unitario: float = Field(..., ge=0)
+
+
+class CompraCreate(BaseModel):
+    proveedor_id: str
+    fecha_compra: date
+    fecha_factura: Optional[date] = None
+    factura: Optional[str] = None
+    observaciones: Optional[str] = None
+    condicion_pago: str = "CREDITO"
+    detalles: List[CompraDetalleCreate]
+
+
+class PagoProveedorCreate(BaseModel):
+    compra_id: str
+    monto: float = Field(..., gt=0)
+    fecha_pago: date
+    metodo_pago_id: int = 1
+    referencia: Optional[str] = None

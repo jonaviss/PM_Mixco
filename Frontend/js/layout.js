@@ -3,6 +3,24 @@
  * @description Inyección dinámica del sidebar unificado en todas las páginas del módulo librería.
  */
 
+function mostrarUsuario() {
+    const nombre = localStorage.getItem('usuario') || 'Usuario';
+    const rango = localStorage.getItem('rango') || '';
+    const elNombre = document.getElementById('nombre-usuario');
+    const elRango = document.getElementById('rango-usuario');
+    const elAvatar = document.getElementById('avatar-inicial');
+    if (elNombre) elNombre.textContent = nombre;
+    if (elRango) elRango.textContent = rango;
+    if (elAvatar) elAvatar.textContent = nombre.charAt(0).toUpperCase();
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar-dinamico');
+    if (sidebar) sidebar.classList.toggle('open');
+    const overlay = document.getElementById('overlay');
+    if (overlay) overlay.classList.toggle('hidden');
+}
+
 async function cargarLayout() {
     if (document.getElementById('sidebar-dinamico')) return;
 
@@ -40,6 +58,7 @@ async function cargarLayout() {
         { href: "reporte_lotes.html", icono: "inventory", texto: "Lotes Pendientes" },
         { href: "libreria_reportes_ventas.html", icono: "assessment", texto: "Reportes de Ventas" },
         { href: "cancelar_venta.html", icono: "block", texto: "Cancelar Venta" },
+        { href: "gastos.html", icono: "money_off", texto: "Gastos" },
         { href: "admin_configuracion.html", icono: "settings", texto: "Configuración", admin: true }
       
     ];
