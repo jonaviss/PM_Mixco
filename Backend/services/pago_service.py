@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 from fastapi import HTTPException, BackgroundTasks
 from schemas import PagoLibreriaCreate, AbonoDistribuidoCreate
-from repositories.pago_repository import create_pago, sum_pagos_by_venta, calcular_deuda_comprador
+from repositories.pago_repository import create_pago, sum_pagos_by_venta, calcular_deuda_comprador, find_pago_by_id, delete_pago as repo_delete_pago
 from repositories.venta_repository import (
     find_venta_basica, update_venta, find_ventas_by_comprador, find_primer_detalle
 )
@@ -111,6 +111,26 @@ async def distribuir_abono(
         "saldo_restante": round(monto_restante, 2),
         "ok": True
     }
+
+
+def anular_pago(pago_id: str) -> dict:
+    pago = find_pago_by_id(pago_id)
+    if not pago:
+        raise HTTPException(404, "Cobro no encontrado")
+    venta_id = pago["venta_id"]
+    repo_delete_pago(pago_id)
+    total_pagado = sum_pagos_by_venta(venta_id)
+    venta = find_venta_basica(venta_id)
+    if not venta:
+        return {"mensaje": "Cobro anulado", "ok": True}
+    total_venta = float(venta["total_venta"])
+    if total_pagado <= 0:
+        update_venta(venta_id, {"total_pagado": 0, "estado_pago": "pendiente"})
+    elif total_pagado < total_venta:
+        update_venta(venta_id, {"total_pagado": total_pagado, "estado_pago": "parcial"})
+    else:
+        update_venta(venta_id, {"total_pagado": total_pagado, "estado_pago": "pagado"})
+    return {"mensaje": "Cobro anulado correctamente", "ok": True}
 
 
 def obtener_pendientes(cui: str) -> dict:

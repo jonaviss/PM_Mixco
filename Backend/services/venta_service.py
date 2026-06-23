@@ -320,7 +320,7 @@ async def obtener_detalle_venta_completo(venta_id: str) -> Tuple[dict, list, lis
     pagos_raw = find_pagos_by_venta_ordenados(venta_id)
     pagos = []
     for p in pagos_raw:
-        pagos.append({"monto_abonado": float(p["monto_abonado"]), "fecha_pago": p["fecha_pago"], "operador": "—"})
+        pagos.append({"id": p["id"], "monto_abonado": float(p["monto_abonado"]), "fecha_pago": p["fecha_pago"], "operador": "—"})
 
     comprador = find_usuario_basico(venta["comprador_cui"])
     cliente = comprador["nombre_completo"] if comprador else "—"

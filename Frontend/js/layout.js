@@ -50,6 +50,8 @@ async function cargarLayout() {
         { href: "libreria_inventario.html", icono: "inventory_2", texto: "Inventario" },
         { href: "libreria_ventas.html", icono: "point_of_sale", texto: "Ventas" },
         { href: "libreria_cobros.html", icono: "payments", texto: "Cobros" },
+        { href: "libreria_deudas.html", icono: "receipt_long", texto: "Deudas" },
+        { href: "libreria_pagados.html", icono: "check_circle", texto: "Pagados" },
         { href: "libreria_clientes.html", icono: "group", texto: "Clientes" },
         { href: "cliente_mis_compras.html", icono: "receipt_long", texto: "Mis Compras" },
         { href: "proveedores.html", icono: "local_shipping", texto: "Proveedores" },

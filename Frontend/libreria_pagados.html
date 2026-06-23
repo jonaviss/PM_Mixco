@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventas Pagadas | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#755b00",
+                        "primary-container": "#C9A227",
+                        "on-primary": "#ffffff",
+                        "surface": "#F8FAFC",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#F1F5F9",
+                        "surface-container": "#E2E8F0",
+                        "surface-container-high": "#CBD5E1",
+                        "outline-variant": "#CBD5E1",
+                        "outline": "#94A3B8",
+                        "on-surface": "#1E293B",
+                        "on-surface-variant": "#475569",
+                        "secondary": "#64748B",
+                        "error": "#EF4444"
+                    },
+                    fontFamily: { "sora": ["Sora"], "mono": ["JetBrains Mono"] },
+                    spacing: { "sidebar": "260px" }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-on-surface">
+
+<div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<div id="main-content" class="md:ml-sidebar min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-surface-container text-secondary"><span class="material-symbols-outlined">menu</span></button>
+            <div>
+                <h2 class="text-base font-bold text-on-surface leading-none">Ventas Pagadas</h2>
+                <p class="text-xs text-secondary mt-0.5">Historial de cobros completados</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 pl-3 border-l border-outline-variant">
+            <div class="text-right hidden sm:block"><p id="nombre-usuario" class="text-sm font-bold text-on-surface leading-none"></p><p id="rango-usuario" class="text-xs text-secondary mt-0.5 capitalize"></p></div>
+            <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm"><span id="avatar-inicial">?</span></div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 space-y-6">
+
+        <section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+            <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/30">
+                <h3 class="text-sm font-bold text-on-surface">Ventas Cobradas</h3>
+                <button onclick="cargarPagados()" class="p-1.5 rounded-lg hover:bg-surface-container text-secondary transition" title="Actualizar"><span class="material-symbols-outlined text-[18px]">refresh</span></button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-surface-container-low/50">
+                        <tr>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase">Fecha</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase">Cliente</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase">Operador</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase text-right">Total</th>
+                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase text-right">Pagado</th>
+                            <th class="px-5 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-pagados" class="divide-y divide-outline-variant text-sm">
+                        <tr><td colspan="6" class="text-center py-10 text-secondary">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center">
+                <p id="total-registros" class="text-xs font-mono text-secondary">— registros</p>
+                <div class="flex gap-2 items-center">
+                    <button id="btn-anterior" onclick="cambiarPagina(-1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary">
+                        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                    </button>
+                    <span id="pagina-label" class="text-xs font-mono text-secondary px-2">Pág. 1</span>
+                    <button id="btn-siguiente" onclick="cambiarPagina(1)" class="p-1.5 hover:bg-surface-container rounded transition-colors text-secondary">
+                        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL: Detalle de venta -->
+    <div id="modal-detalle" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="bg-primary px-5 py-4 flex justify-between items-center flex-shrink-0">
+                <div>
+                    <h3 class="text-base font-bold text-white">Detalle de Venta</h3>
+                    <p id="modal-detalle-id" class="text-xs text-white/70 mt-0.5">Venta: —</p>
+                </div>
+                <button onclick="cerrarModal()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="overflow-y-auto flex-1 p-5 space-y-4">
+                <div id="detalle-contenido">
+                    <div class="text-center py-10 text-secondary">Cargando...</div>
+                </div>
+            </div>
+            <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center flex-shrink-0">
+                <div class="flex gap-2">
+                    <button onclick="descargarPDF()" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[18px]">download</span> Descargar PDF
+                    </button>
+                    <button id="btn-anular-cobro" onclick="anularCobro()" class="px-4 py-2 text-sm font-bold bg-error text-white rounded-lg hover:opacity-90 transition flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[18px]">undo</span> Anular Cobro
+                    </button>
+                </div>
+                <button onclick="cerrarModal()" class="px-4 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="border-t border-outline-variant px-6 py-3 text-center">
+        <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Módulo Librería &copy; 2026</p>
+    </footer>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/notify.js"></script>
+<script src="js/layout.js?v=3"></script>
+<script src="js/confirm.js"></script>
+<script>
+let ventaActual = null;
+let paginaActual = 1;
+const POR_PAGINA = 10;
+let totalPaginas = 1;
+let totalRegistros = 0;
+let ultimoPagoId = null;
+let ultimoMontoPago = 0;
+
+async function cargarPagados() {
+    cerrarModal();
+    const tbody = document.getElementById('tabla-pagados');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-secondary">Cargando...</td></tr>';
+
+    try {
+        const res = await API.get(`/libreria/dashboard/pagados?pagina=${paginaActual}&por_pagina=${POR_PAGINA}`, true);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const ventas = data.data || [];
+        totalRegistros = data.total || 0;
+        totalPaginas = data.total_paginas || 1;
+
+        document.getElementById('total-registros').textContent = `${totalRegistros} registros`;
+        document.getElementById('pagina-label').textContent = `Pág. ${paginaActual} de ${totalPaginas}`;
+        document.getElementById('btn-anterior').disabled = !data.tiene_anterior;
+        document.getElementById('btn-siguiente').disabled = !data.tiene_siguiente;
+
+        if (ventas.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-secondary">No hay ventas pagadas.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = '';
+        ventas.forEach(v => {
+            const tr = document.createElement('tr');
+            tr.className = 'table-row transition-colors hover:bg-surface-container-low/50 cursor-pointer';
+            tr.innerHTML = `
+                <td class="px-5 py-3 text-sm">${formatearFechaHora(v.created_at)}</td>
+                <td class="px-5 py-3 text-sm font-medium">${v.nombre_cliente || v.comprador_cui || '—'}</td>
+                <td class="px-5 py-3 text-sm text-secondary">${v.nombre_operador || v.digitado_por || '—'}</td>
+                <td class="px-5 py-3 text-sm font-mono font-bold text-right">${formatearMoneda(v.total_venta)}</td>
+                <td class="px-5 py-3 text-sm font-mono text-right text-green-600">${formatearMoneda(v.total_pagado)}</td>
+                <td class="px-5 py-3 text-right">
+                    <button onclick="event.stopPropagation(); verDetalle('${v.id}')" class="p-1.5 rounded-lg border border-outline-variant text-primary hover:bg-primary-container hover:text-white transition" title="Ver detalle"><span class="material-symbols-outlined text-[16px]">receipt_long</span></button>
+                </td>
+            `;
+            tr.addEventListener('click', () => verDetalle(v.id));
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        console.error('[Pagados] Error:', err);
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-error font-bold">Error al cargar las ventas.</td></tr>';
+    }
+}
+
+function cambiarPagina(direccion) {
+    paginaActual += direccion;
+    if (paginaActual < 1) paginaActual = 1;
+    if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+    cargarPagados();
+}
+
+async function verDetalle(ventaId) {
+    ventaActual = ventaId;
+    document.getElementById('modal-detalle-id').textContent = `Venta: ${ventaId.substring(0, 8)}...`;
+    document.getElementById('detalle-contenido').innerHTML = '<div class="text-center py-10 text-secondary">Cargando...</div>';
+    document.getElementById('modal-detalle').classList.remove('hidden');
+    document.getElementById('modal-detalle').classList.add('flex');
+
+    try {
+        const res = await API.get(`/libreria/ventas/${ventaId}/detalle`, true);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const venta = data.venta;
+        const productos = data.productos || [];
+        const pagos = data.pagos || [];
+        ultimoPagoId = pagos.length > 0 ? pagos[pagos.length - 1].id : null;
+        ultimoMontoPago = pagos.length > 0 ? parseFloat(pagos[pagos.length - 1].monto_abonado || 0) : 0;
+        const btnAnular = document.getElementById('btn-anular-cobro');
+        if (btnAnular) btnAnular.classList.toggle('hidden', !ultimoPagoId);
+
+        let html = `
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <p class="text-xs font-mono text-gray-500">Total Venta</p>
+                    <p class="text-lg font-bold font-mono">${formatearMoneda(venta.total_venta)}</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <p class="text-xs font-mono text-gray-500">Total Pagado</p>
+                    <p class="text-lg font-bold font-mono">${formatearMoneda(venta.total_pagado)}</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <p class="text-xs font-mono text-gray-500">Estado</p>
+                    <p class="text-lg font-bold text-green-600">PAGADO</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <p class="text-xs font-mono text-gray-500">Cliente</p>
+                    <p class="text-lg font-bold truncate">${venta.comprador_cui}</p>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-xs font-mono font-bold text-gray-500 uppercase tracking-wider mb-2">Productos</h4>
+                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase">Producto</th>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-center">Cant.</th>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-right">Precio Unit.</th>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm">
+        `;
+        productos.forEach(p => {
+            html += `<tr>
+                <td class="px-4 py-2.5">${p.nombre}</td>
+                <td class="px-4 py-2.5 text-center">${p.cantidad}</td>
+                <td class="px-4 py-2.5 text-right font-mono">${formatearMoneda(p.precio_unitario)}</td>
+                <td class="px-4 py-2.5 text-right font-mono font-bold">${formatearMoneda(p.subtotal)}</td>
+            </tr>`;
+        });
+        html += `</tbody></table></div></div>`;
+
+        if (pagos.length > 0) {
+            html += `
+                <div>
+                    <h4 class="text-xs font-mono font-bold text-gray-500 uppercase tracking-wider mb-2">Pagos Realizados</h4>
+                    <div class="border border-gray-200 rounded-xl overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase">Fecha</th>
+                                    <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-right">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-sm">
+            `;
+            pagos.forEach(p => {
+                html += `<tr>
+                    <td class="px-4 py-2.5">${formatearFechaHora(p.fecha_pago)}</td>
+                    <td class="px-4 py-2.5 text-right font-mono font-bold text-green-700">${formatearMoneda(p.monto_abonado)}</td>
+                </tr>`;
+            });
+            html += `</tbody></table></div></div>`;
+        }
+
+        document.getElementById('detalle-contenido').innerHTML = html;
+    } catch (err) {
+        console.error('[Detalle] Error:', err);
+        document.getElementById('detalle-contenido').innerHTML = '<div class="text-center py-10 text-error font-bold">Error al cargar el detalle.</div>';
+    }
+}
+
+function cerrarModal() {
+    document.getElementById('modal-detalle').classList.add('hidden');
+    document.getElementById('modal-detalle').classList.remove('flex');
+    ventaActual = null;
+}
+
+async function descargarPDF() {
+    if (!ventaActual) return;
+    try {
+        const res = await API.get(`/libreria/ventas/${ventaActual}/pdf`, true);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `recibo_${ventaActual.substring(0,8)}.pdf`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (err) { notify.error('Error al descargar el PDF'); }
+}
+
+async function anularCobro() {
+    if (!ultimoPagoId) { notify.warning('No hay cobros para anular'); return; }
+    confirmar(
+        `¿Anular el último cobro de ${formatearMoneda(ultimoMontoPago)}?\nEsta acción no se puede deshacer.`,
+        async () => {
+            const res = await API.delete(`/libreria/pagos/${ultimoPagoId}`);
+            if (res.ok) {
+                notify.success('Cobro anulado correctamente');
+                cerrarModal();
+                await cargarPagados();
+            } else {
+                const data = await res.json().catch(() => ({}));
+                notify.error(data.detail || 'Error al anular el cobro');
+            }
+        },
+        { titulo: 'Anular Cobro', btnAceptar: 'Sí, anular', colorAceptar: 'bg-error', colorHeader: 'bg-error' }
+    );
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = 'index.html'; return; }
+    mostrarUsuario();
+    document.getElementById('btnCerrarSesion').addEventListener('click', (e) => { e.preventDefault(); localStorage.clear(); window.location.href = 'index.html'; });
+    await cargarPagados();
+});
+</script>
+
+</body>
+</html>

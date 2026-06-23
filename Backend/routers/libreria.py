@@ -19,7 +19,7 @@ from services.venta_service import (
     buscar_ventas, get_reporte_ventas, obtener_detalle_venta_completo, cancelar_venta
 )
 from services.pago_service import (
-    registrar_abono, distribuir_abono, obtener_pendientes, obtener_historial_cliente
+    registrar_abono, distribuir_abono, obtener_pendientes, obtener_historial_cliente, anular_pago
 )
 from services.notificacion_service import despachar_correo_libreria
 from repositories.common_repository import find_vendedores_por_modulo, find_usuarios_activos, find_all_usuarios_basico
@@ -230,6 +230,19 @@ async def obtener_pendientes_endpoint(
 ):
     try:
         return obtener_pendientes(cui)
+    except Exception as e:
+        raise HTTPException(500, detail=str(e))
+
+
+@router.delete("/pagos/{pago_id}")
+async def anular_pago_endpoint(
+    pago_id: str,
+    usuario_actual=Depends(obtener_usuario_actual)
+):
+    try:
+        return anular_pago(pago_id)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(500, detail=str(e))
 

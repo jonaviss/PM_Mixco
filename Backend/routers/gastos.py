@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import Dict, Any, Optional
-from services.gasto_service import registrar_gasto, editar_gasto, eliminar_gasto, listar_gastos
+from services.gasto_service import registrar_gasto, editar_gasto, eliminar_gasto, listar_gastos, obtener_resumen
 from routers.dependencies import obtener_usuario_actual
 
 router = APIRouter(prefix="/libreria/gastos", tags=["Gastos"])
@@ -21,6 +21,16 @@ async def obtener_gastos(
 ):
     try:
         return listar_gastos(inicio, fin, pagina, por_pagina)
+    except Exception as e:
+        raise HTTPException(500, detail=str(e))
+
+
+@router.get("/resumen")
+async def resumen_gastos(
+    usuario_actual=Depends(obtener_usuario_actual)
+):
+    try:
+        return obtener_resumen()
     except Exception as e:
         raise HTTPException(500, detail=str(e))
 

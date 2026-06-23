@@ -1,9 +1,18 @@
 from typing import Dict, Any, Optional
 from fastapi import HTTPException
 from repositories.gasto_repository import (
-    create_gasto, update_gasto, delete_gasto, find_gasto_by_id, list_gastos
+    create_gasto, update_gasto, delete_gasto, find_gasto_by_id, list_gastos, sum_gastos_periodo
 )
 from datetime import date
+
+
+def obtener_resumen() -> dict:
+    hoy = str(date.today())
+    inicio_mes = str(date.today().replace(day=1))
+    return {
+        "total_hoy": sum_gastos_periodo(hoy, hoy),
+        "total_mes": sum_gastos_periodo(inicio_mes, hoy),
+    }
 
 
 def registrar_gasto(descripcion: str, monto: float, categoria: str, fecha_gasto: str, usuario_cui: str) -> dict:

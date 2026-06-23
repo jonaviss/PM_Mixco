@@ -81,35 +81,81 @@
 
         <div id="badge-rol" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold border"></div>
 
-        <!-- KPIs -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- KPIs - Row 1: Hoy -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <div class="kpi-card p-5">
                 <div class="flex justify-between items-start mb-3">
-                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider" id="kpi1-label">Ventas del Día</span>
-                    <span id="kpi1-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">—</span>
+                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Cobrado Hoy</span>
+                    <span class="material-symbols-outlined text-[18px] text-green-600">payments</span>
                 </div>
-                <p id="kpi1-valor" class="text-3xl font-bold text-on-surface font-mono">—</p>
-                <p id="kpi1-sub" class="text-xs text-secondary mt-1">—</p>
+                <p id="kpi-cobrado-hoy" class="text-3xl font-bold text-on-surface font-mono">—</p>
+                <p class="text-xs text-secondary mt-1">Ventas pagadas del día</p>
             </div>
 
             <div class="kpi-card p-5">
                 <div class="flex justify-between items-start mb-3">
-                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider" id="kpi2-label">Créditos Pendientes</span>
-                    <span class="material-symbols-outlined text-[18px] text-primary">pending_actions</span>
+                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Ganancia Bruta Hoy</span>
+                    <span class="material-symbols-outlined text-[18px] text-green-600">trending_up</span>
                 </div>
-                <p id="kpi2-valor" class="text-3xl font-bold text-on-surface font-mono">—</p>
-                <p id="kpi2-sub" class="text-xs text-error mt-1 font-bold">—</p>
+                <p id="kpi-ganancia-hoy" class="text-3xl font-bold text-on-surface font-mono">—</p>
+                <p class="text-xs text-secondary mt-1">Cobrado − Costo productos</p>
             </div>
 
             <div class="kpi-card p-5">
                 <div class="flex justify-between items-start mb-3">
-                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider" id="kpi3-label">Ventas del Mes</span>
-                    <span class="material-symbols-outlined text-[18px] text-primary">trending_up</span>
+                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Gastos Hoy</span>
+                    <span class="material-symbols-outlined text-[18px] text-error">money_off</span>
                 </div>
-                <p id="kpi3-valor" class="text-3xl font-bold text-on-surface font-mono">—</p>
-                <div class="w-full bg-surface-container-high h-1.5 rounded-full mt-3">
-                    <div id="barra-progreso" class="bg-primary-container h-full rounded-full transition-all duration-500" style="width:0%"></div>
+                <p id="kpi-gastos-hoy" class="text-3xl font-bold text-on-surface font-mono">—</p>
+                <p class="text-xs text-secondary mt-1">Egresos del día</p>
+            </div>
+
+            <div class="kpi-card p-5">
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Ganancia Neta Hoy</span>
+                    <span class="material-symbols-outlined text-[18px] text-primary">account_balance_wallet</span>
                 </div>
+                <p id="kpi-neta-hoy" class="text-3xl font-bold text-on-surface font-mono">—</p>
+                <p class="text-xs text-secondary mt-1">Ganancia − Gastos</p>
+            </div>
+        </div>
+
+        <!-- KPIs - Row 2: Mes & Deuda -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="kpi-card p-5">
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Cobrado del Mes</span>
+                    <span class="material-symbols-outlined text-[18px] text-green-600">payments</span>
+                </div>
+                <p id="kpi-cobrado-mes" class="text-3xl font-bold text-on-surface font-mono">—</p>
+                <p class="text-xs text-secondary mt-1">Ventas pagadas del mes</p>
+            </div>
+
+            <div class="kpi-card p-5">
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Ganancia Bruta Mes</span>
+                    <span class="material-symbols-outlined text-[18px] text-green-600">trending_up</span>
+                </div>
+                <p id="kpi-ganancia-mes" class="text-3xl font-bold text-on-surface font-mono">—</p>
+                <p class="text-xs text-secondary mt-1">Cobrado − Costo productos</p>
+            </div>
+
+            <div class="kpi-card p-5">
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Gastos del Mes</span>
+                    <span class="material-symbols-outlined text-[18px] text-error">receipt_long</span>
+                </div>
+                <p id="kpi-gastos-mes" class="text-3xl font-bold text-on-surface font-mono">—</p>
+                <p class="text-xs text-secondary mt-1">Egresos del mes</p>
+            </div>
+
+            <div class="kpi-card p-5 cursor-pointer hover:shadow-md transition-shadow" onclick="window.location.href='libreria_deudas.html'">
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Deuda Pendiente</span>
+                    <span class="material-symbols-outlined text-[18px] text-error">pending_actions</span>
+                </div>
+                <p id="kpi-deuda-total" class="text-3xl font-bold text-error font-mono">—</p>
+                <p id="kpi-deuda-sub" class="text-xs text-secondary mt-1">—</p>
             </div>
         </div>
 
@@ -190,6 +236,8 @@
 
     </main>
 
+
+
     <footer class="border-t border-outline-variant px-6 py-3 text-center">
         <p class="text-xs font-mono text-outline">PM Mixco ERP v2.0.0 &mdash; Módulo Librería &copy; 2026</p>
     </footer>
@@ -220,9 +268,6 @@ function configurarPorRol(rango, nombre) {
         badge.textContent = 'Vista Administrador — Acceso total al módulo';
         badge.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold border bg-amber-50 text-amber-700 border-amber-200';
         subtitulo.textContent = 'Librería · Vista global';
-        document.getElementById('kpi1-label').textContent = 'Ventas del Día';
-        document.getElementById('kpi2-label').textContent = 'Créditos Pendientes';
-        document.getElementById('kpi3-label').textContent = 'Ventas del Mes';
         tituloActividad.textContent = 'Actividad Reciente — Todos los operadores';
         filtroContainer.classList.remove('hidden');
         colOperador.classList.remove('hidden');
@@ -231,9 +276,6 @@ function configurarPorRol(rango, nombre) {
         badge.textContent = 'Vista Encargado — Supervisión de analistas';
         badge.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold border bg-blue-50 text-blue-700 border-blue-200';
         subtitulo.textContent = 'Librería · Vista de encargado';
-        document.getElementById('kpi1-label').textContent = 'Ventas del Día';
-        document.getElementById('kpi2-label').textContent = 'Créditos Pendientes';
-        document.getElementById('kpi3-label').textContent = 'Ventas del Mes';
         tituloActividad.textContent = 'Actividad Reciente — Analistas a cargo';
         filtroContainer.classList.remove('hidden');
         colOperador.classList.remove('hidden');
@@ -242,9 +284,6 @@ function configurarPorRol(rango, nombre) {
         badge.textContent = `Vista Analista — Tus operaciones, ${nombre}`;
         badge.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold border bg-green-50 text-green-700 border-green-200';
         subtitulo.textContent = 'Librería · Mis operaciones';
-        document.getElementById('kpi1-label').textContent = 'Mis Ventas Hoy';
-        document.getElementById('kpi2-label').textContent = 'Mis Créditos';
-        document.getElementById('kpi3-label').textContent = 'Mis Ventas del Mes';
         tituloActividad.textContent = 'Mi Actividad Reciente';
         filtroContainer.classList.add('hidden');
         colOperador.classList.add('hidden');
@@ -264,14 +303,26 @@ async function cargarKPIs() {
         const res = await API.get(url, true);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        document.getElementById('kpi1-valor').textContent = formatearMoneda(data.ventas_dia_total);
-        document.getElementById('kpi1-sub').textContent = `${data.ventas_dia_cantidad || 0} transacciones hoy`;
-        document.getElementById('kpi1-badge').textContent = `+${data.ventas_dia_cantidad || 0}`;
-        document.getElementById('kpi2-valor').textContent = formatearMoneda(data.creditos_pendientes_total);
-        document.getElementById('kpi2-sub').textContent = `${data.creditos_pendientes_cantidad || 0} cuentas por cobrar`;
-        document.getElementById('kpi3-valor').textContent = formatearMoneda(data.ventas_mes_total);
-        const progreso = Math.min((data.ventas_mes_total / (data.meta_mes || 1)) * 100, 100);
-        document.getElementById('barra-progreso').style.width = `${progreso}%`;
+        document.getElementById('kpi-cobrado-hoy').textContent = formatearMoneda(data.cobrado_hoy || 0);
+        const gHoy = data.ganancia_hoy || 0;
+        const elGHoy = document.getElementById('kpi-ganancia-hoy');
+        elGHoy.textContent = formatearMoneda(gHoy);
+        elGHoy.className = `text-3xl font-bold font-mono ${gHoy >= 0 ? 'text-green-600' : 'text-error'}`;
+        document.getElementById('kpi-gastos-hoy').textContent = formatearMoneda(data.gastos_hoy || 0);
+        const nHoy = data.neta_hoy || 0;
+        const elNHoy = document.getElementById('kpi-neta-hoy');
+        elNHoy.textContent = formatearMoneda(nHoy);
+        elNHoy.className = `text-3xl font-bold font-mono ${nHoy >= 0 ? 'text-green-600' : 'text-error'}`;
+
+        document.getElementById('kpi-cobrado-mes').textContent = formatearMoneda(data.cobrado_mes || 0);
+        const gMes = data.ganancia_mes || 0;
+        const elGMes = document.getElementById('kpi-ganancia-mes');
+        elGMes.textContent = formatearMoneda(gMes);
+        elGMes.className = `text-3xl font-bold font-mono ${gMes >= 0 ? 'text-green-600' : 'text-error'}`;
+        document.getElementById('kpi-gastos-mes').textContent = formatearMoneda(data.gastos_mes || 0);
+
+        document.getElementById('kpi-deuda-total').textContent = formatearMoneda(data.creditos_pendientes_total || 0);
+        document.getElementById('kpi-deuda-sub').textContent = `${data.creditos_pendientes_cantidad || 0} cuentas por cobrar`;
     } catch (err) {
         console.error('[Dashboard] Error al cargar KPIs:', err);
         notify.error('Error al cargar los indicadores');

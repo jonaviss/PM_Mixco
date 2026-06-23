@@ -21,6 +21,15 @@ def find_pagos_by_venta_ordenados(venta_id: str) -> List[Dict[str, Any]]:
     return res.data or []
 
 
+def find_pago_by_id(pago_id: str) -> Optional[Dict[str, Any]]:
+    res = supabase.table("libreria_pagos").select("*").eq("id", pago_id).execute()
+    return res.data[0] if res.data else None
+
+
+def delete_pago(pago_id: str) -> None:
+    supabase.table("libreria_pagos").delete().eq("id", pago_id).execute()
+
+
 def sum_pagos_by_venta(venta_id: str) -> float:
     res = supabase.table("libreria_pagos").select("monto_abonado").eq("venta_id", venta_id).execute()
     return sum(float(p["monto_abonado"]) for p in (res.data or []))

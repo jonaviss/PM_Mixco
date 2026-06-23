@@ -177,21 +177,11 @@ function paginaSiguiente() { if (paginaActual < Math.ceil(totalRegistros / POR_P
 
 async function calcularResumen() {
     try {
-        const hoy = new Date().toISOString().split('T')[0];
-        const mes = new Date().toISOString().slice(0, 7) + '-01';
-        const [resHoy, resMes] = await Promise.all([
-            API.get(`/libreria/gastos?inicio=${hoy}&fin=${hoy}&por_pagina=1000`, true),
-            API.get(`/libreria/gastos?inicio=${mes}&fin=2100-12-31&por_pagina=1000`, true)
-        ]);
-        if (resHoy.ok) {
-            const d = await resHoy.json();
-            const total = (d.data || []).reduce((a, g) => a + parseFloat(g.monto || 0), 0);
-            document.getElementById('total-hoy').textContent = formatearMoneda(total);
-        }
-        if (resMes.ok) {
-            const d = await resMes.json();
-            const total = (d.data || []).reduce((a, g) => a + parseFloat(g.monto || 0), 0);
-            document.getElementById('total-mes').textContent = formatearMoneda(total);
+        const res = await API.get('/libreria/gastos/resumen', true);
+        if (res.ok) {
+            const d = await res.json();
+            document.getElementById('total-hoy').textContent = formatearMoneda(d.total_hoy || 0);
+            document.getElementById('total-mes').textContent = formatearMoneda(d.total_mes || 0);
         }
     } catch (e) {}
 }

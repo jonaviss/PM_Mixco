@@ -1,11 +1,13 @@
 from typing import Dict, Any, Optional, List
-from datetime import datetime
+from datetime import datetime, date
 import pytz
-from database import supabase
 from repositories.dashboard_repository import (
-    find_ventas_dia, find_creditos_pendientes, find_ventas_mes,
-    count_actividad_total, find_actividad_paginada
+    find_creditos_pendientes, count_actividad_total, find_actividad_paginada,
+    find_ventas_pagadas_periodo, find_detalle_por_venta_ids, find_all_creditos_pendientes,
+    find_all_pagados
 )
+from repositories.gasto_repository import sum_gastos_periodo
+from repositories.common_repository import find_usuarios_by_cuis
 
 ZONA_GT = pytz.timezone("America/Guatemala")
 
@@ -19,8 +21,7 @@ def _enriquecer_nombres(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             cuis.add(v["comprador_cui"])
     if not cuis:
         return data
-    res = supabase.table("usuarios").select("cui, nombre_completo").in_("cui", list(cuis)).execute()
-    nombres = {u["cui"]: u["nombre_completo"] for u in (res.data or [])}
+    nombres = find_usuarios_by_cuis(list(cuis))
     for v in data:
         v["nombre_operador"] = nombres.get(v.get("digitado_por"), v.get("digitado_por", "—"))
         v["nombre_cliente"] = nombres.get(v.get("comprador_cui"), v.get("comprador_cui", "—"))
@@ -37,22 +38,109 @@ def _resolver_cui_filtro(usuario: Dict[str, Any], cui_param: Optional[str]) -> O
     return None
 
 
+def _calcular_ganancia_bruta(ventas: List[Dict[str, Any]], detalle: List[Dict[str, Any]]) -> float:
+    """Suma (precio_unitario - costo_unitario) * cantidad para cada item en ventas pagadas."""
+    detalle_por_venta: dict[str, list] = {}
+    for d in detalle:
+        detalle_por_venta.setdefault(d["venta_id"], []).append(d)
+
+    ganancia = 0.0
+    for v in ventas:
+        for d in detalle_por_venta.get(v["id"], []):
+            precio = float(d["precio_unitario"] or 0)
+            costo = float(d["costo_unitario"] or 0)
+            ganancia += (precio - costo) * int(d["cantidad"] or 0)
+    return ganancia
+
+
+def obtener_creditos_detallados(cui_filtro: Optional[str],
+                                 pagina: int = 1, por_pagina: int = 10) -> dict:
+    result = find_all_creditos_pendientes(cui_filtro, pagina, por_pagina)
+    ventas = result["data"]
+    total = result["total"]
+    cuis = set()
+    for v in ventas:
+        if v.get("comprador_cui"): cuis.add(v["comprador_cui"])
+        if v.get("digitado_por"): cuis.add(v["digitado_por"])
+    if cuis:
+        nombres = find_usuarios_by_cuis(list(cuis))
+        for v in ventas:
+            v["nombre_cliente"] = nombres.get(v.get("comprador_cui"), v.get("comprador_cui", "—"))
+            v["nombre_operador"] = nombres.get(v.get("digitado_por"), v.get("digitado_por", "—"))
+    total_paginas = max((total + por_pagina - 1) // por_pagina, 1)
+    return {
+        "data": ventas,
+        "total": total,
+        "pagina": pagina,
+        "por_pagina": por_pagina,
+        "total_paginas": total_paginas,
+        "tiene_siguiente": pagina < total_paginas,
+        "tiene_anterior": pagina > 1,
+    }
+
+
+def obtener_pagados_detallados(cui_filtro: Optional[str],
+                                pagina: int = 1, por_pagina: int = 10) -> dict:
+    result = find_all_pagados(cui_filtro, pagina, por_pagina)
+    ventas = result["data"]
+    total = result["total"]
+    cuis = set()
+    for v in ventas:
+        if v.get("comprador_cui"): cuis.add(v["comprador_cui"])
+        if v.get("digitado_por"): cuis.add(v["digitado_por"])
+    if cuis:
+        nombres = find_usuarios_by_cuis(list(cuis))
+        for v in ventas:
+            v["nombre_cliente"] = nombres.get(v.get("comprador_cui"), v.get("comprador_cui", "—"))
+            v["nombre_operador"] = nombres.get(v.get("digitado_por"), v.get("digitado_por", "—"))
+    total_paginas = max((total + por_pagina - 1) // por_pagina, 1)
+    return {
+        "data": ventas,
+        "total": total,
+        "pagina": pagina,
+        "por_pagina": por_pagina,
+        "total_paginas": total_paginas,
+        "tiene_siguiente": pagina < total_paginas,
+        "tiene_anterior": pagina > 1,
+    }
+
+
 def obtener_kpis(cui_filtro: Optional[str]) -> dict:
     ahora = datetime.now(ZONA_GT)
+    fin_dia = ahora.isoformat()
     inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     inicio_mes = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
 
-    ventas_dia = find_ventas_dia(inicio_dia, cui_filtro)
     creditos = find_creditos_pendientes(cui_filtro)
-    ventas_mes = find_ventas_mes(inicio_mes, cui_filtro)
+    hoy = str(date.today())
+    inicio_mes_str = str(date.today().replace(day=1))
+
+    ventas_hoy = find_ventas_pagadas_periodo(inicio_dia, fin_dia, cui_filtro)
+    ventas_mes = find_ventas_pagadas_periodo(inicio_mes_str, hoy, cui_filtro)
+
+    cobrado_hoy = sum(v["total_venta"] for v in ventas_hoy)
+    cobrado_mes = sum(v["total_venta"] for v in ventas_mes)
+
+    detalle_hoy = find_detalle_por_venta_ids([v["id"] for v in ventas_hoy])
+    detalle_mes = find_detalle_por_venta_ids([v["id"] for v in ventas_mes])
+
+    ganancia_hoy = _calcular_ganancia_bruta(ventas_hoy, detalle_hoy)
+    ganancia_mes = _calcular_ganancia_bruta(ventas_mes, detalle_mes)
+
+    gastos_hoy = sum_gastos_periodo(hoy, hoy)
+    gastos_mes = sum_gastos_periodo(inicio_mes_str, hoy)
 
     return {
-        "ventas_dia_total": sum(v["total_venta"] for v in ventas_dia),
-        "ventas_dia_cantidad": len(ventas_dia),
+        "cobrado_hoy": cobrado_hoy,
+        "cobrado_mes": cobrado_mes,
+        "ganancia_hoy": ganancia_hoy,
+        "ganancia_mes": ganancia_mes,
+        "gastos_hoy": gastos_hoy,
+        "gastos_mes": gastos_mes,
+        "neta_hoy": ganancia_hoy - gastos_hoy,
+        "neta_mes": ganancia_mes - gastos_mes,
         "creditos_pendientes_total": sum(v["total_venta"] - v["total_pagado"] for v in creditos),
         "creditos_pendientes_cantidad": len(creditos),
-        "ventas_mes_total": sum(v["total_venta"] for v in ventas_mes),
-        "meta_mes": 50000
     }
 
 
