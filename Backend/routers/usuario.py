@@ -1,62 +1,33 @@
 from fastapi import APIRouter, HTTPException, Depends
-from database import supabase, verificar_contrasena
+from typing import Dict, Any
+from schemas import PerfilUpdate, PasswordChange
 from routers.dependencies import obtener_usuario_actual
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
-import bcrypt
+from services.usuario_service import update_profile, change_password
 
 router = APIRouter(prefix="/usuario", tags=["Perfil"])
 
 
-class PerfilUpdate(BaseModel):
-    nombre_completo: Optional[str] = None
-    correo: Optional[str] = None
-
-
-class PasswordChange(BaseModel):
-    contrasena_actual: str
-    contrasena_nueva: str = Field(..., min_length=6)
-
-
 @router.put("/perfil")
-async def actualizar_perfil(
+def actualizar_perfil(
     payload: PerfilUpdate,
-    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual),
 ):
-    cui = usuario_actual["sub"]
     try:
-        update_data = payload.model_dump(exclude_none=True)
-        if not update_data:
-            raise HTTPException(400, "No se enviaron campos para actualizar.")
-        supabase.table("usuarios").update(update_data).eq("cui", cui).execute()
+        update_profile(usuario_actual["sub"], payload.nombre_completo, payload.correo)
         return {"mensaje": "Perfil actualizado correctamente"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(500, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 @router.put("/cambiar-contrasena")
-async def cambiar_contrasena(
+def cambiar_contrasena(
     payload: PasswordChange,
-    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual),
 ):
-    cui = usuario_actual["sub"]
     try:
-        res = supabase.table("usuarios") \
-            .select("contrasena_hash") \
-            .eq("cui", cui) \
-            .execute()
-        if not res.data:
-            raise HTTPException(404, "Usuario no encontrado.")
-        if not verificar_contrasena(payload.contrasena_actual, res.data[0]["contrasena_hash"]):
-            raise HTTPException(400, "La contraseña actual no es correcta.")
-        contrasena_hash = bcrypt.hashpw(
-            payload.contrasena_nueva.encode("utf-8"), bcrypt.gensalt()
-        ).decode("utf-8")
-        supabase.table("usuarios").update({"contrasena_hash": contrasena_hash}).eq("cui", cui).execute()
+        change_password(usuario_actual["sub"], payload.contrasena_actual, payload.contrasena_nueva)
         return {"mensaje": "Contraseña actualizada correctamente"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(500, detail=str(e))
+    except ValueError as e:
+        if "no es correcta" in str(e):
+            raise HTTPException(400, str(e))
+        raise HTTPException(404, str(e))

@@ -62,3 +62,30 @@ class VentaMultipleCreate(BaseModel):
     comprador_cui: str
     tipo_pago: str = Field(..., description="'contado' o 'credito'")
     productos: List[VentaProductoItem] = Field(..., min_items=1, description="Lista de productos a vender")
+
+# ======================== USUARIOS ========================
+class UsuarioCreate(BaseModel):
+    cui: str = Field(..., min_length=13, max_length=13)
+    nombre_completo: str
+    contrasena: str = Field(..., min_length=6)
+    correo: Optional[str] = None
+    rango_id: int
+    modulos_ids: List[int] = Field(default_factory=list)
+
+class UsuarioUpdate(BaseModel):
+    nombre_completo: Optional[str] = None
+    correo: Optional[str] = None
+    activo: Optional[bool] = None
+    contrasena: Optional[str] = None
+
+class UsuarioAccesosUpdate(BaseModel):
+    rango_id: int
+    modulos_ids: List[int] = Field(default_factory=list)
+
+class PerfilUpdate(BaseModel):
+    nombre_completo: Optional[str] = None
+    correo: Optional[str] = None
+
+class PasswordChange(BaseModel):
+    contrasena_actual: str
+    contrasena_nueva: str = Field(..., min_length=6)
