@@ -693,7 +693,11 @@ function cerrarModalNuevoProducto() {
     btn.innerHTML = 'Crear Producto';
 }
 
+let _guardandoProducto = false;
+
 async function guardarNuevoProducto() {
+    if (_guardandoProducto) return;
+    _guardandoProducto = true;
     const btn = document.getElementById('btn-guardar-nuevo');
     const nombre = document.getElementById('np-nombre').value.trim();
     const categoria = document.getElementById('np-categoria').value;
@@ -702,10 +706,10 @@ async function guardarNuevoProducto() {
     const stock = parseInt(document.getElementById('np-stock').value) || 0;
     const descripcion = document.getElementById('np-descripcion').value.trim() || null;
 
-    if (!nombre) { notify.error('El nombre del producto es obligatorio'); return; }
-    if (isNaN(precio) || precio <= 0) { notify.error('El precio de venta debe ser mayor a Q0.00'); return; }
-    if (isNaN(costo) || costo < 0) { notify.error('El costo de referencia no puede ser negativo'); return; }
-    if (isNaN(stock) || stock < 0) { notify.error('El stock no puede ser negativo'); return; }
+    if (!nombre) { notify.error('El nombre del producto es obligatorio'); _guardandoProducto = false; return; }
+    if (isNaN(precio) || precio <= 0) { notify.error('El precio de venta debe ser mayor a Q0.00'); _guardandoProducto = false; return; }
+    if (isNaN(costo) || costo < 0) { notify.error('El costo de referencia no puede ser negativo'); _guardandoProducto = false; return; }
+    if (isNaN(stock) || stock < 0) { notify.error('El stock no puede ser negativo'); _guardandoProducto = false; return; }
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Creando...';
@@ -739,6 +743,7 @@ async function guardarNuevoProducto() {
     } finally {
         btn.disabled = false;
         btn.innerHTML = 'Crear Producto';
+        _guardandoProducto = false;
     }
 }
 
@@ -767,16 +772,20 @@ function cerrarModalEditar() {
     btn.innerHTML = 'Guardar';
 }
 
+let _guardandoEditar = false;
+
 async function guardarEditarProducto() {
+    if (_guardandoEditar) return;
+    _guardandoEditar = true;
     const id = document.getElementById('producto-id-editar').value;
-    if (!id) return;
+    if (!id) { _guardandoEditar = false; return; }
     const btn = document.getElementById('btn-guardar-editar');
     const nombre = document.getElementById('prod-nombre').value.trim();
     const precio = parseFloat(document.getElementById('prod-precio').value || '0');
     const stock = parseInt(document.getElementById('prod-stock').value);
-    if (!nombre) { notify.error('El nombre del producto es obligatorio'); return; }
-    if (isNaN(precio) || precio <= 0) { notify.error('Precio inválido'); return; }
-    if (isNaN(stock) || stock < 0) { notify.error('Stock inválido'); return; }
+    if (!nombre) { notify.error('El nombre del producto es obligatorio'); _guardandoEditar = false; return; }
+    if (isNaN(precio) || precio <= 0) { notify.error('Precio inválido'); _guardandoEditar = false; return; }
+    if (isNaN(stock) || stock < 0) { notify.error('Stock inválido'); _guardandoEditar = false; return; }
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Guardando...';
     const payload = {
@@ -803,6 +812,7 @@ async function guardarEditarProducto() {
     } finally {
         btn.disabled = false;
         btn.innerHTML = 'Guardar';
+        _guardandoEditar = false;
     }
 }
 

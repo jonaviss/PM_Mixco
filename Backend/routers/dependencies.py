@@ -7,12 +7,6 @@ from config import JWT_SECRET, JWT_ALGORITHM
 seguridad = HTTPBearer()
 
 
-def requiere_admin(usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)) -> Dict[str, Any]:
-    if usuario_actual.get("rango") not in ["administrador", "super_admin"]:
-        raise HTTPException(403, "Solo administradores pueden acceder a este módulo.")
-    return usuario_actual
-
-
 def obtener_usuario_actual(
     credenciales: HTTPAuthorizationCredentials = Depends(seguridad)
 ) -> Dict[str, Any]:
@@ -41,3 +35,9 @@ def obtener_usuario_actual(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=mensaje,
         )
+
+
+def requiere_admin(usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)) -> Dict[str, Any]:
+    if usuario_actual.get("rango") not in ["administrador", "super_admin"]:
+        raise HTTPException(403, "Solo administradores pueden acceder a este módulo.")
+    return usuario_actual
