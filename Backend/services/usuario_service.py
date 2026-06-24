@@ -102,12 +102,14 @@ def update_usuario_accesos(cui: str, rango_id: int, modulos_ids: List[int]) -> N
         create_acceso(cui, rango_id, modulo_id)
 
 
-def update_profile(cui: str, nombre_completo: Optional[str], correo: Optional[str]) -> None:
+def update_profile(cui: str, nombre_completo: Optional[str], correo: Optional[str], telegram_chat_id: Optional[str] = None) -> None:
     update_data = {}
     if nombre_completo:
         update_data["nombre_completo"] = nombre_completo
-    if correo:
+    if correo is not None:
         update_data["correo"] = correo
+    if telegram_chat_id is not None:
+        update_data["telegram_chat_id"] = telegram_chat_id or None
     if not update_data:
         raise ValueError("No se enviaron campos para actualizar.")
     update_usuario(cui, update_data)

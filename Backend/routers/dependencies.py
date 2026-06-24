@@ -47,3 +47,9 @@ def requiere_encargado(usuario_actual: Dict[str, Any] = Depends(obtener_usuario_
     if usuario_actual.get("rango") not in ["encargado", "administrador", "super_admin"]:
         raise HTTPException(403, "No tiene permisos para esta acción.")
     return usuario_actual
+
+
+def requiere_empleado(usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)) -> Dict[str, Any]:
+    if usuario_actual.get("rango") == "cliente":
+        raise HTTPException(403, "Acceso solo para personal de la librería.")
+    return usuario_actual

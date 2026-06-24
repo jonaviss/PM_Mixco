@@ -81,6 +81,11 @@
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Correo</label>
                     <input type="email" id="field-correo" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="correo@ejemplo.com">
                 </div>
+                <div>
+                    <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Telegram Chat ID</label>
+                    <input type="text" id="field-telegram" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-container transition" placeholder="123456789">
+                    <p class="text-xs text-secondary mt-1">Enviale un mensaje a <a href="https://t.me/userinfobot" target="_blank" class="text-primary hover:underline">@userinfobot</a> para obtener tu ID.</p>
+                </div>
                 <button onclick="guardarPerfil()" id="btn-guardar-perfil" class="px-5 py-2.5 text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition">Guardar Cambios</button>
             </div>
         </section>
@@ -125,8 +130,8 @@ async function guardarPerfil() {
     btn.disabled = true;
     btn.textContent = 'Guardando...';
     try {
-        const payload = { nombre_completo: nombre };
-        if (correo) payload.correo = correo;
+        const telegram = document.getElementById('field-telegram').value.trim();
+        const payload = { nombre_completo: nombre, correo: correo || "", telegram_chat_id: telegram || null };
         const res = await API.put('/usuario/perfil', payload, true);
         if (res.ok) {
             localStorage.setItem('usuario', nombre);
@@ -181,7 +186,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'index.html';
     });
     document.getElementById('perfil-cui').textContent = localStorage.getItem('cui') || '—';
-    document.getElementById('field-nombre').value = localStorage.getItem('usuario') || '';
+    try {
+        const res = await API.get('/usuario/perfil', true);
+        if (res.ok) {
+            const data = await res.json();
+            document.getElementById('field-nombre').value = data.nombre_completo || '';
+            document.getElementById('field-correo').value = data.correo || '';
+            document.getElementById('field-telegram').value = data.telegram_chat_id || '';
+        }
+    } catch (err) {
+        document.getElementById('field-nombre').value = localStorage.getItem('usuario') || '';
+    }
 });
 </script>
 </body>

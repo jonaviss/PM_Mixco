@@ -409,6 +409,8 @@ let todosLosProductos = [];
 let categoriaActiva = 'todos';
 let busquedaActiva = '';
 let paginaActual = 1;
+let totalPaginasServer = 1;
+let totalProductos = 0;
 const POR_PAGINA = 15;
 let listaProveedores = [];
 
@@ -459,19 +461,32 @@ async function cargarProveedoresSelect() {
 
 // ======================== CARGAR PRODUCTOS ========================
 async function cargarProductos() {
-    const incluirInactivos = document.getElementById('mostrar-inactivos').checked;
-    const url = `/libreria/productos?incluir_inactivos=${incluirInactivos}`;
     try {
-        const res = await API.get(url, true);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        todosLosProductos = await res.json();
+        const [resResumen, resPag] = await Promise.all([
+            API.get(`/libreria/productos/resumen?incluir_inactivos=${document.getElementById('mostrar-inactivos').checked}`, true),
+            API.get(armarUrlProductos(), true)
+        ]);
+        if (!resResumen.ok || !resPag.ok) throw new Error('Error al cargar productos');
+        todosLosProductos = await resResumen.json();
+        const pagData = await resPag.json();
+        paginaActual = pagData.pagina || 1;
+        totalPaginasServer = pagData.total_paginas || 1;
+        totalProductos = pagData.total || 0;
         calcularStats();
         actualizarCategorias();
-        renderizarTabla();
+        renderizarTabla(pagData.data || []);
     } catch (err) {
         console.error('[Inventario] Error:', err);
         document.getElementById('tabla-productos').innerHTML = `<tr><td colspan="10" class="text-center py-10 text-error">Error al cargar inventario.</td></tr>`;
     }
+}
+
+function armarUrlProductos() {
+    const incluirInactivos = document.getElementById('mostrar-inactivos').checked;
+    let url = `/libreria/productos?incluir_inactivos=${incluirInactivos}&pagina=${paginaActual}&por_pagina=${POR_PAGINA}`;
+    if (busquedaActiva) url += `&busqueda=${encodeURIComponent(busquedaActiva)}`;
+    if (categoriaActiva !== 'todos') url += `&categoria=${encodeURIComponent(categoriaActiva)}`;
+    return url;
 }
 
 function calcularStats() {
@@ -524,7 +539,7 @@ function setOrden(campo, direccion) {
         }
     });
 
-    renderizarTabla();
+    recargarPagina();
 }
 
 function ordenarProductos(productos) {
@@ -563,25 +578,17 @@ function ordenarProductos(productos) {
 }
 
 // ======================== RENDERIZAR TABLA ========================
-function renderizarTabla() {
-    let filtrados = todosLosProductos.filter(p => {
-        const coincideCategoria = categoriaActiva === 'todos' || p.tipo_producto === categoriaActiva;
-        const coincideBusqueda = p.nombre.toLowerCase().includes(busquedaActiva.toLowerCase());
-        return coincideCategoria && coincideBusqueda;
-    });
+function renderizarTabla(pagina) {
+    if (!pagina) {
+        pagina = [];
+        document.getElementById('tabla-productos').innerHTML = `<tr><td colspan="10" class="text-center py-10 text-secondary">Cargando...</td></tr>`;
+        return;
+    }
 
-    filtrados = ordenarProductos(filtrados);
-
-    const total = filtrados.length;
-    const totalPaginas = Math.ceil(total / POR_PAGINA);
-    if (paginaActual > totalPaginas) paginaActual = 1;
-    const inicio = (paginaActual - 1) * POR_PAGINA;
-    const pagina = filtrados.slice(inicio, inicio + POR_PAGINA);
-
-    document.getElementById('info-paginacion').textContent = `${total} productos`;
-    document.getElementById('pagina-label').textContent = `Pág. ${paginaActual} de ${totalPaginas || 1}`;
+    document.getElementById('info-paginacion').textContent = `${totalProductos} productos`;
+    document.getElementById('pagina-label').textContent = `Pág. ${paginaActual} de ${totalPaginasServer || 1}`;
     document.getElementById('btn-anterior').disabled = paginaActual <= 1;
-    document.getElementById('btn-siguiente').disabled = paginaActual >= totalPaginas;
+    document.getElementById('btn-siguiente').disabled = paginaActual >= totalPaginasServer;
 
     const tbody = document.getElementById('tabla-productos');
     if (pagina.length === 0) {
@@ -631,16 +638,30 @@ function renderizarTabla() {
     });
 }
 
+async function recargarPagina() {
+    try {
+        const res = await API.get(armarUrlProductos(), true);
+        if (!res.ok) throw new Error('Error');
+        const data = await res.json();
+        paginaActual = data.pagina || 1;
+        totalPaginasServer = data.total_paginas || 1;
+        totalProductos = data.total || 0;
+        renderizarTabla(data.data || []);
+    } catch (err) {
+        console.error('[Inventario] Error al recargar:', err);
+    }
+}
+
 function filtrarCategoriaDesdeSelect() {
     const select = document.getElementById('categoria-select');
     categoriaActiva = select.value;
     paginaActual = 1;
-    renderizarTabla();
+    recargarPagina();
 }
 
 function cambiarPagina(direccion) {
     paginaActual += direccion;
-    renderizarTabla();
+    recargarPagina();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -875,7 +896,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         debounce = setTimeout(() => {
             busquedaActiva = e.target.value.toLowerCase().trim();
             paginaActual = 1;
-            renderizarTabla();
+            recargarPagina();
         }, 300);
     });
 

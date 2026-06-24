@@ -307,6 +307,10 @@ function configurarPorRol(rango, nombre) {
     const filtroContainer = document.getElementById('filtro-analista-container');
     const accionesRapidas = document.getElementById('acciones-rapidas');
 
+    if (rango === 'cliente') {
+        window.location.href = 'cliente_mis_compras.html';
+        return;
+    }
     if (rango === 'administrador' || rango === 'super_admin') {
         badge.textContent = 'Vista Administrador — Acceso total al módulo';
         badge.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold border bg-amber-50 text-amber-700 border-amber-200';
@@ -460,8 +464,10 @@ async function recargarDashboard() {
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
     if (!token) { window.location.href = 'index.html'; return; }
+    const r = localStorage.getItem('rango');
+    if (r === 'cliente') { window.location.href = 'cliente_mis_compras.html'; return; }
     const nombre = localStorage.getItem('usuario') || 'Usuario';
-    rangoUsuario = localStorage.getItem('rango') || 'analista';
+    rangoUsuario = r || 'analista';
     cuiUsuario = localStorage.getItem('cui') || '';
     document.getElementById('nombre-usuario').textContent = nombre;
     document.getElementById('rango-usuario').textContent = rangoUsuario;

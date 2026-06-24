@@ -86,6 +86,7 @@ class UsuarioAccesosUpdate(BaseModel):
 class PerfilUpdate(BaseModel):
     nombre_completo: Optional[str] = None
     correo: Optional[str] = None
+    telegram_chat_id: Optional[str] = None
 
 class PasswordChange(BaseModel):
     contrasena_actual: str

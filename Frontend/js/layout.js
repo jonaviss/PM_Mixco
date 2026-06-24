@@ -67,9 +67,11 @@ async function cargarLayout() {
     const paginaActual = window.location.pathname.split('/').pop();
     const rango = localStorage.getItem('rango');
     const esAdmin = rango === 'administrador' || rango === 'super_admin';
+    const esCliente = rango === 'cliente';
     const nav = document.getElementById('nav-links');
     paginas.forEach(p => {
         if (p.admin && !esAdmin) return;
+        if (esCliente && p.href !== 'cliente_mis_compras.html') return;
         const a = document.createElement('a');
         a.href = p.href;
         a.className = `nav-item ${paginaActual === p.href ? 'active' : ''}`;
@@ -130,8 +132,23 @@ async function cargarLayout() {
     }
 }
 
+function bloquearCliente() {
+    const rango = localStorage.getItem('rango');
+    if (rango === 'cliente') {
+        const pagina = window.location.pathname.split('/').pop();
+        const permitidas = ['cliente_mis_compras.html', 'mi_perfil.html'];
+        if (!permitidas.includes(pagina)) {
+            window.location.replace('cliente_mis_compras.html');
+            return true;
+        }
+    }
+    return false;
+}
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', cargarLayout);
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!bloquearCliente()) cargarLayout();
+    });
 } else {
-    cargarLayout();
+    if (!bloquearCliente()) cargarLayout();
 }

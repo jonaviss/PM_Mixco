@@ -4,7 +4,9 @@ Inicializa FastAPI, configura CORS y registra los routers de cada módulo.
 """
 
 import os
+import asyncio
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,11 +17,23 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 from routers import auth, libreria, dashboard_libreria
-from routers import compras, cliente, admin, usuario, configuracion, gastos
+from routers import compras, cliente, admin, usuario, configuracion, gastos, telegram
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="PM Mixco ERP API", version="2.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(telegram.polling_loop())
+    yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
+app = FastAPI(title="PM Mixco ERP API", version="2.0.0", lifespan=lifespan)
 
 
 @app.exception_handler(Exception)
@@ -57,6 +71,7 @@ app.include_router(admin.router)
 app.include_router(usuario.router)
 app.include_router(configuracion.router)
 app.include_router(gastos.router)
+app.include_router(telegram.router)
 
 @app.get("/health")
 def health_check():

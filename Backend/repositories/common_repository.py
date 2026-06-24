@@ -4,7 +4,7 @@ from database import supabase
 
 def find_usuario_basico(cui: str) -> Optional[Dict[str, Any]]:
     res = supabase.table("usuarios") \
-        .select("cui, nombre_completo, correo") \
+        .select("cui, nombre_completo, correo, telegram_chat_id") \
         .eq("cui", cui) \
         .execute()
     return res.data[0] if res.data else None

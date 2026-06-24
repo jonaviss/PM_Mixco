@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
-from routers.dependencies import obtener_usuario_actual
+from routers.dependencies import obtener_usuario_actual, requiere_empleado
 from typing import Dict, Any, Optional
 from services.dashboard_service import _resolver_cui_filtro, obtener_kpis, obtener_actividad, obtener_creditos_detallados, obtener_pagados_detallados
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(requiere_empleado)])
 
 
 @router.get("/kpis")

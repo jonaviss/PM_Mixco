@@ -2,15 +2,37 @@ from typing import List, Dict, Any
 from fastapi import HTTPException
 from schemas import ProductoLibreriaCreate, ProductoLibreriaUpdate
 from repositories.inventario_repository import (
-    list_productos, find_producto_by_id, create_producto, update_producto,
+    list_productos, list_all_productos, find_producto_by_id, create_producto, update_producto,
     get_producto_stock, update_producto_stock, get_producto_costo_promedio
 )
 from repositories.lote_repository import create_lote_auto
 from repositories.common_repository import find_usuarios_by_cuis
 
 
-def get_all_productos(incluir_inactivos: bool = False) -> List[Dict[str, Any]]:
-    productos = list_productos(incluir_inactivos)
+def get_all_productos(incluir_inactivos: bool = False,
+                       pagina: int = 1, por_pagina: int = 50,
+                       busqueda: str = "", categoria: str = "") -> dict:
+    result = list_productos(incluir_inactivos, pagina, por_pagina, busqueda, categoria)
+    productos = result["data"]
+    cuis = list(set(p.get("creado_por") for p in productos if p.get("creado_por")))
+    nombres = find_usuarios_by_cuis(cuis) if cuis else {}
+    for p in productos:
+        p["creado_por_nombre"] = nombres.get(p.get("creado_por"), p.get("creado_por") or "—")
+    total = result["total"]
+    total_paginas = max((total + por_pagina - 1) // por_pagina, 1)
+    return {
+        "data": productos,
+        "total": total,
+        "pagina": pagina,
+        "por_pagina": por_pagina,
+        "total_paginas": total_paginas,
+        "tiene_siguiente": pagina < total_paginas,
+        "tiene_anterior": pagina > 1,
+    }
+
+
+def get_todos_productos_sin_paginar(incluir_inactivos: bool = False) -> List[Dict[str, Any]]:
+    productos = list_all_productos(incluir_inactivos)
     cuis = list(set(p.get("creado_por") for p in productos if p.get("creado_por")))
     nombres = find_usuarios_by_cuis(cuis) if cuis else {}
     for p in productos:

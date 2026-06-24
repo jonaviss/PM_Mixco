@@ -122,3 +122,22 @@ async def despachar_correo_libreria(datos: dict):
 
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, _enviar_smtp, correo_destino, asunto, html_content, pdf_bytes, pdf_filename, gmail_user, gmail_pass)
+
+    # También enviar Telegram si el usuario tiene chat_id
+    try:
+        from services.telegram_service import enviar_telegram, enviar_pdf_telegram
+        chat_id = datos.get("hermano", {}).get("telegram_chat_id")
+        if chat_id:
+            import locale
+            try:
+                locale.setlocale(locale.LC_ALL, "es_GT.UTF-8")
+            except:
+                pass
+            monto_str = f"Q{monto:,.2f}".replace(",", "@").replace(".", ",").replace("@", ".")
+            texto = f"<b>{titulo_recibo}</b>\n\nHola {nombre_hermano},\nSe registró una transacción por <b>{monto_str}</b> en PM Mixco.\n\n— Módulo Librería"
+            if pdf_bytes:
+                await enviar_pdf_telegram(chat_id, texto, pdf_bytes, pdf_filename)
+            else:
+                await enviar_telegram(chat_id, texto)
+    except Exception as e:
+        logger.warning(f"Telegram opcional falló: {e}")

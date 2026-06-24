@@ -249,7 +249,7 @@ let productosFiltrados = [];
 
 async function cargarProductos() {
     try {
-        const res = await API.get('/libreria/productos', true);
+        const res = await API.get('/libreria/productos/resumen', true);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         cacheProductos = await res.json();
         productosFiltrados = [...cacheProductos];

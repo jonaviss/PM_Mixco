@@ -2,9 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import Dict, Any, Optional
 from schemas import GastoCreate, GastoUpdate
 from services.gasto_service import registrar_gasto, editar_gasto, eliminar_gasto, listar_gastos, obtener_resumen
-from routers.dependencies import obtener_usuario_actual, requiere_encargado
+from routers.dependencies import obtener_usuario_actual, requiere_encargado, requiere_empleado
 
-router = APIRouter(prefix="/libreria/gastos", tags=["Gastos"])
+router = APIRouter(prefix="/libreria/gastos", tags=["Gastos"], dependencies=[Depends(requiere_empleado)])
 
 
 @router.get("")

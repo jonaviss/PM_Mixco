@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from routers.dependencies import obtener_usuario_actual
+from routers.dependencies import obtener_usuario_actual, requiere_empleado
 from typing import Dict, Any
 from schemas import TipoProductoCreate, TipoProductoUpdate, MetodoPagoCreate, MetodoPagoUpdate, ConfiguracionCorreoUpdate
 from services.configuracion_service import (
@@ -8,7 +8,7 @@ from services.configuracion_service import (
     obtener_configuracion_correo, actualizar_configuracion_correo
 )
 
-router = APIRouter(prefix="/configuracion", tags=["Configuración"])
+router = APIRouter(prefix="/configuracion", tags=["Configuración"], dependencies=[Depends(requiere_empleado)])
 
 
 @router.get("/tipos-producto")

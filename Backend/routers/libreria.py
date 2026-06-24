@@ -8,7 +8,7 @@ from schemas import (
     VentaLibreriaCreate, VentaMultipleCreate,
     PagoLibreriaCreate, AbonoDistribuidoCreate
 )
-from routers.dependencies import obtener_usuario_actual, requiere_encargado
+from routers.dependencies import obtener_usuario_actual, requiere_encargado, requiere_empleado
 from routers.pdf_libreria import generar_pdf_comprobante
 
 from services.inventario_service import (
@@ -26,15 +26,27 @@ from repositories.common_repository import find_vendedores_por_modulo, find_usua
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(requiere_empleado)])
 
 
 @router.get("/productos")
 async def listar_productos(
     incluir_inactivos: bool = False,
+    pagina: int = Query(1, ge=1),
+    por_pagina: int = Query(50, ge=1, le=200),
+    busqueda: str = Query(""),
+    categoria: str = Query(""),
     usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
 ):
-    return get_all_productos(incluir_inactivos)
+    return get_all_productos(incluir_inactivos, pagina, por_pagina, busqueda, categoria)
+
+
+@router.get("/productos/resumen")
+async def listar_productos_resumen(
+    usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
+):
+    from services.inventario_service import get_todos_productos_sin_paginar
+    return get_todos_productos_sin_paginar()
 
 
 @router.get("/clientes")

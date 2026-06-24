@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from routers.dependencies import obtener_usuario_actual
+from routers.dependencies import obtener_usuario_actual, requiere_empleado
 from schemas import ProveedorCreate, ProveedorUpdate, CompraCreate, PagoProveedorCreate
 from typing import Dict, Optional
 from services.proveedor_service import get_all_proveedores, register_proveedor, update_proveedor_info
@@ -9,7 +9,7 @@ from services.compra_service import (
 )
 from repositories.compra_repository import list_pagos_proveedores as repo_list_pagos
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(requiere_empleado)])
 
 
 @router.get("/proveedores")

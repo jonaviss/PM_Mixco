@@ -2,7 +2,22 @@ from typing import List, Optional, Dict, Any
 from database import supabase
 
 
-def list_productos(incluir_inactivos: bool = False) -> List[Dict[str, Any]]:
+def list_productos(incluir_inactivos: bool = False,
+                   pagina: int = 1, por_pagina: int = 50,
+                   busqueda: str = "", categoria: str = "") -> dict:
+    offset = (pagina - 1) * por_pagina
+    query = supabase.table("inventario_libreria").select("*, proveedores(nombre, id)", count="exact")
+    if not incluir_inactivos:
+        query = query.eq("estado", True)
+    if busqueda:
+        query = query.ilike("nombre", f"%{busqueda}%")
+    if categoria:
+        query = query.eq("tipo_producto", categoria)
+    res = query.order("created_at", desc=True).range(offset, offset + por_pagina - 1).execute()
+    return {"data": res.data or [], "total": res.count or 0}
+
+
+def list_all_productos(incluir_inactivos: bool = False) -> List[Dict[str, Any]]:
     query = supabase.table("inventario_libreria").select("*, proveedores(nombre, id)")
     if not incluir_inactivos:
         query = query.eq("estado", True)
