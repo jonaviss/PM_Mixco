@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, BackgroundTasks
 from routers.dependencies import obtener_usuario_actual, requiere_empleado
 from schemas import ProveedorCreate, ProveedorUpdate, CompraCreate, PagoProveedorCreate
 from typing import Dict, Optional
@@ -51,9 +51,9 @@ async def obtener_compra(compra_id: str, usuario_actual: Dict = Depends(obtener_
 
 
 @router.post("/pagos_proveedores", status_code=201)
-async def registrar_pago_proveedor(payload: PagoProveedorCreate, usuario_actual: Dict = Depends(obtener_usuario_actual)):
+async def registrar_pago_proveedor(payload: PagoProveedorCreate, background_tasks: BackgroundTasks, usuario_actual: Dict = Depends(obtener_usuario_actual)):
     _requiere_permiso(usuario_actual)
-    return register_pago_proveedor(payload, usuario_actual["sub"])
+    return register_pago_proveedor(payload, usuario_actual["sub"], background_tasks)
 
 
 @router.get("/pagos_proveedores")

@@ -300,3 +300,132 @@ def generar_pdf_comprobante(datos: dict) -> bytes:
     doc.build(elementos)
     buffer.seek(0)
     return buffer.read()
+
+
+def generar_pdf_pago_proveedor(datos: dict) -> bytes:
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=20*mm, leftMargin=20*mm,
+                            topMargin=20*mm, bottomMargin=20*mm)
+    estilos = getSampleStyleSheet()
+
+    estilo_titulo = ParagraphStyle('titulo', parent=estilos['Normal'], fontSize=18,
+        fontName='Helvetica-Bold', textColor=COLOR_PRIMARIO, alignment=TA_CENTER, spaceAfter=2*mm)
+    estilo_sub = ParagraphStyle('subtitulo', parent=estilos['Normal'], fontSize=10,
+        fontName='Helvetica', textColor=COLOR_GRIS, alignment=TA_CENTER, spaceAfter=1*mm)
+    estilo_seccion = ParagraphStyle('seccion', parent=estilos['Normal'], fontSize=8,
+        fontName='Helvetica-Bold', textColor=COLOR_GRIS, spaceBefore=4*mm, spaceAfter=2*mm)
+    estilo_bold = ParagraphStyle('bold_custom', parent=estilos['Normal'], fontSize=9,
+        fontName='Helvetica-Bold', textColor=COLOR_TEXTO)
+    estilo_normal = ParagraphStyle('normal_custom', parent=estilos['Normal'], fontSize=9,
+        fontName='Helvetica', textColor=COLOR_TEXTO)
+    estilo_pie = ParagraphStyle('pie', parent=estilos['Normal'], fontSize=7,
+        fontName='Helvetica', textColor=COLOR_GRIS, alignment=TA_CENTER)
+
+    monto = datos.get("monto", 0)
+    hermano = datos.get("hermano", {})
+    compra_data = datos.get("compra", {})
+    pago_data = datos.get("pago", {})
+    fecha_emision = datetime.now(ZONA_GT).strftime("%d/%m/%Y %H:%M")
+
+    elementos = []
+    elementos.append(Paragraph("PALABRA MIEL MIXCO", estilo_titulo))
+    elementos.append(Spacer(1, 3*mm))
+    elementos.append(HRFlowable(width="100%", thickness=2, color=COLOR_DORADO))
+    elementos.append(Spacer(1, 3*mm))
+
+    estilo_tipo = ParagraphStyle('tipo', parent=estilos['Normal'], fontSize=12,
+        fontName='Helvetica-Bold', textColor=COLOR_PRIMARIO, alignment=TA_CENTER, spaceAfter=3*mm)
+    elementos.append(Paragraph("RECIBO DE PAGO A PROVEEDOR", estilo_tipo))
+
+    # Datos del pago
+    elementos.append(Paragraph("DATOS DEL PAGO", estilo_seccion))
+    id_corto = str(pago_data.get("id", ""))[:8].upper()
+    datos_pago = [
+        ["No. Recibo:", id_corto, "Fecha:", fecha_emision],
+        ["Monto Pagado:", formatear_moneda(float(monto)), "Referencia:", pago_data.get("referencia", "—")],
+    ]
+    tabla_pago = Table(datos_pago, colWidths=[35*mm, 55*mm, 25*mm, 55*mm])
+    tabla_pago.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('TEXTCOLOR', (0, 0), (0, -1), COLOR_GRIS),
+        ('TEXTCOLOR', (2, 0), (2, -1), COLOR_GRIS),
+        ('TEXTCOLOR', (1, 0), (1, -1), COLOR_TEXTO),
+        ('TEXTCOLOR', (3, 0), (3, -1), COLOR_TEXTO),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+    ]))
+    elementos.append(tabla_pago)
+    elementos.append(Spacer(1, 3*mm))
+    elementos.append(HRFlowable(width="100%", thickness=0.5, color=COLOR_BORDE))
+
+    # Datos del hermano
+    elementos.append(Paragraph("DATOS DEL HERMANO", estilo_seccion))
+    datos_hermano = [
+        ["Nombre:", hermano.get("nombre_completo", "—")],
+        ["CUI:", hermano.get("cui", "—")],
+    ]
+    tabla_h = Table(datos_hermano, colWidths=[35*mm, 135*mm])
+    tabla_h.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('TEXTCOLOR', (0, 0), (0, -1), COLOR_GRIS),
+        ('TEXTCOLOR', (1, 0), (1, -1), COLOR_TEXTO),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+    ]))
+    elementos.append(tabla_h)
+    elementos.append(Spacer(1, 2*mm))
+    elementos.append(HRFlowable(width="100%", thickness=0.5, color=COLOR_BORDE))
+
+    # Datos de la compra
+    elementos.append(Paragraph("DATOS DE LA COMPRA", estilo_seccion))
+    datos_compra = [
+        ["Proveedor:", compra_data.get("proveedor", "—")],
+        ["Factura:", compra_data.get("factura", "—")],
+        ["Total Compra:", formatear_moneda(float(compra_data.get("total_compra", 0)))],
+    ]
+    tabla_c = Table(datos_compra, colWidths=[40*mm, 130*mm])
+    tabla_c.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('TEXTCOLOR', (0, 0), (0, -1), COLOR_GRIS),
+        ('TEXTCOLOR', (1, 0), (1, -1), COLOR_TEXTO),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+    ]))
+    elementos.append(tabla_c)
+    elementos.append(Spacer(1, 2*mm))
+
+    # Resumen
+    elementos.append(HRFlowable(width="100%", thickness=0.5, color=COLOR_BORDE))
+    elementos.append(Paragraph("RESUMEN", estilo_seccion))
+    datos_resumen = [
+        ["Monto Pagado:", formatear_moneda(float(monto))],
+    ]
+    tabla_r = Table(datos_resumen, colWidths=[100*mm, 70*mm])
+    tabla_r.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TEXTCOLOR', (0, 0), (-1, -1), COLOR_TEXTO),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('LINEABOVE', (0, 0), (-1, 0), 1, COLOR_DORADO),
+    ]))
+    elementos.append(tabla_r)
+
+    elementos.append(Spacer(1, 6*mm))
+    elementos.append(HRFlowable(width="100%", thickness=0.5, color=COLOR_BORDE))
+    elementos.append(Spacer(1, 2*mm))
+    elementos.append(Paragraph(
+        f"PM Mixco ERP v2.0.0  •  Emitido el {fecha_emision}  •  Documento generado automáticamente",
+        estilo_pie))
+
+    doc.build(elementos)
+    buffer.seek(0)
+    return buffer.read()

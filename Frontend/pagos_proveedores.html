@@ -126,6 +126,15 @@
                     <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Fecha Pago *</label><input type="date" id="pago-fecha" class="w-full border rounded-lg px-3 py-2"></div>
                     <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Método Pago</label><select id="pago-metodo" class="w-full border rounded-lg px-3 py-2"><option value="1">Efectivo</option><option value="2">Transferencia</option><option value="3">Cheque</option></select></div>
                     <div><label class="block text-xs font-bold text-secondary uppercase mb-1">Referencia</label><input type="text" id="pago-referencia" class="w-full border rounded-lg px-3 py-2" placeholder="Opcional"></div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-secondary uppercase mb-1">Hermano que entregó el pago</label>
+                        <div class="relative">
+                            <input type="text" id="hermano-search" class="w-full border rounded-lg px-3 py-2" placeholder="Buscar por nombre o CUI..." autocomplete="off" oninput="buscarHermanoPago()">
+                            <div id="hermano-suggestions" class="absolute top-full left-0 right-0 bg-white border border-outline-variant rounded-b-lg shadow-lg z-50 max-h-48 overflow-y-auto hidden"></div>
+                            <input type="hidden" id="hermano-cui" value="">
+                        </div>
+                        <p id="hermano-seleccionado" class="text-xs text-green-700 mt-1 hidden"></p>
+                    </div>
                 </div>
                 <div id="monto-error-unificado" class="text-xs text-error hidden mt-2">El monto no puede exceder el saldo pendiente.</div>
                 <div class="flex justify-end gap-3 mt-4">
@@ -151,6 +160,38 @@
     let proveedores = [];
     let resumenDeuda = [];
     let compraActual = null;
+    let hermanosCache = [];
+
+    async function cargarHermanos() {
+        try {
+            const res = await API.get('/libreria/clientes', true);
+            if (res.ok) hermanosCache = await res.json();
+        } catch(e) { console.error(e); }
+    }
+
+    function buscarHermanoPago() {
+        const q = document.getElementById('hermano-search').value.trim().toLowerCase();
+        const container = document.getElementById('hermano-suggestions');
+        const hidden = document.getElementById('hermano-cui');
+        const selected = document.getElementById('hermano-seleccionado');
+        hidden.value = '';
+        selected.classList.add('hidden');
+        if (!q) { container.innerHTML = ''; container.classList.add('hidden'); return; }
+        const filtrados = hermanosCache.filter(h =>
+            h.nombre_completo.toLowerCase().includes(q) || h.cui.includes(q)
+        ).slice(0, 10);
+        if (filtrados.length === 0) { container.innerHTML = '<div class="px-3 py-2 text-xs text-secondary">Sin resultados</div>'; container.classList.remove('hidden'); return; }
+        container.innerHTML = filtrados.map(h => `<div class="px-3 py-2 text-sm hover:bg-surface-container-low cursor-pointer border-b border-outline-variant last:border-0" onclick="seleccionarHermano('${h.cui}', '${h.nombre_completo.replace(/'/g, "\\'")}')">${h.nombre_completo} <span class="text-xs text-secondary">(${h.cui})</span></div>`).join('');
+        container.classList.remove('hidden');
+    }
+
+    function seleccionarHermano(cui, nombre) {
+        document.getElementById('hermano-search').value = nombre;
+        document.getElementById('hermano-cui').value = cui;
+        document.getElementById('hermano-seleccionado').textContent = `Hermano: ${nombre}`;
+        document.getElementById('hermano-seleccionado').classList.remove('hidden');
+        document.getElementById('hermano-suggestions').classList.add('hidden');
+    }
 
     async function cargarProveedores(){ 
         try{ 
@@ -410,7 +451,8 @@
         btn.disabled = true;
         btn.textContent = 'Registrando...';
         try {
-            const res = await API.post('/libreria/compras/pagos_proveedores', { compra_id, monto, fecha_pago, metodo_pago_id, referencia }, true);
+            const hermano_cui = document.getElementById('hermano-cui').value || null;
+            const res = await API.post('/libreria/compras/pagos_proveedores', { compra_id, monto, fecha_pago, metodo_pago_id, referencia, hermano_cui }, true);
             if (res.ok) {
                 notify.success('Pago registrado correctamente');
                 await verDetalleCompra(compra_id);
@@ -429,8 +471,8 @@
 
     document.addEventListener('DOMContentLoaded', async () => { 
         if(!localStorage.getItem('token')) window.location.href='index.html'; 
-        mostrarUsuario(); 
-        await cargarProveedores(); 
+        mostrarUsuario();
+        await Promise.all([cargarProveedores(), cargarHermanos()]);
         await cargarCompras(); 
     });
 </script>

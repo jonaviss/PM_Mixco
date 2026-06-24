@@ -1,5 +1,5 @@
 from typing import Dict, Any, Optional
-from fastapi import HTTPException
+from fastapi import HTTPException, BackgroundTasks
 from schemas import CompraCreate, PagoProveedorCreate
 from repositories.compra_repository import (
     create_compra, find_compra_by_id, list_compras, update_compra,
@@ -8,7 +8,8 @@ from repositories.compra_repository import (
     find_lotes_pendientes
 )
 from repositories.inventario_repository import find_producto_by_id
-from repositories.common_repository import find_usuarios_by_cuis
+from repositories.common_repository import find_usuarios_by_cuis, find_usuario_basico
+from services.notificacion_service import despachar_correo_libreria
 
 
 def _requiere_permiso(usuario: Dict[str, Any]):
@@ -84,6 +85,7 @@ def get_compra_detalle(compra_id: str) -> dict:
     detalles = find_compra_detalles(compra_id)
     pagos = find_pagos_proveedor(compra_id)
     cuis = list(set(p.get("digitado_por") for p in pagos if p.get("digitado_por")))
+    cuis += [p.get("hermano_cui") for p in pagos if p.get("hermano_cui")]
     nombres = find_usuarios_by_cuis(cuis) if cuis else {}
     pagos_con_nombre = []
     for p in pagos:
@@ -91,29 +93,58 @@ def get_compra_detalle(compra_id: str) -> dict:
             "id": p["id"], "monto": p["monto"], "fecha_pago": p["fecha_pago"],
             "referencia": p.get("referencia"),
             "operador_cui": p.get("digitado_por"),
-            "operador_nombre": nombres.get(p.get("digitado_por"), p.get("digitado_por") or "—")
+            "operador_nombre": nombres.get(p.get("digitado_por"), p.get("digitado_por") or "—"),
+            "hermano_cui": p.get("hermano_cui"),
+            "hermano_nombre": nombres.get(p.get("hermano_cui"), p.get("hermano_cui") or "—")
         })
     return {"compra": compra, "detalles": detalles, "pagos": pagos_con_nombre}
 
 
-def register_pago_proveedor(payload: PagoProveedorCreate, usuario_cui: str) -> Dict[str, Any]:
+def register_pago_proveedor(payload: PagoProveedorCreate, usuario_cui: str, background_tasks: BackgroundTasks = None) -> Dict[str, Any]:
     compra = find_compra_by_id(payload.compra_id)
     if not compra:
         raise HTTPException(404, "Compra no encontrada")
     saldo = compra["total_compra"] - compra["total_pagado"]
     if payload.monto > saldo:
         raise HTTPException(400, f"El monto no puede exceder el saldo pendiente (Q{saldo:.2f})")
-    pago = create_pago_proveedor({
+    pago_data = {
         "compra_id": payload.compra_id,
         "monto": payload.monto,
         "fecha_pago": payload.fecha_pago.isoformat(),
         "metodo_pago_id": payload.metodo_pago_id,
         "referencia": payload.referencia,
         "digitado_por": usuario_cui
-    })
+    }
+    if payload.hermano_cui:
+        pago_data["hermano_cui"] = payload.hermano_cui
+    pago = create_pago_proveedor(pago_data)
     nuevo_pagado = compra["total_pagado"] + payload.monto
     nuevo_estado = "pagado" if nuevo_pagado >= compra["total_compra"] else "parcial"
     update_compra(payload.compra_id, {"total_pagado": nuevo_pagado, "estado": nuevo_estado})
+
+    # Notificar al hermano si se seleccionó
+    if payload.hermano_cui and background_tasks:
+        hermano = find_usuario_basico(payload.hermano_cui)
+        if hermano:
+            proveedor_nombre = compra.get("proveedores", {}).get("nombre", "Proveedor") if isinstance(compra.get("proveedores"), dict) else "Proveedor"
+            datos_notif = {
+                "tipo_notificacion": "pago_proveedor",
+                "monto": payload.monto,
+                "hermano": hermano,
+                "compra": {
+                    "id": payload.compra_id,
+                    "factura": compra.get("factura", "—"),
+                    "proveedor": proveedor_nombre,
+                    "total_compra": compra["total_compra"]
+                },
+                "pago": {
+                    "id": pago["id"],
+                    "referencia": payload.referencia or "—",
+                    "fecha_pago": payload.fecha_pago.isoformat()
+                }
+            }
+            background_tasks.add_task(despachar_correo_libreria, datos_notif)
+
     return {"mensaje": "Pago registrado", "pago_id": pago["id"], "saldo_restante": compra["total_compra"] - nuevo_pagado}
 
 

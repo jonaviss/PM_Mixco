@@ -6,7 +6,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-from routers.pdf_libreria import generar_pdf_comprobante
+from routers.pdf_libreria import generar_pdf_comprobante, generar_pdf_pago_proveedor
 from repositories.common_repository import get_configuracion_correo
 
 logger = logging.getLogger(__name__)
@@ -46,6 +46,8 @@ async def despachar_correo_libreria(datos: dict):
         titulo_recibo = "Notificacion de Cargo a Credito"
     elif tipo == "venta_contado":
         titulo_recibo = "Comprobante de Compra en Efectivo"
+    elif tipo == "pago_proveedor":
+        titulo_recibo = "Recibo de Pago a Proveedor"
     else:
         titulo_recibo = "Comprobante de Abono Recibido"
 
@@ -56,11 +58,43 @@ async def despachar_correo_libreria(datos: dict):
     pdf_filename = f"comprobante_{datos.get('id_transaccion', 'tx')[:8]}.pdf"
 
     try:
-        pdf_bytes = generar_pdf_comprobante(datos)
+        if tipo == "pago_proveedor":
+            pdf_bytes = generar_pdf_pago_proveedor(datos)
+        else:
+            pdf_bytes = generar_pdf_comprobante(datos)
+        pdf_filename = f"recibo_pago_{datos.get('pago', {}).get('id', 'tx')[:8]}.pdf"
     except Exception as e:
         logger.error(f"Falla al generar PDF: {e}")
 
-    if tipo == "cancelacion":
+    if tipo == "pago_proveedor":
+        compra_data = datos.get("compra", {})
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 24px;
+                    border: 1px solid #e8e4d9; border-radius: 12px; background-color: #fafaf8;">
+            <h2 style="color: #755b00; text-align: center; margin-bottom: 4px;">PALABRA MIEL MIXCO</h2>
+            <p style="text-align: center; color: #7a7565; font-size: 13px; margin-top: 0;">{titulo_recibo}</p>
+            <hr style="border: none; border-top: 2px solid #C9A227; margin: 16px 0;">
+            <p style="font-size: 14px; color: #1c1c1a;">Estimado(a) <strong>{nombre_hermano}</strong>,</p>
+            <p style="font-size: 14px; color: #4d4635; margin-top: 8px;">
+                Se realizó un pago a <strong>{compra_data.get("proveedor", "Proveedor")}</strong>
+                por un monto de <strong style="color: #15803d;">Q{monto:.2f}</strong>.
+            </p>
+            <p style="font-size: 14px; color: #4d4635; margin-top: 8px;">
+                Factura: {compra_data.get("factura", "—")}<br>
+                Referencia: {datos.get("pago", {}).get("referencia", "—")}
+            </p>
+            <p style="font-size: 14px; color: #4d4635; margin-top: 8px;">
+                Adjunto encontrará el recibo de pago en formato PDF.
+            </p>
+            <div style="background: #f0edea; border-radius: 8px; padding: 12px; margin-top: 16px;
+                        text-align: center; border: 1px solid #d1c5af;">
+                <p style="font-size: 11px; color: #7a7565; margin: 0;">
+                    PM Mixco ERP v2.0.0 — Módulo Librería — Documento generado automáticamente
+                </p>
+            </div>
+        </div>
+        """
+    elif tipo == "cancelacion":
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 24px;
                     border: 1px solid #e8e4d9; border-radius: 12px; background-color: #fafaf8;">
@@ -134,7 +168,11 @@ async def despachar_correo_libreria(datos: dict):
             except:
                 pass
             monto_str = f"Q{monto:,.2f}".replace(",", "@").replace(".", ",").replace("@", ".")
-            texto = f"<b>{titulo_recibo}</b>\n\nHola {nombre_hermano},\nSe registró una transacción por <b>{monto_str}</b> en PM Mixco.\n\n— Módulo Librería"
+            if tipo == "pago_proveedor":
+                compra_data = datos.get("compra", {})
+                texto = f"<b>{titulo_recibo}</b>\n\nHola {nombre_hermano},\nSe realizó un pago a <b>{compra_data.get('proveedor', 'Proveedor')}</b> por <b>{monto_str}</b>.\nFactura: {compra_data.get('factura', '—')}"
+            else:
+                texto = f"<b>{titulo_recibo}</b>\n\nHola {nombre_hermano},\nSe registró una transacción por <b>{monto_str}</b> en PM Mixco.\n\n— Módulo Librería"
             if pdf_bytes:
                 await enviar_pdf_telegram(chat_id, texto, pdf_bytes, pdf_filename)
             else:

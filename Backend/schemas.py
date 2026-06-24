@@ -132,6 +132,7 @@ class PagoProveedorCreate(BaseModel):
     fecha_pago: date
     metodo_pago_id: int = 1
     referencia: Optional[str] = None
+    hermano_cui: Optional[str] = None
 
 
 # ======================== CONFIGURACIÓN ========================
