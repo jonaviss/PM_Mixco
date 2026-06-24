@@ -41,3 +41,9 @@ def requiere_admin(usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actu
     if usuario_actual.get("rango") not in ["administrador", "super_admin"]:
         raise HTTPException(403, "Solo administradores pueden acceder a este módulo.")
     return usuario_actual
+
+
+def requiere_encargado(usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)) -> Dict[str, Any]:
+    if usuario_actual.get("rango") not in ["encargado", "administrador", "super_admin"]:
+        raise HTTPException(403, "No tiene permisos para esta acción.")
+    return usuario_actual

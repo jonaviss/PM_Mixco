@@ -13,89 +13,49 @@ router = APIRouter(prefix="/configuracion", tags=["Configuración"])
 
 @router.get("/tipos-producto")
 async def listar_tipos_producto_endpoint(usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
-    try:
-        return listar_tipos_producto()
-    except Exception as e:
-        raise HTTPException(500, detail=str(e))
+    return listar_tipos_producto()
 
 
 @router.post("/tipos-producto", status_code=201)
 async def crear_tipo_producto_endpoint(data: TipoProductoCreate, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
-    try:
-        return crear_tipo_producto(data.nombre)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(500, detail=str(e))
+    return crear_tipo_producto(data.nombre)
 
 
 @router.put("/tipos-producto/{tipo_id}")
 async def actualizar_tipo_producto_endpoint(tipo_id: int, data: TipoProductoUpdate, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
-    try:
-        return actualizar_tipo_producto(tipo_id, {"nombre": data.nombre})
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(500, detail=str(e))
+    return actualizar_tipo_producto(tipo_id, {"nombre": data.nombre})
 
 
 @router.delete("/tipos-producto/{tipo_id}")
 async def eliminar_tipo_producto_endpoint(tipo_id: int, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
-    try:
-        return eliminar_tipo_producto(tipo_id)
-    except Exception as e:
-        raise HTTPException(500, detail=str(e))
+    return eliminar_tipo_producto(tipo_id)
 
 
 @router.get("/metodos-pago")
 async def listar_metodos_pago_endpoint(usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
-    try:
-        return listar_metodos_pago()
-    except Exception as e:
-        raise HTTPException(500, detail=str(e))
+    return listar_metodos_pago()
 
 
 @router.post("/metodos-pago", status_code=201)
 async def crear_metodo_pago_endpoint(data: MetodoPagoCreate, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
-    try:
-        return crear_metodo_pago(data.nombre)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(500, detail=str(e))
+    return crear_metodo_pago(data.nombre)
 
 
 @router.put("/metodos-pago/{metodo_id}")
 async def actualizar_metodo_pago_endpoint(metodo_id: int, data: MetodoPagoUpdate, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
-    try:
-        return actualizar_metodo_pago(metodo_id, {"nombre": data.nombre})
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(500, detail=str(e))
+    return actualizar_metodo_pago(metodo_id, {"nombre": data.nombre})
 
 
 @router.delete("/metodos-pago/{metodo_id}")
 async def eliminar_metodo_pago_endpoint(metodo_id: int, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
-    try:
-        return eliminar_metodo_pago(metodo_id)
-    except Exception as e:
-        raise HTTPException(500, detail=str(e))
+    return eliminar_metodo_pago(metodo_id)
 
 
 @router.get("/correo")
 async def obtener_correo_endpoint(usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
-    try:
-        return obtener_configuracion_correo()
-    except Exception as e:
-        raise HTTPException(500, detail=str(e))
+    return obtener_configuracion_correo()
 
 
 @router.put("/correo")
 async def actualizar_correo_endpoint(data: ConfiguracionCorreoUpdate, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
-    try:
-        return actualizar_configuracion_correo(data.model_dump(exclude_none=True))
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(500, detail=str(e))
+    return actualizar_configuracion_correo(data.model_dump(exclude_none=True))

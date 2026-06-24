@@ -5,7 +5,8 @@ Inicializa FastAPI, configura CORS y registra los routers de cada módulo.
 
 import os
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 logging.basicConfig(
@@ -16,7 +17,17 @@ logging.basicConfig(
 from routers import auth, libreria, dashboard_libreria
 from routers import compras, cliente, admin, usuario, configuracion, gastos
 
+logger = logging.getLogger(__name__)
+
 app = FastAPI(title="PM Mixco ERP API", version="2.0.0")
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, HTTPException):
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    logger.exception("Error no manejado: %s", exc)
+    return JSONResponse(status_code=500, content={"detail": "Error interno del servidor"})
 
 # CORS configurado desde variable de entorno
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")

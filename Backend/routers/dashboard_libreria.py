@@ -11,11 +11,8 @@ async def obtener_kpis_endpoint(
     cui: Optional[str] = Query(default=None),
     usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
 ):
-    try:
-        cui_filtro = _resolver_cui_filtro(usuario_actual, cui)
-        return obtener_kpis(cui_filtro)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    cui_filtro = _resolver_cui_filtro(usuario_actual, cui)
+    return obtener_kpis(cui_filtro)
 
 
 @router.get("/creditos")
@@ -25,11 +22,8 @@ async def obtener_creditos_endpoint(
     cui: Optional[str] = Query(default=None),
     usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
 ):
-    try:
-        cui_filtro = _resolver_cui_filtro(usuario_actual, cui)
-        return obtener_creditos_detallados(cui_filtro, pagina, por_pagina)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    cui_filtro = _resolver_cui_filtro(usuario_actual, cui)
+    return obtener_creditos_detallados(cui_filtro, pagina, por_pagina)
 
 
 @router.get("/pagados")
@@ -39,11 +33,8 @@ async def obtener_pagados_endpoint(
     cui: Optional[str] = Query(default=None),
     usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
 ):
-    try:
-        cui_filtro = _resolver_cui_filtro(usuario_actual, cui)
-        return obtener_pagados_detallados(cui_filtro, pagina, por_pagina)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    cui_filtro = _resolver_cui_filtro(usuario_actual, cui)
+    return obtener_pagados_detallados(cui_filtro, pagina, por_pagina)
 
 
 @router.get("/actividad")
@@ -53,8 +44,5 @@ async def obtener_actividad_endpoint(
     cui: Optional[str] = Query(default=None),
     usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)
 ):
-    try:
-        cui_filtro = _resolver_cui_filtro(usuario_actual, cui)
-        return obtener_actividad(pagina, por_pagina, cui_filtro)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    cui_filtro = _resolver_cui_filtro(usuario_actual, cui)
+    return obtener_actividad(pagina, por_pagina, cui_filtro)
