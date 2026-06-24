@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from routers.dependencies import obtener_usuario_actual
 from typing import Dict, Any
+from schemas import TipoProductoCreate, TipoProductoUpdate, MetodoPagoCreate, MetodoPagoUpdate, ConfiguracionCorreoUpdate
 from services.configuracion_service import (
     listar_tipos_producto, crear_tipo_producto, actualizar_tipo_producto, eliminar_tipo_producto,
     listar_metodos_pago, crear_metodo_pago, actualizar_metodo_pago, eliminar_metodo_pago,
@@ -19,9 +20,9 @@ async def listar_tipos_producto_endpoint(usuario_actual: Dict[str, Any] = Depend
 
 
 @router.post("/tipos-producto", status_code=201)
-async def crear_tipo_producto_endpoint(data: dict, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
+async def crear_tipo_producto_endpoint(data: TipoProductoCreate, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
     try:
-        return crear_tipo_producto(data.get("nombre", ""))
+        return crear_tipo_producto(data.nombre)
     except HTTPException:
         raise
     except Exception as e:
@@ -29,9 +30,9 @@ async def crear_tipo_producto_endpoint(data: dict, usuario_actual: Dict[str, Any
 
 
 @router.put("/tipos-producto/{tipo_id}")
-async def actualizar_tipo_producto_endpoint(tipo_id: int, data: dict, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
+async def actualizar_tipo_producto_endpoint(tipo_id: int, data: TipoProductoUpdate, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
     try:
-        return actualizar_tipo_producto(tipo_id, data)
+        return actualizar_tipo_producto(tipo_id, {"nombre": data.nombre})
     except HTTPException:
         raise
     except Exception as e:
@@ -55,9 +56,9 @@ async def listar_metodos_pago_endpoint(usuario_actual: Dict[str, Any] = Depends(
 
 
 @router.post("/metodos-pago", status_code=201)
-async def crear_metodo_pago_endpoint(data: dict, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
+async def crear_metodo_pago_endpoint(data: MetodoPagoCreate, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
     try:
-        return crear_metodo_pago(data.get("nombre", ""))
+        return crear_metodo_pago(data.nombre)
     except HTTPException:
         raise
     except Exception as e:
@@ -65,9 +66,9 @@ async def crear_metodo_pago_endpoint(data: dict, usuario_actual: Dict[str, Any] 
 
 
 @router.put("/metodos-pago/{metodo_id}")
-async def actualizar_metodo_pago_endpoint(metodo_id: int, data: dict, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
+async def actualizar_metodo_pago_endpoint(metodo_id: int, data: MetodoPagoUpdate, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
     try:
-        return actualizar_metodo_pago(metodo_id, data)
+        return actualizar_metodo_pago(metodo_id, {"nombre": data.nombre})
     except HTTPException:
         raise
     except Exception as e:
@@ -91,9 +92,9 @@ async def obtener_correo_endpoint(usuario_actual: Dict[str, Any] = Depends(obten
 
 
 @router.put("/correo")
-async def actualizar_correo_endpoint(data: dict, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
+async def actualizar_correo_endpoint(data: ConfiguracionCorreoUpdate, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
     try:
-        return actualizar_configuracion_correo(data)
+        return actualizar_configuracion_correo(data.model_dump(exclude_none=True))
     except HTTPException:
         raise
     except Exception as e:

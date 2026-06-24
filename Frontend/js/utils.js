@@ -39,6 +39,13 @@ function badgeEstado(estado) {
     return `<span class="px-2 py-0.5 rounded-full text-xs font-bold ${estilos[estado] || 'bg-surface-container text-secondary'}">${etiquetas[estado] || estado}</span>`;
 }
 
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(String(text)));
+    return div.innerHTML;
+}
+
 function debounce(func, delay) {
     let timeoutId;
     return function (...args) {

@@ -13,7 +13,7 @@ from repositories.usuario_repository import (
     list_roles,
     list_modulos,
 )
-from config import DEFAULT_PASSWORD
+import secrets
 
 
 def hash_password(contrasena: str) -> str:
@@ -83,11 +83,13 @@ def toggle_usuario_activo(cui: str) -> bool:
     return nuevo_estado
 
 
-def reset_usuario_password(cui: str) -> None:
+def reset_usuario_password(cui: str) -> str:
     user = find_user_by_cui(cui)
     if not user:
         raise ValueError("Usuario no encontrado.")
-    update_usuario(cui, {"contrasena_hash": hash_password(DEFAULT_PASSWORD)})
+    temp_password = secrets.token_hex(8)
+    update_usuario(cui, {"contrasena_hash": hash_password(temp_password)})
+    return temp_password
 
 
 def update_usuario_accesos(cui: str, rango_id: int, modulos_ids: List[int]) -> None:

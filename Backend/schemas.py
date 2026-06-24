@@ -131,3 +131,43 @@ class PagoProveedorCreate(BaseModel):
     fecha_pago: date
     metodo_pago_id: int = 1
     referencia: Optional[str] = None
+
+
+# ======================== CONFIGURACIÓN ========================
+class TipoProductoCreate(BaseModel):
+    nombre: str = Field(..., min_length=1)
+
+
+class TipoProductoUpdate(BaseModel):
+    nombre: str = Field(..., min_length=1)
+
+
+class MetodoPagoCreate(BaseModel):
+    nombre: str = Field(..., min_length=1)
+
+
+class MetodoPagoUpdate(BaseModel):
+    nombre: str = Field(..., min_length=1)
+
+
+class ConfiguracionCorreoUpdate(BaseModel):
+    servidor_smtp: Optional[str] = None
+    puerto: Optional[int] = None
+    usuario: Optional[str] = None
+    contrasena: Optional[str] = None
+    correo_origen: Optional[str] = None
+
+
+# ======================== GASTOS ========================
+class GastoCreate(BaseModel):
+    descripcion: str = Field(..., min_length=1)
+    monto: float = Field(..., gt=0)
+    categoria: str = "Otro"
+    fecha_gasto: str = ""
+
+
+class GastoUpdate(BaseModel):
+    descripcion: str = Field(..., min_length=1)
+    monto: float = Field(..., gt=0)
+    categoria: str = "Otro"
+    fecha_gasto: str = ""

@@ -616,14 +616,14 @@ function renderizarTabla() {
         const tr = document.createElement('tr');
         tr.className = 'table-row transition-colors';
         tr.innerHTML = `
-            <td class="px-4 py-3 font-bold text-on-surface">${p.nombre}</td>
-            <td class="px-4 py-3"><span class="px-2 py-0.5 bg-surface-container text-secondary rounded text-xs font-mono">${p.tipo_producto}</span></td>
-            <td class="px-4 py-3">${proveedorNombre}</td>
+            <td class="px-4 py-3 font-bold text-on-surface">${escapeHtml(p.nombre)}</td>
+            <td class="px-4 py-3"><span class="px-2 py-0.5 bg-surface-container text-secondary rounded text-xs font-mono">${escapeHtml(p.tipo_producto)}</span></td>
+            <td class="px-4 py-3">${escapeHtml(proveedorNombre)}</td>
             <td class="px-4 py-3 text-right font-mono ${stockClass}">${p.stock}</td>
             <td class="px-4 py-3 text-right font-mono">${formatearMoneda(costoCompra)}</td>
             <td class="px-4 py-3 text-right font-mono font-bold">${formatearMoneda(p.precio)}</td>
             <td class="px-4 py-3 text-xs text-secondary">${fechaFormateada}</td>
-            <td class="px-4 py-3 text-sm text-secondary">${creadorNombre}</td>
+            <td class="px-4 py-3 text-sm text-secondary">${escapeHtml(creadorNombre)}</td>
             <td class="px-4 py-3 text-center">${estadoBadge}</td>
             <td class="px-4 py-3 text-center whitespace-nowrap">${botones}</td>
         `;

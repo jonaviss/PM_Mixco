@@ -132,8 +132,8 @@ async function abrirDetalleVenta(ventaId) {
                 tr.className = 'hover:bg-gray-50 transition-colors';
                 tr.innerHTML = `
                     <td class="px-4 py-2.5">
-                        <p class="font-bold text-gray-800 text-sm">${p.nombre}</p>
-                        <p class="text-xs text-gray-500 font-mono">${p.tipo_producto}</p>
+                        <p class="font-bold text-gray-800 text-sm">${escapeHtml(p.nombre)}</p>
+                        <p class="text-xs text-gray-500 font-mono">${escapeHtml(p.tipo_producto)}</p>
                     </td>
                     <td class="px-4 py-2.5 text-center font-mono text-sm">${p.cantidad}</td>
                     <td class="px-4 py-2.5 text-right font-mono text-sm">${formatearMoneda(p.precio_unitario)}</td>
@@ -152,7 +152,7 @@ async function abrirDetalleVenta(ventaId) {
                 tr.className = 'hover:bg-gray-50 transition-colors';
                 tr.innerHTML = `
                     <td class="px-4 py-2.5 text-sm">${formatearFechaHora(p.fecha_pago)}</td>
-                    <td class="px-4 py-2.5 text-sm text-gray-500">${p.operador}</td>
+                    <td class="px-4 py-2.5 text-sm text-gray-500">${escapeHtml(p.operador)}</td>
                     <td class="px-4 py-2.5 text-right font-mono font-bold text-sm text-green-700">${formatearMoneda(p.monto_abonado)}</td>
                 `;
                 tbodyPagos.appendChild(tr);
@@ -249,12 +249,12 @@ function renderizarRecibo(data) {
             </div>
             <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
                 <p class="text-xs font-mono text-gray-500">Operador</p>
-                <p class="text-lg font-bold">${venta.operador || '—'}</p>
+                <p class="text-lg font-bold">${escapeHtml(venta.operador || '—')}</p>
             </div>
         </div>
         <div class="mb-4">
             <p class="text-xs font-mono text-gray-500">Cliente</p>
-            <p class="font-bold">${venta.cliente || venta.comprador_cui}</p>
+            <p class="font-bold">${escapeHtml(venta.cliente || venta.comprador_cui)}</p>
         </div>
         <div class="mb-4">
             <h4 class="text-xs font-mono font-bold text-gray-500 uppercase tracking-wider mb-2">Productos</h4>
@@ -276,7 +276,7 @@ function renderizarRecibo(data) {
         productos.forEach(p => {
             html += `
                 <tr>
-                    <td class="px-4 py-2.5">${p.nombre}</td>
+                    <td class="px-4 py-2.5">${escapeHtml(p.nombre)}</td>
                     <td class="px-4 py-2.5 text-center">${p.cantidad}</td>
                     <td class="px-4 py-2.5 text-right font-mono">${formatearMoneda(p.precio_unitario)}</td>
                     <td class="px-4 py-2.5 text-right font-mono font-bold">${formatearMoneda(p.subtotal)}</td>

@@ -3,15 +3,28 @@ from fastapi import HTTPException
 from repositories.gasto_repository import (
     create_gasto, update_gasto, delete_gasto, find_gasto_by_id, list_gastos, sum_gastos_periodo
 )
-from datetime import date
+from datetime import date, datetime
+import pytz
 
+ZONA_GT = pytz.timezone("America/Guatemala")
+
+
+def _hoy_gt() -> str:
+    return str(datetime.now(ZONA_GT).date())
+
+def _fin_mes() -> str:
+    import calendar
+    ahora_gt = datetime.now(ZONA_GT).date()
+    ultimo_dia = calendar.monthrange(ahora_gt.year, ahora_gt.month)[1]
+    return str(ahora_gt.replace(day=ultimo_dia))
 
 def obtener_resumen() -> dict:
-    hoy = str(date.today())
-    inicio_mes = str(date.today().replace(day=1))
+    hoy = _hoy_gt()
+    inicio_mes = str(datetime.now(ZONA_GT).date().replace(day=1))
+    fin_mes = _fin_mes()
     return {
         "total_hoy": sum_gastos_periodo(hoy, hoy),
-        "total_mes": sum_gastos_periodo(inicio_mes, hoy),
+        "total_mes": sum_gastos_periodo(inicio_mes, fin_mes),
     }
 
 
@@ -24,7 +37,7 @@ def registrar_gasto(descripcion: str, monto: float, categoria: str, fecha_gasto:
         "descripcion": descripcion.strip(),
         "monto": monto,
         "categoria": categoria.strip() or "Otro",
-        "fecha_gasto": fecha_gasto or str(date.today()),
+        "fecha_gasto": fecha_gasto or _hoy_gt(),
         "registrado_por": usuario_cui
     })
     return {"mensaje": "Gasto registrado", "data": gasto}
@@ -42,7 +55,7 @@ def editar_gasto(gasto_id: str, descripcion: str, monto: float, categoria: str, 
         "descripcion": descripcion.strip(),
         "monto": monto,
         "categoria": categoria.strip() or "Otro",
-        "fecha_gasto": fecha_gasto or str(date.today())
+        "fecha_gasto": fecha_gasto or _hoy_gt()
     })
     return {"mensaje": "Gasto actualizado"}
 

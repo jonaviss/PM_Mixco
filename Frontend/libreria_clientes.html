@@ -208,8 +208,8 @@ function configurarBuscador() {
                     const div = document.createElement('div');
                     div.className = 'p-3 cursor-pointer hover:bg-surface-container-low transition';
                     div.innerHTML = `
-                        <p class="text-sm font-bold text-on-surface">${c.nombre_completo}</p>
-                        <p class="text-xs font-mono text-secondary">CUI: ${c.cui}</p>
+                        <p class="text-sm font-bold text-on-surface">${escapeHtml(c.nombre_completo)}</p>
+                        <p class="text-xs font-mono text-secondary">CUI: ${escapeHtml(c.cui)}</p>
                     `;
                     div.onclick = () => {
                         cargarPerfilCliente(c);

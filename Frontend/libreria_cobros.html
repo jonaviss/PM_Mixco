@@ -139,7 +139,7 @@ function configurarBuscador() {
         if (!query) { results.classList.add('hidden'); return; }
         const filtrados = cacheClientes.filter(c => (c.nombre_completo || '').toLowerCase().includes(query) || (c.cui || '').includes(query));
         if (filtrados.length === 0) results.innerHTML = '<div class="p-3 text-sm text-secondary text-center">Hermano no encontrado.</div>';
-        else filtrados.slice(0,8).forEach(c => { const div = document.createElement('div'); div.className = 'p-3 cursor-pointer hover:bg-surface-container-low transition text-sm'; div.innerHTML = `<p class="font-bold text-on-surface">${c.nombre_completo}</p><p class="text-xs font-mono text-secondary">CUI: ${c.cui}</p>`; div.onclick = () => seleccionarCliente(c); results.appendChild(div); });
+        else filtrados.slice(0,8).forEach(c => { const div = document.createElement('div'); div.className = 'p-3 cursor-pointer hover:bg-surface-container-low transition text-sm'; div.innerHTML = `<p class="font-bold text-on-surface">${escapeHtml(c.nombre_completo)}</p><p class="text-xs font-mono text-secondary">CUI: ${escapeHtml(c.cui)}</p>`; div.onclick = () => seleccionarCliente(c); results.appendChild(div); });
         results.classList.remove('hidden');
     });
     document.addEventListener('click', (e) => { if (!input.contains(e.target) && !results.contains(e.target)) results.classList.add('hidden'); });

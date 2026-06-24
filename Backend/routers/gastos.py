@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import Dict, Any, Optional
+from schemas import GastoCreate, GastoUpdate
 from services.gasto_service import registrar_gasto, editar_gasto, eliminar_gasto, listar_gastos, obtener_resumen
 from routers.dependencies import obtener_usuario_actual
 
@@ -37,14 +38,14 @@ async def resumen_gastos(
 
 @router.post("", status_code=201)
 async def crear_gasto(
-    payload: dict,
+    payload: GastoCreate,
     usuario_actual=Depends(obtener_usuario_actual)
 ):
     _requiere_encargado(usuario_actual)
     try:
         return registrar_gasto(
-            payload["descripcion"], payload["monto"],
-            payload.get("categoria", "Otro"), payload.get("fecha_gasto", ""),
+            payload.descripcion, payload.monto,
+            payload.categoria, payload.fecha_gasto,
             usuario_actual["sub"]
         )
     except HTTPException:
@@ -56,13 +57,13 @@ async def crear_gasto(
 @router.put("/{gasto_id}")
 async def actualizar_gasto(
     gasto_id: str,
-    payload: dict,
+    payload: GastoUpdate,
     usuario_actual=Depends(obtener_usuario_actual)
 ):
     _requiere_encargado(usuario_actual)
     try:
-        return editar_gasto(gasto_id, payload["descripcion"], payload["monto"],
-                            payload.get("categoria", "Otro"), payload.get("fecha_gasto", ""))
+        return editar_gasto(gasto_id, payload.descripcion, payload.monto,
+                            payload.categoria, payload.fecha_gasto)
     except HTTPException:
         raise
     except Exception as e:

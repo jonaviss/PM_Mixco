@@ -62,8 +62,8 @@ def toggle_activo(cui: str, _: Dict[str, Any] = Depends(requiere_admin)):
 @router.post("/usuarios/{cui}/reset-password")
 def reset_password(cui: str, _: Dict[str, Any] = Depends(requiere_admin)):
     try:
-        reset_usuario_password(cui)
-        return {"mensaje": f"Contraseña reiniciada a: PalabraMiel2026"}
+        temp_password = reset_usuario_password(cui)
+        return {"mensaje": f"Contraseña reiniciada", "contrasena_temporal": temp_password}
     except ValueError as e:
         raise HTTPException(404, str(e))
 

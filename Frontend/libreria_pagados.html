@@ -251,7 +251,7 @@ async function verDetalle(ventaId) {
         `;
         productos.forEach(p => {
             html += `<tr>
-                <td class="px-4 py-2.5">${p.nombre}</td>
+                <td class="px-4 py-2.5">${escapeHtml(p.nombre)}</td>
                 <td class="px-4 py-2.5 text-center">${p.cantidad}</td>
                 <td class="px-4 py-2.5 text-right font-mono">${formatearMoneda(p.precio_unitario)}</td>
                 <td class="px-4 py-2.5 text-right font-mono font-bold">${formatearMoneda(p.subtotal)}</td>

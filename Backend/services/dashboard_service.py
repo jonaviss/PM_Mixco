@@ -1,5 +1,5 @@
 from typing import Dict, Any, Optional, List
-from datetime import datetime, date
+from datetime import datetime
 import pytz
 from repositories.dashboard_repository import (
     find_creditos_pendientes, count_actividad_total, find_actividad_paginada,
@@ -112,11 +112,14 @@ def obtener_kpis(cui_filtro: Optional[str]) -> dict:
     inicio_mes = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
 
     creditos = find_creditos_pendientes(cui_filtro)
-    hoy = str(date.today())
-    inicio_mes_str = str(date.today().replace(day=1))
+    hoy_str = str(ahora.date())
+    inicio_mes_str = str(ahora.date().replace(day=1))
+    import calendar
+    ultimo_dia = calendar.monthrange(ahora.year, ahora.month)[1]
+    fin_mes_str = str(ahora.date().replace(day=ultimo_dia))
 
     ventas_hoy = find_ventas_pagadas_periodo(inicio_dia, fin_dia, cui_filtro)
-    ventas_mes = find_ventas_pagadas_periodo(inicio_mes_str, hoy, cui_filtro)
+    ventas_mes = find_ventas_pagadas_periodo(inicio_mes_str, fin_mes_str, cui_filtro)
 
     cobrado_hoy = sum(v["total_venta"] for v in ventas_hoy)
     cobrado_mes = sum(v["total_venta"] for v in ventas_mes)
@@ -127,8 +130,8 @@ def obtener_kpis(cui_filtro: Optional[str]) -> dict:
     ganancia_hoy = _calcular_ganancia_bruta(ventas_hoy, detalle_hoy)
     ganancia_mes = _calcular_ganancia_bruta(ventas_mes, detalle_mes)
 
-    gastos_hoy = sum_gastos_periodo(hoy, hoy)
-    gastos_mes = sum_gastos_periodo(inicio_mes_str, hoy)
+    gastos_hoy = sum_gastos_periodo(hoy_str, hoy_str)
+    gastos_mes = sum_gastos_periodo(inicio_mes_str, fin_mes_str)
 
     return {
         "cobrado_hoy": cobrado_hoy,

@@ -34,6 +34,49 @@
             }
         }
     </script>
+    <style>
+        .kpi-card {
+            position: relative;
+        }
+        .kpi-card[data-tip]:hover::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 41, 59, 0.92);
+            backdrop-filter: blur(4px);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-family: 'Sora', sans-serif;
+            line-height: 1.4;
+            white-space: normal;
+            width: max-content;
+            max-width: 280px;
+            text-align: center;
+            z-index: 50;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            pointer-events: none;
+            animation: tooltip-fade 0.15s ease;
+        }
+        .kpi-card[data-tip]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: calc(100% + 2px);
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: rgba(30, 41, 59, 0.92);
+            z-index: 50;
+            pointer-events: none;
+        }
+        @keyframes tooltip-fade {
+            from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+    </style>
 </head>
 <body class="text-on-surface">
 
@@ -83,7 +126,7 @@
 
         <!-- KPIs - Row 1: Hoy -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <div class="kpi-card p-5">
+            <div class="kpi-card p-5" data-tip="Total de ventas pagadas registradas hoy, sin descontar costos ni gastos">
                 <div class="flex justify-between items-start mb-3">
                     <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Cobrado Hoy</span>
                     <span class="material-symbols-outlined text-[18px] text-green-600">payments</span>
@@ -92,7 +135,7 @@
                 <p class="text-xs text-secondary mt-1">Ventas pagadas del día</p>
             </div>
 
-            <div class="kpi-card p-5">
+            <div class="kpi-card p-5" data-tip="Ganancia calculada como (precio_venta − costo_promedio) × cantidad de cada producto vendido hoy">
                 <div class="flex justify-between items-start mb-3">
                     <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Ganancia Bruta Hoy</span>
                     <span class="material-symbols-outlined text-[18px] text-green-600">trending_up</span>
@@ -101,7 +144,7 @@
                 <p class="text-xs text-secondary mt-1">Cobrado − Costo productos</p>
             </div>
 
-            <div class="kpi-card p-5">
+            <div class="kpi-card p-5" data-tip="Total de egresos registrados hoy: gastos operativos, compras menores, etc.">
                 <div class="flex justify-between items-start mb-3">
                     <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Gastos Hoy</span>
                     <span class="material-symbols-outlined text-[18px] text-error">money_off</span>
@@ -110,7 +153,7 @@
                 <p class="text-xs text-secondary mt-1">Egresos del día</p>
             </div>
 
-            <div class="kpi-card p-5">
+            <div class="kpi-card p-5" data-tip="Ganancia bruta del día menos los gastos del día. Si es negativa, los gastos superaron la ganancia.">
                 <div class="flex justify-between items-start mb-3">
                     <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Ganancia Neta Hoy</span>
                     <span class="material-symbols-outlined text-[18px] text-primary">account_balance_wallet</span>
@@ -122,7 +165,7 @@
 
         <!-- KPIs - Row 2: Mes & Deuda -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <div class="kpi-card p-5">
+            <div class="kpi-card p-5" data-tip="Total de ventas pagadas registradas en lo que va del mes">
                 <div class="flex justify-between items-start mb-3">
                     <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Cobrado del Mes</span>
                     <span class="material-symbols-outlined text-[18px] text-green-600">payments</span>
@@ -131,7 +174,7 @@
                 <p class="text-xs text-secondary mt-1">Ventas pagadas del mes</p>
             </div>
 
-            <div class="kpi-card p-5">
+            <div class="kpi-card p-5" data-tip="Ganancia bruta acumulada del mes: (precio_venta − costo) × cantidad">
                 <div class="flex justify-between items-start mb-3">
                     <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Ganancia Bruta Mes</span>
                     <span class="material-symbols-outlined text-[18px] text-green-600">trending_up</span>
@@ -140,7 +183,7 @@
                 <p class="text-xs text-secondary mt-1">Cobrado − Costo productos</p>
             </div>
 
-            <div class="kpi-card p-5">
+            <div class="kpi-card p-5" data-tip="Total de egresos registrados en el mes: gastos operativos y administrativos">
                 <div class="flex justify-between items-start mb-3">
                     <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Gastos del Mes</span>
                     <span class="material-symbols-outlined text-[18px] text-error">receipt_long</span>
@@ -149,7 +192,7 @@
                 <p class="text-xs text-secondary mt-1">Egresos del mes</p>
             </div>
 
-            <div class="kpi-card p-5 cursor-pointer hover:shadow-md transition-shadow" onclick="window.location.href='libreria_deudas.html'">
+            <div class="kpi-card p-5 cursor-pointer hover:shadow-md transition-shadow" onclick="window.location.href='libreria_deudas.html'" data-tip="Total de saldos pendientes por cobrar de ventas a crédito. Haz clic para ver detalles.">
                 <div class="flex justify-between items-start mb-3">
                     <span class="text-xs font-mono font-bold text-secondary uppercase tracking-wider">Deuda Pendiente</span>
                     <span class="material-symbols-outlined text-[18px] text-error">pending_actions</span>
