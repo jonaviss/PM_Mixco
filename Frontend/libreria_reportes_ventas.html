@@ -101,7 +101,7 @@
             </div>
             <div class="flex justify-end mt-4 gap-3">
                 <button onclick="exportarCSV()" class="border border-primary-container text-primary-container font-bold px-4 py-2 rounded-lg hover:bg-primary-container hover:text-white transition text-sm flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[18px]">download</span> Exportar CSV
+                    <span class="material-symbols-outlined text-[18px]">download</span> Exportar Excel
                 </button>
                 <button onclick="cargarReporte()" class="bg-primary-container text-white font-bold px-6 py-2 rounded-lg hover:opacity-90 transition text-sm flex items-center gap-1">
                     <span class="material-symbols-outlined text-[18px]">bar_chart</span> Generar Reporte
@@ -194,6 +194,7 @@
 <script src="js/notify.js"></script>
 <script src="js/layout.js?v=3"></script>
 <script src="js/table.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <script>
 // ======================== VARIABLES GLOBALES ========================
 let ventasLista = [];
@@ -606,24 +607,25 @@ async function reenviarCorreoRecibo() {
     }
 }
 
-// ======================== EXPORTAR CSV ========================
+// ======================== EXPORTAR EXCEL ========================
 function exportarCSV() {
     if (ventasLista.length === 0) {
         notify.warning('No hay datos para exportar.');
         return;
     }
 
-    let csv = 'Fecha,Hora,Cliente,Total,Estado\n';
-    ventasLista.forEach(v => {
-        csv += `${formatearFecha(v.fecha)},${formatearFechaHora(v.created_at)},${v.cliente || '—'},${v.total},${v.estado}\n`;
-    });
+    const data = ventasLista.map(v => ({
+        Fecha: formatearFecha(v.fecha),
+        Hora: formatearFechaHora(v.created_at),
+        Cliente: v.cliente || '—',
+        'Total (Q)': v.total,
+        Estado: v.estado === 'pagado' ? 'Pagado' : v.estado === 'parcial' ? 'Parcial' : 'Pendiente'
+    }));
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `ventas_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Ventas');
+    XLSX.writeFile(wb, `ventas_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
 // ======================== INICIALIZACIÓN ========================
