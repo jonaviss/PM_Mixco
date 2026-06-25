@@ -174,6 +174,152 @@ function inyectarModalRecibo() {
     document.body.appendChild(modal);
 }
 
+// ================ RECIBO (endpoints cliente) ================
+async function verRecibo(ventaId) {
+    ventaActualRecibo = ventaId;
+    inyectarModalRecibo();
+    document.getElementById('modal-recibo-id').textContent = `Venta: ${ventaId.substring(0,8)}...`;
+    document.getElementById('recibo-contenido').innerHTML = '<div class="text-center py-10 text-secondary">Cargando detalle...</div>';
+    document.getElementById('modal-recibo').classList.remove('hidden');
+    document.getElementById('modal-recibo').classList.add('flex');
+    try {
+        const res = await API.get(`/cliente/ventas/${ventaId}/detalle`, true);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderizarRecibo(data);
+    } catch (err) {
+        console.error('[Recibo] Error:', err);
+        document.getElementById('recibo-contenido').innerHTML = `<div class="text-center py-10 text-error">Error al cargar el recibo.</div>`;
+        if (window.notify) notify.error('Error al cargar el detalle');
+    }
+}
+
+function renderizarRecibo(data) {
+    const venta = data.venta;
+    const productos = data.productos || [];
+    const pagos = data.pagos || [];
+    let html = `
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <p class="text-xs font-mono text-gray-500">Total Venta</p>
+                <p class="text-lg font-bold font-mono">${formatearMoneda(venta.total_venta)}</p>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <p class="text-xs font-mono text-gray-500">Total Pagado</p>
+                <p class="text-lg font-bold font-mono">${formatearMoneda(venta.total_pagado)}</p>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <p class="text-xs font-mono text-gray-500">Estado</p>
+                <p class="text-lg font-bold ${venta.estado_pago === 'pagado' ? 'text-green-600' : 'text-red-600'}">${venta.estado_pago.toUpperCase()}</p>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <p class="text-xs font-mono text-gray-500">Operador</p>
+                <p class="text-lg font-bold">${escapeHtml(venta.operador || '—')}</p>
+            </div>
+        </div>
+        <div class="mb-4">
+            <p class="text-xs font-mono text-gray-500">Cliente</p>
+            <p class="font-bold">${escapeHtml(venta.cliente || venta.comprador_cui)}</p>
+        </div>
+        <div class="mb-4">
+            <h4 class="text-xs font-mono font-bold text-gray-500 uppercase tracking-wider mb-2">Productos</h4>
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase">Producto</th>
+                            <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-center">Cant.</th>
+                            <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-right">Precio Unit.</th>
+                            <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-right">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-sm">
+    `;
+    if (productos.length === 0) {
+        html += `<tr><td colspan="4" class="text-center py-4 text-gray-500">Sin productos.</td></tr>`;
+    } else {
+        productos.forEach(p => {
+            html += `
+                <tr>
+                    <td class="px-4 py-2.5">${escapeHtml(p.nombre)}</td>
+                    <td class="px-4 py-2.5 text-center">${p.cantidad}</td>
+                    <td class="px-4 py-2.5 text-right font-mono">${formatearMoneda(p.precio_unitario)}</td>
+                    <td class="px-4 py-2.5 text-right font-mono font-bold">${formatearMoneda(p.subtotal)}</td>
+                </tr>
+            `;
+        });
+    }
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    if (pagos.length > 0) {
+        html += `
+            <div>
+                <h4 class="text-xs font-mono font-bold text-gray-500 uppercase tracking-wider mb-2">Pagos</h4>
+                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase">Fecha</th>
+                                <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-right">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm">
+        `;
+        pagos.forEach(p => {
+            html += `
+                <tr>
+                    <td class="px-4 py-2.5">${formatearFechaHora(p.fecha_pago)}</td>
+                    <td class="px-4 py-2.5 text-right font-mono font-bold text-green-700">${formatearMoneda(p.monto_abonado)}</td>
+                </tr>
+            `;
+        });
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+    document.getElementById('recibo-contenido').innerHTML = html;
+}
+
+function cerrarModalRecibo() {
+    const modal = document.getElementById('modal-recibo');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+    ventaActualRecibo = null;
+}
+
+async function descargarPDFRecibo() {
+    if (!ventaActualRecibo) {
+        if (window.notify) notify.warning('No hay recibo seleccionado');
+        return;
+    }
+    try {
+        const res = await API.get(`/cliente/ventas/${ventaActualRecibo}/pdf`, true);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `recibo_${ventaActualRecibo.substring(0,8)}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        if (window.notify) notify.success('PDF descargado correctamente');
+    } catch (err) {
+        console.error('[PDF] Error:', err);
+        if (window.notify) notify.error('Error al descargar el PDF');
+    }
+}
+
 // ================ PAGINACIÓN ================
 function getPaginaActual() {
     const filtrados = filtrarDatos();

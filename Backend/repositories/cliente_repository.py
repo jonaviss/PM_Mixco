@@ -1,5 +1,14 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from database import supabase
+
+
+def find_venta_basica_by_comprador(venta_id: str, cui: str) -> Optional[Dict[str, Any]]:
+    res = supabase.table("libreria_ventas") \
+        .select("*") \
+        .eq("id", venta_id) \
+        .eq("comprador_cui", cui) \
+        .execute()
+    return res.data[0] if res.data else None
 
 
 def find_ventas_by_comprador(cui: str) -> List[Dict[str, Any]]:

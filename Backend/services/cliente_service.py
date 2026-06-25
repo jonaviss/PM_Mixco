@@ -1,8 +1,35 @@
 from typing import Dict, Any
+from fastapi import HTTPException
 from repositories.cliente_repository import (
     find_ventas_by_comprador, find_usuarios_by_cuis,
-    find_detalle_by_venta_ids, find_venta_ids_by_comprador, find_pagos_by_venta_ids
+    find_detalle_by_venta_ids, find_venta_ids_by_comprador, find_pagos_by_venta_ids,
+    find_venta_basica_by_comprador
 )
+from services.venta_service import obtener_detalle_venta_completo
+
+
+async def obtener_detalle_venta_cliente(cui: str, venta_id: str) -> dict:
+    venta = find_venta_basica_by_comprador(venta_id, cui)
+    if not venta:
+        raise HTTPException(404, "Venta no encontrada o no te pertenece")
+
+    _, productos, pagos, cliente, _, operador = await obtener_detalle_venta_completo(venta_id)
+    return {
+        "venta": {
+            "id": venta["id"],
+            "comprador_cui": venta["comprador_cui"],
+            "cliente": cliente,
+            "total_venta": float(venta["total_venta"]),
+            "total_pagado": float(venta["total_pagado"]),
+            "saldo_pendiente": float(venta["total_venta"]) - float(venta["total_pagado"]),
+            "estado_pago": venta["estado_pago"],
+            "created_at": venta["created_at"],
+            "operador": operador
+        },
+        "productos": productos,
+        "pagos": pagos,
+        "ok": True
+    }
 
 
 def obtener_mis_compras(cui: str) -> Dict[str, Any]:
