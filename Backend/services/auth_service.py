@@ -54,16 +54,6 @@ def create_token(user_data: Dict[str, Any]) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def _find_cliente_rango() -> Optional[int]:
-    res = supabase.table("rangos").select("id").ilike("nombre", "cliente").limit(1).execute()
-    if res.data:
-        return res.data[0]["id"]
-    res = supabase.table("rangos").select("id").order("id").limit(1).execute()
-    if res.data:
-        return res.data[0]["id"]
-    return None
-
-
 def registrar_usuario(cui: str, nombre_completo: str, contrasena: str, correo: Optional[str] = None) -> Dict[str, Any]:
     existing = find_user_by_cui(cui)
     if existing:
@@ -74,17 +64,9 @@ def registrar_usuario(cui: str, nombre_completo: str, contrasena: str, correo: O
         "nombre_completo": nombre_completo,
         "contrasena_hash": _hash_password(contrasena),
         "activo": True,
-        "correo": correo or None,
+        "correo": correo or "",
     }
     nuevo = create_usuario(usuario_data)
-
-    rango_id = _find_cliente_rango()
-    if rango_id:
-        supabase.table("accesos_usuarios").insert({
-            "usuario_cui": cui,
-            "rango_id": rango_id,
-            "modulo_id": 1
-        }).execute()
 
     return nuevo
 
