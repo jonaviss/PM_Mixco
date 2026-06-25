@@ -1,7 +1,7 @@
 import secrets
 import hashlib
 import bcrypt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 from jose import jwt
 from database import verificar_contrasena, supabase
@@ -49,7 +49,7 @@ def create_token(user_data: Dict[str, Any]) -> str:
         "nombre": user_data["nombre_completo"],
         "rango": user_data["rango"],
         "modulos": user_data["modulos"],
-        "exp": datetime.utcnow() + timedelta(minutes=TOKEN_EXPIRE_MINUTES),
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=TOKEN_EXPIRE_MINUTES),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
@@ -78,7 +78,7 @@ def generar_token_recuperacion(cui: str) -> Optional[str]:
 
     token = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    expires_at = (datetime.utcnow() + timedelta(hours=1)).isoformat()
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
 
     supabase.table("reset_tokens").insert({
         "cui": cui,
@@ -102,7 +102,7 @@ def restablecer_contrasena(token: str, contrasena_nueva: str) -> None:
 
     record = res.data[0]
     expires = datetime.fromisoformat(record["expires_at"])
-    if datetime.utcnow() > expires:
+    if datetime.now(timezone.utc) > expires:
         raise ValueError("Token expirado.")
 
     update_usuario(record["cui"], {"contrasena_hash": _hash_password(contrasena_nueva)})
