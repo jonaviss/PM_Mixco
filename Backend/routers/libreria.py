@@ -8,11 +8,6 @@ Soporte para ventas con múltiples productos en una sola transacción.
 import os
 import base64
 import asyncio
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
 import httpx
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Depends, Query
 from database import supabase
@@ -66,35 +61,49 @@ async def consumir_lote_fifo(producto_id: str, cantidad_vendida: int) -> float:
     return costo_total
 
 # ======================== NOTIFICACIONES ASÍNCRONAS ========================
-def _enviar_smtp(destinatario: str, asunto: str, html: str, pdf_bytes: bytes, pdf_filename: str):
-    gmail_user = os.getenv("GMAIL_SMTP_USER", "jonathanvisoni@gmail.com")
-    gmail_pass = os.getenv("GMAIL_SMTP_PASSWORD")
-    if not gmail_pass:
-        logger.warning("GMAIL_SMTP_PASSWORD no configurada. Correo abortado.")
+def _enviar_sendgrid(destinatario: str, asunto: str, html: str, pdf_bytes: bytes, pdf_filename: str, api_key: str):
+    if not api_key:
+        logger.warning("SENDGRID_API_KEY no configurada. Correo abortado.")
         return
 
-    msg = MIMEMultipart("mixed")
-    msg["From"] = f"Libreria PM Mixco <{gmail_user}>"
-    msg["To"] = destinatario
-    msg["Subject"] = asunto
-
-    msg.attach(MIMEText(html, "html"))
-
+    content = [
+        {"type": "text/html", "value": html}
+    ]
+    attachments = []
     if pdf_bytes:
-        part = MIMEBase("application", "pdf")
-        part.set_payload(pdf_bytes)
-        encoders.encode_base64(part)
-        part.add_header("Content-Disposition", "attachment", filename=pdf_filename)
-        msg.attach(part)
+        encoded = base64.b64encode(pdf_bytes).decode()
+        attachments.append({
+            "content": encoded,
+            "type": "application/pdf",
+            "filename": pdf_filename,
+            "disposition": "attachment"
+        })
+
+    payload = {
+        "personalizations": [{"to": [{"email": destinatario}]}],
+        "from": {"email": "libreriapmmixco@gmail.com", "name": "Libreria PM Mixco"},
+        "subject": asunto,
+        "content": content,
+    }
+    if attachments:
+        payload["attachments"] = attachments
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(gmail_user, gmail_pass)
-            server.sendmail(gmail_user, destinatario, msg.as_string())
-        logger.info(f"Correo enviado a {destinatario}")
+        resp = httpx.post(
+            "https://api.sendgrid.com/v3/mail/send",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json=payload,
+            timeout=30
+        )
+        if resp.status_code in (200, 201, 202):
+            logger.info(f"Correo enviado a {destinatario}")
+        else:
+            logger.error(f"SendGrid falló ({resp.status_code}): {resp.text}")
     except Exception as e:
-        logger.error(f"Falla al enviar correo via Gmail SMTP: {e}")
+        logger.error(f"Falla al enviar correo via SendGrid: {e}")
 
 async def despachar_correo_libreria(datos: dict):
     """Genera PDF y envía correo por Gmail SMTP"""
@@ -137,10 +146,20 @@ async def despachar_correo_libreria(datos: dict):
         </div>
     </div>
     """
-    correo_destino = datos.get("hermano", {}).get("correo") or "jonathanvisoni@gmail.com"
+    correo_destino = datos.get("hermano", {}).get("correo") or "libreriapmmixco@gmail.com"
     asunto = f"{titulo_recibo} — Q{monto:.2f} — PM Mixco"
+
+    api_key = os.getenv("SENDGRID_API_KEY")
+    try:
+        res_config = supabase.table("configuracion_correo").select("*").limit(1).execute()
+        if res_config.data:
+            cfg = res_config.data[0]
+            api_key = cfg.get("sendgrid_api_key") or api_key
+    except Exception:
+        pass
+
     loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _enviar_smtp, correo_destino, asunto, html_content, pdf_bytes, pdf_filename)
+    await loop.run_in_executor(None, _enviar_sendgrid, correo_destino, asunto, html_content, pdf_bytes, pdf_filename, api_key)
 
 # ======================== GESTIÓN DE INVENTARIO Y CLIENTES ========================
 @router.get("/productos")
@@ -335,7 +354,9 @@ async def registrar_venta(
             "hermano": comprador,
             "deuda_hermano": {"total": deuda_total, "cantidad": len(deuda_data)}
         })
-        return {"mensaje": "Transacción completada exitosamente", "venta_id": venta_id}
+        sin_correo = not comprador.get("correo")
+        mensaje_extra = " El comprador no tiene correo registrado, no se envió comprobante." if sin_correo else ""
+        return {"mensaje": f"Transacción completada exitosamente.{mensaje_extra}", "venta_id": venta_id, "sin_correo": sin_correo}
     except HTTPException:
         raise
     except Exception as e:
@@ -483,7 +504,9 @@ async def registrar_venta_multiple(
             "deuda_hermano": {"total": deuda_total, "cantidad": len(deuda_data)}
         })
 
-        return {"mensaje": "Venta registrada exitosamente", "venta_id": venta_id, "total": total_venta}
+        sin_correo = not comprador.get("correo")
+        mensaje_extra = " El comprador no tiene correo registrado, no se envió comprobante." if sin_correo else ""
+        return {"mensaje": f"Venta registrada exitosamente.{mensaje_extra}", "venta_id": venta_id, "total": total_venta, "sin_correo": sin_correo}
 
     except HTTPException:
         raise
