@@ -51,15 +51,14 @@ def eliminar_metodo_pago(metodo_id: int) -> dict:
 
 def obtener_configuracion_correo() -> dict:
     config = repo.get_configuracion_correo_first() or {}
-    if config.get("smtp_password"):
-        config["smtp_password"] = "********"
+    if config.get("sendgrid_api_key"):
+        config["sendgrid_api_key"] = "********"
     return config
 
 
 def actualizar_configuracion_correo(data: dict) -> dict:
-    smtp_user = data.get("smtp_user", "").strip()
-    smtp_password = data.get("smtp_password", "").strip()
-    if not smtp_user or not smtp_password:
-        raise HTTPException(400, "Usuario y contraseña son obligatorios")
-    repo.upsert_configuracion_correo(smtp_user, smtp_password)
+    api_key = data.get("sendgrid_api_key", "").strip()
+    if not api_key:
+        raise HTTPException(400, "La API Key de SendGrid es obligatoria")
+    repo.upsert_configuracion_correo(api_key)
     return {"mensaje": "Configuración de correo actualizada"}

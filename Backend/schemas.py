@@ -153,11 +153,7 @@ class MetodoPagoUpdate(BaseModel):
 
 
 class ConfiguracionCorreoUpdate(BaseModel):
-    servidor_smtp: Optional[str] = None
-    puerto: Optional[int] = None
-    usuario: Optional[str] = None
-    contrasena: Optional[str] = None
-    correo_origen: Optional[str] = None
+    sendgrid_api_key: Optional[str] = None
 
 
 # ======================== GASTOS ========================

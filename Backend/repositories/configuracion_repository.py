@@ -28,11 +28,10 @@ def get_configuracion_correo_first() -> Optional[Dict[str, Any]]:
     return res.data[0] if res.data else None
 
 
-def upsert_configuracion_correo(smtp_user: str, smtp_password: str) -> None:
+def upsert_configuracion_correo(sendgrid_api_key: str) -> None:
     existing = get_configuracion_correo_first()
     data = {
-        "smtp_user": smtp_user,
-        "smtp_password": smtp_password,
+        "sendgrid_api_key": sendgrid_api_key,
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     if existing:
