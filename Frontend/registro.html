@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Cuenta | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold:#C9A227; --gold-dark:#a8841a; --gold-light:#e8c84a;
+            --gold-glow:rgba(201,162,39,0.15); --bg:#ffffff; --bg-card:#ffffff;
+            --border:#E2E8F0; --text-primary:#1E293B; --text-secondary:#475569;
+            --error:#EF4444; --error-bg:#FEF2F2; --success:#10B981; --success-bg:#F0FDF4;
+        }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:'Sora',sans-serif; background:var(--bg); color:var(--text-primary); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1.5rem; }
+        .card { width:100%; max-width:440px; background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:2rem; box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 32px rgba(0,0,0,0.06); }
+        .brand { text-align:center; margin-bottom:1.5rem; }
+        .brand h1 { font-family:'Playfair Display',serif; font-size:1.4rem; color:var(--text-primary); }
+        .brand h1 span { color:var(--gold); }
+        .brand p { font-size:0.7rem; color:var(--text-secondary); font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.1em; margin-top:0.25rem; }
+        .field-group { margin-bottom:1rem; }
+        .field-label { display:block; font-size:0.75rem; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.4rem; }
+        .field-input { width:100%; background:#fff; border:1.5px solid var(--border); border-radius:10px; padding:0.75rem 1rem; font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--text-primary); outline:none; transition:border-color 0.2s,box-shadow 0.2s; }
+        .field-input:focus { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-glow); }
+        .field-input::placeholder { color:#94A3B8; font-family:'Sora',sans-serif; font-size:0.8rem; }
+        .msg-box { display:none; border-radius:10px; padding:0.7rem 1rem; margin-bottom:1rem; font-size:0.8rem; }
+        .msg-box.error { display:block; background:var(--error-bg); border:1px solid #FEE2E2; color:var(--error); }
+        .msg-box.success { display:block; background:var(--success-bg); border:1px solid #BBF7D0; color:var(--success); }
+        .btn { width:100%; background:linear-gradient(135deg,var(--gold) 0%,var(--gold-light) 100%); color:#fff; border:none; border-radius:10px; padding:0.8rem 1rem; font-family:'Sora',sans-serif; font-size:0.85rem; font-weight:600; cursor:pointer; transition:opacity 0.2s,transform 0.15s; margin-top:0.5rem; box-shadow:0 4px 16px rgba(201,162,39,0.35); }
+        .btn:hover:not(:disabled) { opacity:0.92; transform:translateY(-1px); }
+        .btn:disabled { opacity:0.6; cursor:not-allowed; }
+        .footer { text-align:center; margin-top:1.25rem; font-size:0.7rem; color:#94A3B8; }
+        .footer a { color:var(--gold); text-decoration:none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="brand">
+            <h1>Palabra Miel <span>Mixco</span></h1>
+            <p>Crear cuenta de cliente</p>
+        </div>
+        <div id="msg" class="msg-box"></div>
+        <form id="formRegistro" autocomplete="off">
+            <div class="field-group">
+                <label class="field-label">CUI</label>
+                <input type="text" id="cui" class="field-input" placeholder="0000000000000" maxlength="13" required>
+            </div>
+            <div class="field-group">
+                <label class="field-label">Nombre completo</label>
+                <input type="text" id="nombre" class="field-input" placeholder="Juan Pérez" required>
+            </div>
+            <div class="field-group">
+                <label class="field-label">Correo electrónico</label>
+                <input type="email" id="correo" class="field-input" placeholder="correo@ejemplo.com">
+            </div>
+            <div class="field-group">
+                <label class="field-label">Contraseña</label>
+                <input type="password" id="contrasena" class="field-input" placeholder="Mínimo 6 caracteres" minlength="6" required>
+            </div>
+            <button type="submit" id="btn-registro" class="btn">Crear cuenta</button>
+        </form>
+        <p class="footer"><a href="index.html">&larr; Volver al inicio de sesión</a></p>
+    </div>
+    <script src="js/api.js"></script>
+    <script>
+        const form = document.getElementById('formRegistro');
+        const btn = document.getElementById('btn-registro');
+        const msg = document.getElementById('msg');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            msg.className = 'msg-box';
+            const cui = document.getElementById('cui').value.trim();
+            const nombre = document.getElementById('nombre').value.trim();
+            const correo = document.getElementById('correo').value.trim();
+            const contrasena = document.getElementById('contrasena').value;
+
+            if (!/^\d{13}$/.test(cui)) { msg.textContent = 'El CUI debe tener 13 dígitos numéricos.'; msg.className = 'msg-box error'; return; }
+            if (!nombre) { msg.textContent = 'Ingresa tu nombre completo.'; msg.className = 'msg-box error'; return; }
+            if (contrasena.length < 6) { msg.textContent = 'La contraseña debe tener al menos 6 caracteres.'; msg.className = 'msg-box error'; return; }
+
+            btn.disabled = true;
+            btn.textContent = 'Creando cuenta...';
+            try {
+                const res = await API.post('/registro', { cui, nombre_completo: nombre, contrasena, correo: correo || null });
+                if (res.ok) {
+                    msg.textContent = 'Cuenta creada exitosamente. Redirigiendo al inicio de sesión...';
+                    msg.className = 'msg-box success';
+                    setTimeout(() => window.location.href = 'index.html', 2000);
+                } else {
+                    const data = await res.json();
+                    msg.textContent = data.detail || 'Error al crear la cuenta.';
+                    msg.className = 'msg-box error';
+                    btn.disabled = false;
+                    btn.textContent = 'Crear cuenta';
+                }
+            } catch (err) {
+                msg.textContent = 'Error de conexión. Verifica tu red.';
+                msg.className = 'msg-box error';
+                btn.disabled = false;
+                btn.textContent = 'Crear cuenta';
+            }
+        });
+    </script>
+</body>
+</html>

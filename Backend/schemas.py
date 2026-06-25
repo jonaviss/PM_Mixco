@@ -156,6 +156,23 @@ class ConfiguracionCorreoUpdate(BaseModel):
     sendgrid_api_key: Optional[str] = None
 
 
+# ======================== REGISTRO Y RECUPERACIÓN ========================
+class RegistroCreate(BaseModel):
+    cui: str = Field(..., min_length=13, max_length=13)
+    nombre_completo: str = Field(..., min_length=1)
+    contrasena: str = Field(..., min_length=6)
+    correo: Optional[str] = None
+
+
+class RecuperarRequest(BaseModel):
+    cui: str = Field(..., min_length=13, max_length=13)
+
+
+class RestablecerRequest(BaseModel):
+    token: str
+    contrasena_nueva: str = Field(..., min_length=6)
+
+
 # ======================== GASTOS ========================
 class GastoCreate(BaseModel):
     descripcion: str = Field(..., min_length=1)
