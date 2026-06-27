@@ -1,12 +1,15 @@
 """
-Backup de todas las tablas a archivos JSON.
-Uso: cd Backend; python backup.py
-Los archivos se guardan en ./backups/
+Backup automático de todas las tablas a JSON.
+Programar en Windows Task Scheduler para ejecución diaria.
+
+Uso manual: cd Backend; python backup.py
+Los archivos se guardan en C:\Backups\PM_MIXCO\
 """
 
 import os
 import json
-from datetime import datetime
+import shutil
+from datetime import datetime, timedelta
 from pathlib import Path
 from database import supabase
 
@@ -18,29 +21,41 @@ TABLAS = [
     "configuracion_correo", "reset_tokens",
 ]
 
-OUTPUT_DIR = Path(__file__).parent / "backups"
-OUTPUT_DIR.mkdir(exist_ok=True)
+OUTPUT_DIR = Path("C:/Backups/PM_MIXCO")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+carpeta_backup = OUTPUT_DIR / timestamp
+carpeta_backup.mkdir(exist_ok=True)
+
 resumen = {}
 
 for tabla in TABLAS:
     try:
         res = supabase.table(tabla).select("*").execute()
         data = res.data or []
-        archivo = OUTPUT_DIR / f"{timestamp}_{tabla}.json"
+        archivo = carpeta_backup / f"{tabla}.json"
         with open(archivo, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False, default=str)
-        resumen[tabla] = f"{len(data)} registros -> {archivo.name}"
+        resumen[tabla] = f"{len(data)} registros"
     except Exception as e:
         resumen[tabla] = f"ERROR: {e}"
 
-# Resumen general
-resumen_path = OUTPUT_DIR / f"{timestamp}_resumen.json"
-with open(resumen_path, "w", encoding="utf-8") as f:
+with open(carpeta_backup / "resumen.json", "w", encoding="utf-8") as f:
     json.dump(resumen, f, indent=2, ensure_ascii=False)
 
-print(f"Backup completado: {OUTPUT_DIR / timestamp}")
+# Limpiar backups más viejos de 7 días
+limite = datetime.now() - timedelta(days=7)
+for d in OUTPUT_DIR.iterdir():
+    if d.is_dir():
+        try:
+            fecha = datetime.strptime(d.name[:8], "%Y%m%d")
+            if fecha < limite:
+                shutil.rmtree(d)
+                print(f"  Backup antiguo eliminado: {d.name}")
+        except:
+            pass
+
+print(f"Backup completado: {carpeta_backup}")
 for k, v in resumen.items():
     print(f"  {k}: {v}")
-print(f"\nResumen: {resumen_path.name}")
