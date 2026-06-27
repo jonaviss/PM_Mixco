@@ -61,7 +61,6 @@ async function cargarLayout() {
         { href: "libreria_reportes_ventas.html", icono: "assessment", texto: "Reportes de Ventas", roles: ["super_admin", "administrador"] },
         { href: "cancelar_venta.html", icono: "block", texto: "Cancelar Venta", roles: ["super_admin", "encargado"] },
         { href: "gastos.html", icono: "money_off", texto: "Gastos", roles: ["super_admin", "encargado"] },
-        { href: "admin_categorias_gasto.html", icono: "money_off", texto: "Cat. Gastos", roles: ["super_admin", "administrador"] },
         { href: "admin_configuracion.html", icono: "settings", texto: "Configuración", roles: ["super_admin", "administrador"] }
     ];
     const paginaActual = window.location.pathname.split('/').pop();
