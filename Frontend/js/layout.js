@@ -37,6 +37,7 @@ async function cargarLayout() {
                 <button id="btnColapsarSidebar" class="nav-item w-full text-left justify-center md:justify-start" title="Colapsar sidebar">
                     <span class="material-symbols-outlined text-[20px]">chevron_left</span>
                 </button>
+                <a href="https://t.me/pmmixco_bot" target="_blank" class="nav-item" title="Recibe tus recibos de pago por Telegram"><span class="material-symbols-outlined text-[20px]">send</span><span class="sidebar-text">Telegram Bot</span></a>
                 <a href="mi_perfil.html" class="nav-item"><span class="material-symbols-outlined text-[20px]">person</span><span class="sidebar-text">Mi Perfil</span></a>
                 <a href="index.html" id="btnCerrarSesion" class="nav-item danger"><span class="material-symbols-outlined text-[20px]">logout</span><span class="sidebar-text">Cerrar Sesión</span></a>
             </div>
