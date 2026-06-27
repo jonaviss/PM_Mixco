@@ -52,7 +52,8 @@ def create_new_usuario(payload: UsuarioCreate) -> Dict[str, Any]:
     }
     nuevo = create_usuario(usuario_data)
 
-    for modulo_id in payload.modulos_ids:
+    modulos = payload.modulos_ids if payload.modulos_ids else [1]
+    for modulo_id in modulos:
         create_acceso(payload.cui, payload.rango_id, modulo_id)
 
     return nuevo
@@ -98,7 +99,8 @@ def update_usuario_accesos(cui: str, rango_id: int, modulos_ids: List[int]) -> N
         raise ValueError("Usuario no encontrado.")
 
     delete_accesos_by_cui(cui)
-    for modulo_id in modulos_ids:
+    modulos = modulos_ids if modulos_ids else [1]
+    for modulo_id in modulos:
         create_acceso(cui, rango_id, modulo_id)
 
 

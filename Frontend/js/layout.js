@@ -46,32 +46,29 @@ async function cargarLayout() {
     document.body.insertAdjacentHTML('afterbegin', sidebarHTML);
 
     const paginas = [
-        { href: "libreria_dashboard.html", icono: "dashboard", texto: "Dashboard" },
-        { href: "libreria_inventario.html", icono: "inventory_2", texto: "Inventario" },
-        { href: "libreria_ventas.html", icono: "point_of_sale", texto: "Ventas" },
-        { href: "libreria_cobros.html", icono: "payments", texto: "Cobros" },
-        { href: "libreria_deudas.html", icono: "receipt_long", texto: "Deudas" },
-        { href: "libreria_pagados.html", icono: "check_circle", texto: "Pagados" },
-        { href: "libreria_clientes.html", icono: "group", texto: "Clientes" },
-        { href: "cliente_mis_compras.html", icono: "receipt_long", texto: "Mis Compras" },
-        { href: "proveedores.html", icono: "local_shipping", texto: "Proveedores" },
-        { href: "compras.html", icono: "receipt", texto: "Registrar Compra" },
-        { href: "pagos_proveedores.html", icono: "payments", texto: "Pagos a Proveedores" },
-        { href: "reporte_lotes.html", icono: "inventory", texto: "Lotes Pendientes" },
-        { href: "libreria_reportes_ventas.html", icono: "assessment", texto: "Reportes de Ventas" },
-        { href: "cancelar_venta.html", icono: "block", texto: "Cancelar Venta" },
-        { href: "gastos.html", icono: "money_off", texto: "Gastos" },
-        { href: "admin_configuracion.html", icono: "settings", texto: "Configuración", admin: true }
-      
+        { href: "libreria_dashboard.html", icono: "dashboard", texto: "Dashboard", roles: ["super_admin", "administrador", "encargado"] },
+        { href: "libreria_inventario.html", icono: "inventory_2", texto: "Inventario", roles: ["super_admin", "encargado"] },
+        { href: "libreria_ventas.html", icono: "point_of_sale", texto: "Ventas", roles: ["super_admin", "encargado"] },
+        { href: "libreria_cobros.html", icono: "payments", texto: "Cobros", roles: ["super_admin", "encargado"] },
+        { href: "libreria_deudas.html", icono: "receipt_long", texto: "Deudas", roles: ["super_admin", "administrador"] },
+        { href: "libreria_pagados.html", icono: "check_circle", texto: "Pagados", roles: ["super_admin", "administrador"] },
+        { href: "libreria_clientes.html", icono: "group", texto: "Clientes", roles: ["super_admin", "administrador"] },
+        { href: "cliente_mis_compras.html", icono: "receipt_long", texto: "Mis Compras", roles: ["super_admin", "administrador", "cliente"] },
+        { href: "proveedores.html", icono: "local_shipping", texto: "Proveedores", roles: ["super_admin", "encargado"] },
+        { href: "compras.html", icono: "receipt", texto: "Registrar Compra", roles: ["super_admin", "encargado"] },
+        { href: "pagos_proveedores.html", icono: "payments", texto: "Pagos a Proveedores", roles: ["super_admin", "encargado"] },
+        { href: "reporte_lotes.html", icono: "inventory", texto: "Lotes Pendientes", roles: ["super_admin", "encargado"] },
+        { href: "libreria_reportes_ventas.html", icono: "assessment", texto: "Reportes de Ventas", roles: ["super_admin", "administrador"] },
+        { href: "cancelar_venta.html", icono: "block", texto: "Cancelar Venta", roles: ["super_admin", "encargado"] },
+        { href: "gastos.html", icono: "money_off", texto: "Gastos", roles: ["super_admin", "encargado"] },
+        { href: "admin_categorias_gasto.html", icono: "money_off", texto: "Cat. Gastos", roles: ["super_admin", "administrador"] },
+        { href: "admin_configuracion.html", icono: "settings", texto: "Configuración", roles: ["super_admin", "administrador"] }
     ];
     const paginaActual = window.location.pathname.split('/').pop();
     const rango = localStorage.getItem('rango');
-    const esAdmin = rango === 'administrador' || rango === 'super_admin';
-    const esCliente = rango === 'cliente';
     const nav = document.getElementById('nav-links');
     paginas.forEach(p => {
-        if (p.admin && !esAdmin) return;
-        if (esCliente && p.href !== 'cliente_mis_compras.html') return;
+        if (!p.roles.includes(rango)) return;
         const a = document.createElement('a');
         a.href = p.href;
         a.className = `nav-item ${paginaActual === p.href ? 'active' : ''}`;

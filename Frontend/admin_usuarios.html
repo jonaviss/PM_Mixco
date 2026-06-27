@@ -87,7 +87,6 @@
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Nombre</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Correo</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Rol</th>
-                            <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider">Módulos</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Estado</th>
                             <th class="px-5 py-3 text-xs font-mono font-bold text-secondary uppercase tracking-wider text-center">Acciones</th>
                         </tr>
@@ -138,10 +137,7 @@
                     <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Rol</label>
                     <select id="field-rol" class="w-full border border-outline-variant rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition bg-white"></select>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Módulos</label>
-                    <div id="field-modulos" class="space-y-1.5 border border-outline-variant rounded-lg p-3 bg-surface-container-low/20 max-h-32 overflow-y-auto"></div>
-                </div>
+                <div class="sm:col-span-2"></div>
             </div>
         </div>
         <div class="px-5 py-3 border-t border-outline-variant bg-gray-50 flex justify-end gap-2 flex-shrink-0">
@@ -179,28 +175,17 @@
 <script>
 let usuarios = [];
 let roles = [];
-let modulos = [];
 let editando = false;
 
-async function cargarRolesModulos() {
+async function cargarRoles() {
     try {
-        const [resRoles, resModulos] = await Promise.all([
-            API.get('/admin/roles', true),
-            API.get('/admin/modulos', true)
-        ]);
+        const resRoles = await API.get('/admin/roles', true);
         if (resRoles.ok) roles = await resRoles.json();
-        if (resModulos.ok) modulos = await resModulos.json();
         const selRol = document.getElementById('field-rol');
         selRol.innerHTML = roles.map(r => `<option value="${r.id}">${r.nombre}</option>`).join('');
-        const divModulos = document.getElementById('field-modulos');
-        divModulos.innerHTML = modulos.map(m => `
-            <label class="flex items-center gap-2 cursor-pointer text-sm">
-                <input type="checkbox" value="${m.id}" class="accent-primary-container"> ${m.nombre}
-            </label>
-        `).join('');
     } catch (err) {
-        console.error('[Admin] Error cargando roles/módulos:', err);
-        notify.error('Error al cargar roles y módulos');
+        console.error('[Admin] Error cargando roles:', err);
+        notify.error('Error al cargar roles');
     }
 }
 
@@ -221,7 +206,7 @@ async function cargarUsuarios() {
 function renderizarUsuarios() {
     const tbody = document.getElementById('tabla-usuarios');
     if (usuarios.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-secondary text-sm"><span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">group_off</span>No hay usuarios registrados.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-secondary text-sm"><span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">group_off</span>No hay usuarios registrados.</td></tr>`;
         return;
     }
     tbody.innerHTML = '';
@@ -229,7 +214,6 @@ function renderizarUsuarios() {
         const badgeActivo = u.activo
             ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Activo</span>'
             : '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Inactivo</span>';
-        const modulosStr = (u.modulos || []).map(m => m.nombre).join(', ') || '—';
         const tr = document.createElement('tr');
         tr.className = 'table-row transition-colors';
         tr.innerHTML = `
@@ -237,7 +221,6 @@ function renderizarUsuarios() {
             <td class="px-5 py-3 text-sm font-bold">${u.nombre_completo}</td>
             <td class="px-5 py-3 text-sm text-secondary">${u.correo || '—'}</td>
             <td class="px-5 py-3 text-sm"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-surface-container text-secondary">${u.rango_nombre}</span></td>
-            <td class="px-5 py-3 text-sm text-secondary max-w-[160px] truncate" title="${modulosStr}">${modulosStr}</td>
             <td class="px-5 py-3 text-center">${badgeActivo}</td>
             <td class="px-5 py-3 text-center">
                 <div class="flex items-center justify-center gap-1">
@@ -286,7 +269,6 @@ function abrirModalCrear() {
     document.getElementById('pass-hint').textContent = '*';
     document.getElementById('field-cui').disabled = false;
     if (roles.length > 0) document.getElementById('field-rol').value = roles[0].id;
-    document.querySelectorAll('#field-modulos input').forEach(cb => cb.checked = false);
     document.getElementById('msg-modal').classList.add('hidden');
     document.getElementById('modal-usuario').classList.remove('hidden');
     document.getElementById('modal-usuario').classList.add('flex');
@@ -307,9 +289,6 @@ async function editarUsuario(cui) {
     document.getElementById('field-contrasena').disabled = true;
     document.getElementById('pass-hint').textContent = '(dejar vacío para no cambiar)';
     if (u.rango_id) document.getElementById('field-rol').value = u.rango_id;
-    document.querySelectorAll('#field-modulos input').forEach(cb => {
-        cb.checked = (u.modulos || []).some(m => m.id == cb.value);
-    });
     document.getElementById('msg-modal').classList.add('hidden');
     document.getElementById('modal-usuario').classList.remove('hidden');
     document.getElementById('modal-usuario').classList.add('flex');
@@ -328,9 +307,6 @@ async function guardarUsuario() {
     const correo = document.getElementById('field-correo').value.trim();
     const contrasena = document.getElementById('field-contrasena').value;
     const rango_id = parseInt(document.getElementById('field-rol').value);
-    const modulos_ids = [];
-    document.querySelectorAll('#field-modulos input:checked').forEach(cb => modulos_ids.push(parseInt(cb.value)));
-
     if (!cui || !/^\d{13}$/.test(cui)) { notify.error('El CUI debe tener 13 dígitos numéricos.'); return; }
     if (!nombre) { notify.error('El nombre es obligatorio.'); return; }
     if (!editando && !contrasena) { notify.error('La contraseña es obligatoria para nuevos usuarios.'); return; }
@@ -347,11 +323,11 @@ async function guardarUsuario() {
             if (contrasena) updateData.contrasena = contrasena;
             const res1 = await API.put(`/admin/usuarios/${cui}`, updateData, true);
             if (!res1.ok) { const d = await res1.json(); notify.error(API.mensajeError(d)); btn.disabled = false; btn.textContent = 'Actualizar'; return; }
-            const res2 = await API.put(`/admin/usuarios/${cui}/accesos`, { rango_id, modulos_ids }, true);
+            const res2 = await API.put(`/admin/usuarios/${cui}/accesos`, { rango_id, modulos_ids: [] }, true);
             if (!res2.ok) { const d = await res2.json(); notify.error(API.mensajeError(d)); btn.disabled = false; btn.textContent = 'Actualizar'; return; }
             notify.success('Usuario actualizado correctamente');
         } else {
-            const res = await API.post('/admin/usuarios', { cui, nombre_completo: nombre, contrasena, correo: correo || null, rango_id, modulos_ids }, true);
+            const res = await API.post('/admin/usuarios', { cui, nombre_completo: nombre, contrasena, correo: correo || null, rango_id, modulos_ids: [] }, true);
             if (!res.ok) { const d = await res.json(); notify.error(API.mensajeError(d)); btn.disabled = false; btn.textContent = 'Guardar'; return; }
             notify.success('Usuario creado correctamente');
         }
@@ -419,7 +395,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.clear();
         window.location.href = 'index.html';
     });
-    await cargarRolesModulos();
+    await cargarRoles();
     await cargarUsuarios();
 });
 </script>

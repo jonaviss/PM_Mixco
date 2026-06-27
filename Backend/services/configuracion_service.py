@@ -49,6 +49,29 @@ def eliminar_metodo_pago(metodo_id: int) -> dict:
     return {"mensaje": "Método de pago eliminado"}
 
 
+def listar_categorias_gasto() -> list:
+    return repo.list_all("categorias_gasto")
+
+
+def crear_categoria_gasto(nombre: str) -> Dict[str, Any]:
+    if not nombre:
+        raise HTTPException(400, "El nombre es obligatorio")
+    return repo.insert("categorias_gasto", {"nombre": nombre})
+
+
+def actualizar_categoria_gasto(cat_id: int, data: dict) -> Dict[str, Any]:
+    result = repo.update("categorias_gasto", "id", cat_id, data)
+    if not result:
+        raise HTTPException(404, "Categoría no encontrada")
+    return result
+
+
+def eliminar_categoria_gasto(cat_id: int) -> dict:
+    if not repo.delete("categorias_gasto", "id", cat_id):
+        raise HTTPException(404, "Categoría no encontrada")
+    return {"mensaje": "Categoría eliminada"}
+
+
 def obtener_configuracion_correo() -> dict:
     config = repo.get_configuracion_correo_first() or {}
     if config.get("sendgrid_api_key"):

@@ -5,6 +5,7 @@ from schemas import TipoProductoCreate, TipoProductoUpdate, MetodoPagoCreate, Me
 from services.configuracion_service import (
     listar_tipos_producto, crear_tipo_producto, actualizar_tipo_producto, eliminar_tipo_producto,
     listar_metodos_pago, crear_metodo_pago, actualizar_metodo_pago, eliminar_metodo_pago,
+    listar_categorias_gasto, crear_categoria_gasto, actualizar_categoria_gasto, eliminar_categoria_gasto,
     obtener_configuracion_correo, actualizar_configuracion_correo
 )
 
@@ -49,6 +50,26 @@ async def actualizar_metodo_pago_endpoint(metodo_id: int, data: MetodoPagoUpdate
 @router.delete("/metodos-pago/{metodo_id}")
 async def eliminar_metodo_pago_endpoint(metodo_id: int, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
     return eliminar_metodo_pago(metodo_id)
+
+
+@router.get("/categorias-gasto")
+async def listar_categorias_endpoint(usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
+    return listar_categorias_gasto()
+
+
+@router.post("/categorias-gasto", status_code=201)
+async def crear_categoria_endpoint(data: TipoProductoCreate, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
+    return crear_categoria_gasto(data.nombre)
+
+
+@router.put("/categorias-gasto/{cat_id}")
+async def actualizar_categoria_endpoint(cat_id: int, data: TipoProductoUpdate, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
+    return actualizar_categoria_gasto(cat_id, data.model_dump())
+
+
+@router.delete("/categorias-gasto/{cat_id}")
+async def eliminar_categoria_endpoint(cat_id: int, usuario_actual: Dict[str, Any] = Depends(obtener_usuario_actual)):
+    return eliminar_categoria_gasto(cat_id)
 
 
 @router.get("/correo")
