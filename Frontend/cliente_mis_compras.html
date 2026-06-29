@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -6,7 +6,6 @@
     <title>Mis Compras | PM Mixco ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/global.css">
     <script>
         tailwind.config = {
@@ -87,14 +86,15 @@
         <section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
             <div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/30">
                 <h3 class="text-sm font-bold text-on-surface">Historial de Compras</h3>
-                <div class="flex gap-2">
+                <div class="flex gap-2 flex-wrap">
                     <button onclick="filtrarHistorial('todos')" id="filtro-todos" class="text-xs font-mono px-3 py-1.5 bg-primary-container text-white rounded-lg transition">Todos</button>
                     <button onclick="filtrarHistorial('pagado')" id="filtro-pagado" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary">Pagados</button>
                     <button onclick="filtrarHistorial('pendiente')" id="filtro-pendiente" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary">Pendientes</button>
                     <button onclick="filtrarHistorial('cancelada')" id="filtro-cancelada" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary">Canceladas</button>
                 </div>
             </div>
-            <div class="overflow-x-auto">
+            <!-- Vista tabla (escritorio) -->
+            <div class="overflow-x-auto hidden md:block">
                 <table class="w-full text-left">
                     <thead class="bg-surface-container-low/50">
                         <tr>
@@ -109,7 +109,9 @@
                     <tbody id="tabla-historial" class="divide-y divide-outline-variant text-sm"></tbody>
                 </table>
             </div>
-            <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center">
+            <!-- Vista cards (móvil) -->
+            <div class="block md:hidden space-y-2 p-2" id="cards-historial"></div>
+            <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex flex-col sm:flex-row justify-between items-center gap-2">
                 <p id="info-historial" class="text-xs font-mono text-secondary">— transacciones</p>
                 <div class="flex items-center gap-2" id="paginacion">
                     <button id="btn-prev" onclick="paginaAnterior()" class="text-xs font-mono px-3 py-1.5 border border-outline-variant rounded-lg hover:bg-surface-container transition text-secondary disabled:opacity-40 disabled:cursor-not-allowed" disabled>Anterior</button>
@@ -150,24 +152,24 @@ function inyectarModalRecibo() {
     modal.id = 'modal-recibo';
     modal.className = 'fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm';
     modal.innerHTML = `
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div class="bg-primary px-5 py-4 flex justify-between items-center flex-shrink-0">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col mx-2">
+            <div class="bg-primary px-4 md:px-5 py-4 flex justify-between items-center flex-shrink-0">
                 <div>
                     <h3 class="text-base font-bold text-white">Detalle del Recibo</h3>
                     <p id="modal-recibo-id" class="text-xs text-white/70 mt-0.5">Venta: —</p>
                 </div>
                 <button onclick="cerrarModalRecibo()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
             </div>
-            <div class="overflow-y-auto flex-1 p-5 space-y-4">
+            <div class="overflow-y-auto flex-1 p-4 md:p-5 space-y-3 md:space-y-4">
                 <div id="recibo-contenido">
                     <div class="text-center py-10 text-secondary">Cargando...</div>
                 </div>
             </div>
-            <div class="px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center flex-shrink-0">
-                <button onclick="descargarPDFRecibo()" class="px-4 py-2 text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[18px]">download</span> Descargar PDF
+            <div class="px-4 md:px-5 py-3 border-t border-outline-variant bg-surface-container-low/30 flex justify-between items-center flex-shrink-0 gap-2">
+                <button onclick="descargarPDFRecibo()" class="px-3 md:px-4 py-2 text-xs md:text-sm font-bold bg-primary-container text-white rounded-lg hover:opacity-90 transition flex items-center gap-1 whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[16px] md:text-[18px]">download</span> <span class="hidden xs:inline">Descargar</span> PDF
                 </button>
-                <button onclick="cerrarModalRecibo()" class="px-4 py-2 text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cerrar</button>
+                <button onclick="cerrarModalRecibo()" class="px-3 md:px-4 py-2 text-xs md:text-sm font-bold text-secondary hover:bg-surface-container rounded-lg transition">Cerrar</button>
             </div>
         </div>
     `;
@@ -199,37 +201,37 @@ function renderizarRecibo(data) {
     const productos = data.productos || [];
     const pagos = data.pagos || [];
     let html = `
-        <div class="grid grid-cols-2 gap-4 mb-4">
-            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                <p class="text-xs font-mono text-gray-500">Total Venta</p>
-                <p class="text-lg font-bold font-mono">${formatearMoneda(venta.total_venta)}</p>
+        <div class="grid grid-cols-2 gap-2 md:gap-4 mb-4">
+            <div class="bg-gray-50 p-2 md:p-3 rounded-lg border border-gray-200 overflow-hidden">
+                <p class="text-[10px] md:text-xs font-mono text-gray-500">Total Venta</p>
+                <p class="text-xs md:text-lg font-bold font-mono truncate">${formatearMoneda(venta.total_venta)}</p>
             </div>
-            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                <p class="text-xs font-mono text-gray-500">Total Pagado</p>
-                <p class="text-lg font-bold font-mono">${formatearMoneda(venta.total_pagado)}</p>
+            <div class="bg-gray-50 p-2 md:p-3 rounded-lg border border-gray-200 overflow-hidden">
+                <p class="text-[10px] md:text-xs font-mono text-gray-500">Total Pagado</p>
+                <p class="text-xs md:text-lg font-bold font-mono truncate">${formatearMoneda(venta.total_pagado)}</p>
             </div>
-            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                <p class="text-xs font-mono text-gray-500">Estado</p>
-                <p class="text-lg font-bold ${venta.estado_pago === 'pagado' ? 'text-green-600' : 'text-red-600'}">${venta.estado_pago.toUpperCase()}</p>
+            <div class="bg-gray-50 p-2 md:p-3 rounded-lg border border-gray-200 overflow-hidden">
+                <p class="text-[10px] md:text-xs font-mono text-gray-500">Estado</p>
+                <p class="text-xs md:text-lg font-bold truncate ${venta.estado_pago === 'pagado' ? 'text-green-600' : 'text-red-600'}">${venta.estado_pago.toUpperCase()}</p>
             </div>
-            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                <p class="text-xs font-mono text-gray-500">Operador</p>
-                <p class="text-lg font-bold">${escapeHtml(venta.operador || '—')}</p>
+            <div class="bg-gray-50 p-2 md:p-3 rounded-lg border border-gray-200 overflow-hidden">
+                <p class="text-[10px] md:text-xs font-mono text-gray-500">Operador</p>
+                <p class="text-xs md:text-lg font-bold truncate">${escapeHtml(venta.operador || '—')}</p>
             </div>
         </div>
         <div class="mb-4">
-            <p class="text-xs font-mono text-gray-500">Cliente</p>
-            <p class="font-bold">${escapeHtml(venta.cliente || venta.comprador_cui)}</p>
+            <p class="text-[10px] md:text-xs font-mono text-gray-500">Cliente</p>
+            <p class="text-xs md:text-base font-bold truncate">${escapeHtml(venta.cliente || venta.comprador_cui)}</p>
         </div>
         <div class="mb-4">
             <h4 class="text-xs font-mono font-bold text-gray-500 uppercase tracking-wider mb-2">Productos</h4>
             <div class="border border-gray-200 rounded-xl overflow-hidden">
-                <table class="w-full text-left">
+                <table class="w-full text-left hidden sm:table">
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase">Producto</th>
                             <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-center">Cant.</th>
-                            <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-right">Precio Unit.</th>
+                            <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-right">Precio</th>
                             <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase text-right">Subtotal</th>
                         </tr>
                     </thead>
@@ -240,18 +242,37 @@ function renderizarRecibo(data) {
     } else {
         productos.forEach(p => {
             html += `
-                <tr>
-                    <td class="px-4 py-2.5">${escapeHtml(p.nombre)}</td>
-                    <td class="px-4 py-2.5 text-center">${p.cantidad}</td>
-                    <td class="px-4 py-2.5 text-right font-mono">${formatearMoneda(p.precio_unitario)}</td>
-                    <td class="px-4 py-2.5 text-right font-mono font-bold">${formatearMoneda(p.subtotal)}</td>
-                </tr>
+                        <tr>
+                            <td class="px-4 py-2.5">${escapeHtml(p.nombre)}</td>
+                            <td class="px-4 py-2.5 text-center">${p.cantidad}</td>
+                            <td class="px-4 py-2.5 text-right font-mono">${formatearMoneda(p.precio_unitario)}</td>
+                            <td class="px-4 py-2.5 text-right font-mono font-bold">${formatearMoneda(p.subtotal)}</td>
+                        </tr>
             `;
         });
     }
     html += `
                     </tbody>
                 </table>
+                <div class="sm:hidden divide-y divide-gray-100">
+    `;
+    if (productos.length === 0) {
+        html += `<div class="text-center py-4 text-gray-500 text-sm">Sin productos.</div>`;
+    } else {
+        productos.forEach(p => {
+            html += `
+                    <div class="px-3 py-2.5">
+                        <div class="text-xs font-bold mb-1 truncate">${escapeHtml(p.nombre)}</div>
+                        <div class="flex gap-2 text-[11px] text-gray-500">
+                            <span class="whitespace-nowrap"><span class="font-bold text-gray-700">${p.cantidad}</span> x ${formatearMoneda(p.precio_unitario)}</span>
+                            <span class="ml-auto font-mono font-bold text-gray-700 whitespace-nowrap">${formatearMoneda(p.subtotal)}</span>
+                        </div>
+                    </div>
+            `;
+        });
+    }
+    html += `
+                </div>
             </div>
         </div>
     `;
@@ -260,7 +281,7 @@ function renderizarRecibo(data) {
             <div>
                 <h4 class="text-xs font-mono font-bold text-gray-500 uppercase tracking-wider mb-2">Pagos</h4>
                 <div class="border border-gray-200 rounded-xl overflow-hidden">
-                    <table class="w-full text-left">
+                    <table class="w-full text-left hidden sm:table">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-4 py-2 text-xs font-mono font-bold text-gray-500 uppercase">Fecha</th>
@@ -271,15 +292,27 @@ function renderizarRecibo(data) {
         `;
         pagos.forEach(p => {
             html += `
-                <tr>
-                    <td class="px-4 py-2.5">${formatearFechaHora(p.fecha_pago)}</td>
-                    <td class="px-4 py-2.5 text-right font-mono font-bold text-green-700">${formatearMoneda(p.monto_abonado)}</td>
-                </tr>
+                        <tr>
+                            <td class="px-4 py-2.5">${formatearFechaHora(p.fecha_pago)}</td>
+                            <td class="px-4 py-2.5 text-right font-mono font-bold text-green-700">${formatearMoneda(p.monto_abonado)}</td>
+                        </tr>
             `;
         });
         html += `
                         </tbody>
                     </table>
+                    <div class="sm:hidden divide-y divide-gray-100">
+        `;
+        pagos.forEach(p => {
+            html += `
+                        <div class="flex justify-between items-center gap-2 px-3 py-2.5">
+                            <span class="text-[11px] md:text-xs truncate">${formatearFechaHora(p.fecha_pago)}</span>
+                            <span class="text-xs md:text-sm font-mono font-bold text-green-700 whitespace-nowrap flex-shrink-0">${formatearMoneda(p.monto_abonado)}</span>
+                        </div>
+            `;
+        });
+        html += `
+                    </div>
                 </div>
             </div>
         `;
@@ -374,6 +407,7 @@ function renderizarPagina() {
 
 function renderizarHistorial(ventas) {
     const tbody = document.getElementById('tabla-historial');
+    const cards = document.getElementById('cards-historial');
     if (ventas.length === 0) {
         tbody.innerHTML = `
             <tr>
@@ -383,9 +417,11 @@ function renderizarHistorial(ventas) {
                 </td>
             </tr>
         `;
+        cards.innerHTML = '<div class="text-center py-8 text-secondary text-sm"><span class="material-symbols-outlined text-[28px] block mb-1 text-outline-variant">receipt_long</span>No hay transacciones con ese filtro.</div>';
         return;
     }
     tbody.innerHTML = '';
+    cards.innerHTML = '';
     ventas.forEach(v => {
         const badge = v.estado_pago === 'cancelada' ?
             '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-600 line-through">Cancelada</span>' :
@@ -396,6 +432,8 @@ function renderizarHistorial(ventas) {
                     '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Pendiente</span>'));
         const fechaHora = v.created_at ?
             new Date(v.created_at).toLocaleString('es-GT', { timeZone: 'America/Guatemala', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+
+        // Fila de tabla (escritorio)
         const tr = document.createElement('tr');
         tr.className = 'table-row transition-colors';
         tr.innerHTML = `
@@ -411,6 +449,27 @@ function renderizarHistorial(ventas) {
             </td>
         `;
         tbody.appendChild(tr);
+
+        // Card (móvil)
+        const card = document.createElement('div');
+        card.className = 'bg-white border border-outline-variant rounded-xl p-3 shadow-sm overflow-hidden';
+        card.innerHTML = `
+            <div class="flex items-center justify-between gap-1 mb-1.5">
+                <span class="text-[10px] text-secondary font-mono truncate min-w-0">${fechaHora}</span>
+                <div class="flex-shrink-0">${badge.replace('text-xs', 'text-[10px]')}</div>
+            </div>
+            <div class="flex items-center justify-between gap-1">
+                <span class="text-[10px] text-secondary truncate min-w-0">${v.nombre_operador || '—'}</span>
+                <span class="text-xs font-bold font-mono whitespace-nowrap flex-shrink-0">${formatearMoneda(v.total_venta)}</span>
+            </div>
+            <div class="flex items-center justify-between gap-1 mt-1.5 pt-1.5 border-t border-outline-variant/50">
+                <span class="text-[10px] text-secondary truncate min-w-0">Pagado <span class="font-bold font-mono text-green-600">${formatearMoneda(v.total_pagado)}</span></span>
+                <button onclick="verRecibo('${v.id}')" class="text-[10px] font-mono px-2 py-1 bg-primary-container text-white rounded-lg hover:opacity-90 transition flex items-center gap-1 whitespace-nowrap flex-shrink-0">
+                    <span class="material-symbols-outlined text-[12px]">receipt_long</span> Recibo
+                </button>
+            </div>
+        `;
+        cards.appendChild(card);
     });
 }
 
@@ -450,6 +509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     Error al cargar los datos. Intenta de nuevo más tarde.
                 </td>
             </tr>`;
+        document.getElementById('cards-historial').innerHTML = '<div class="text-center py-8 text-secondary text-sm p-4"><span class="material-symbols-outlined text-[28px] block mb-1 text-error">error</span>Error al cargar los datos. Intenta de nuevo más tarde.</div>';
     }
 });
 </script>
