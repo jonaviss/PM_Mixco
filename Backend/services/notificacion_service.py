@@ -1,8 +1,11 @@
 import os
 import base64
+import smtplib
 import asyncio
 import httpx
 import logging
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from routers.pdf_libreria import generar_pdf_comprobante, generar_pdf_pago_proveedor
 from repositories.common_repository import get_configuracion_correo
 
@@ -191,8 +194,40 @@ async def despachar_correo_libreria(datos: dict):
         logger.warning(f"Telegram opcional falló: {e}")
 
 
+def _enviar_gmail_smtp(destinatario: str, asunto: str, html: str):
+    smtp_user = os.getenv("GMAIL_SMTP_USER")
+    smtp_pass = os.getenv("GMAIL_SMTP_PASSWORD")
+    if not smtp_user or not smtp_pass:
+        logger.warning("GMAIL_SMTP_USER/PASSWORD no configurados. Correo abortado.")
+        return
+    msg = MIMEMultipart("alternative")
+    msg["From"] = smtp_user
+    msg["To"] = destinatario
+    msg["Subject"] = asunto
+    msg.attach(MIMEText(html, "html"))
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+        logger.info(f"Correo enviado a {destinatario} via Gmail SMTP")
+    except Exception as e:
+        logger.error(f"Falla al enviar correo via Gmail SMTP: {e}")
+
+
+def _get_frontend_url() -> str:
+    url = os.getenv("FRONTEND_URL")
+    if url:
+        return url.rstrip("/")
+    import socket
+    hostname = socket.gethostname()
+    if "render" in hostname:
+        return "https://pm-mixco-frontend.onrender.com"
+    return "http://127.0.0.1:5500"
+
+
 def enviar_correo_verificacion(cui: str, nombre: str, correo: str, token: str):
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
+    FRONTEND_URL = _get_frontend_url()
     link = f"{FRONTEND_URL}/verificar.html?token={token}"
     html = f"""
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 24px;
@@ -220,7 +255,10 @@ def enviar_correo_verificacion(cui: str, nombre: str, correo: str, token: str):
     cfg = get_configuracion_correo()
     if cfg:
         api_key = cfg.get("sendgrid_api_key") or api_key
-    _enviar_sendgrid(correo, "Verifica tu correo — PM Mixco", html, b"", "", api_key)
+    if api_key:
+        _enviar_sendgrid(correo, "Verifica tu correo — PM Mixco", html, b"", "", api_key)
+    else:
+        _enviar_gmail_smtp(correo, "Verifica tu correo — PM Mixco", html)
 
 
 def enviar_correo_recuperacion(cui: str, token: str):
@@ -230,7 +268,7 @@ def enviar_correo_recuperacion(cui: str, token: str):
         logger.warning(f"No se puede enviar recuperación: usuario {cui} sin correo")
         return
 
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
+    FRONTEND_URL = _get_frontend_url()
     link = f"{FRONTEND_URL}/restablecer.html?token={token}"
     html = f"""
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 24px;
@@ -254,4 +292,8 @@ def enviar_correo_recuperacion(cui: str, token: str):
         </div>
     </div>
     """
-    _enviar_sendgrid(user["correo"], "Recuperación de Contraseña — PM Mixco", html, b"", "", os.getenv("SENDGRID_API_KEY"))
+    api_key = os.getenv("SENDGRID_API_KEY")
+    if api_key:
+        _enviar_sendgrid(user["correo"], "Recuperación de Contraseña — PM Mixco", html, b"", "", api_key)
+    else:
+        _enviar_gmail_smtp(user["correo"], "Recuperación de Contraseña — PM Mixco", html)
