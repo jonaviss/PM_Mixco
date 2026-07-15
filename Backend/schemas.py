@@ -161,7 +161,7 @@ class RegistroCreate(BaseModel):
     cui: str = Field(..., min_length=13, max_length=13)
     nombre_completo: str = Field(..., min_length=1)
     contrasena: str = Field(..., min_length=6)
-    correo: Optional[str] = None
+    correo: str = Field(...)
 
 
 class RecuperarRequest(BaseModel):

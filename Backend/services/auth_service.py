@@ -79,7 +79,13 @@ def registrar_usuario(cui: str, nombre_completo: str, contrasena: str, correo: O
         "correo": correo,
     }
     nuevo = create_usuario(usuario_data)
+    return nuevo
 
+
+def crear_token_verificacion(cui: str) -> Optional[Dict[str, Any]]:
+    user = find_user_by_cui(cui)
+    if not user:
+        return None
     token = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(token.encode()).hexdigest()
     expires_at = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
@@ -89,11 +95,7 @@ def registrar_usuario(cui: str, nombre_completo: str, contrasena: str, correo: O
         "expires_at": expires_at,
         "used": False
     }).execute()
-
-    from services.notificacion_service import enviar_correo_verificacion
-    enviar_correo_verificacion(cui, nombre_completo, correo.strip(), token)
-
-    return nuevo
+    return {"token": token}
 
 
 def verificar_correo(token: str) -> str:
