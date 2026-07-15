@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks
 from schemas import LoginRequest, TokenResponse, RegistroCreate, RecuperarRequest, RestablecerRequest
-from services.auth_service import authenticate_user, create_token, registrar_usuario, generar_token_recuperacion, restablecer_contrasena, verificar_correo, crear_token_verificacion
-from services.notificacion_service import enviar_correo_recuperacion, enviar_correo_verificacion
+from services.auth_service import authenticate_user, create_token, registrar_usuario, generar_token_recuperacion, restablecer_contrasena, verificar_correo
+from services.notificacion_service import enviar_correo_recuperacion
 
 router = APIRouter()
 
@@ -30,15 +30,9 @@ def login(payload: LoginRequest):
 
 
 @router.post("/registro", status_code=status.HTTP_201_CREATED)
-def registro(payload: RegistroCreate, background_tasks: BackgroundTasks):
+def registro(payload: RegistroCreate):
     try:
-        resultado = registrar_usuario(payload.cui, payload.nombre_completo, payload.contrasena, payload.correo)
-        token_info = crear_token_verificacion(payload.cui)
-        if token_info:
-            background_tasks.add_task(
-                enviar_correo_verificacion,
-                payload.cui, payload.nombre_completo, payload.correo, token_info["token"]
-            )
+        registrar_usuario(payload.cui, payload.nombre_completo, payload.contrasena, payload.correo)
         return {"mensaje": "Cuenta creada. Revisá tu correo para verificar tu cuenta."}
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
