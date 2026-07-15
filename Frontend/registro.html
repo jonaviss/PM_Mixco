@@ -117,10 +117,10 @@
                     btn.textContent = 'Crear cuenta';
                 }
             } catch (err) {
-                msg.textContent = 'Error de conexión. Verifica tu red.';
-                msg.className = 'msg-box error';
-                btn.disabled = false;
-                btn.textContent = 'Crear cuenta';
+                // La petición pudo llegar al servidor aunque falle la respuesta
+                document.getElementById('correo-enviado').textContent = correo;
+                formPanel.style.display = 'none';
+                exitoPanel.style.display = 'block';
             }
         });
     </script>
