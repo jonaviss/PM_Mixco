@@ -64,13 +64,19 @@ def registrar_usuario(cui: str, nombre_completo: str, contrasena: str, correo: O
     if not correo or not correo.strip():
         raise ValueError("El correo electrónico es obligatorio para registrarse.")
 
+    correo = correo.strip()
+
+    existing_por_correo = supabase.table("usuarios").select("cui").eq("correo", correo).execute()
+    if existing_por_correo.data:
+        raise ValueError("El correo electrónico ya está registrado con otro usuario.")
+
     usuario_data = {
         "cui": cui,
         "nombre_completo": nombre_completo,
         "contrasena_hash": _hash_password(contrasena),
         "activo": True,
         "verificado": False,
-        "correo": correo.strip(),
+        "correo": correo,
     }
     nuevo = create_usuario(usuario_data)
 
