@@ -22,6 +22,9 @@ def authenticate_user(cui: str, contrasena: str) -> Dict[str, Any]:
     if not verificar_contrasena(contrasena, usuario["contrasena_hash"]):
         raise ValueError("CUI o contraseña incorrectos.")
 
+    if not usuario.get("verificado", False):
+        raise ValueError("Debes verificar tu correo electrónico antes de iniciar sesión.")
+
     accesos = find_accesos_by_cui(cui)
 
     if accesos:
@@ -58,17 +61,51 @@ def registrar_usuario(cui: str, nombre_completo: str, contrasena: str, correo: O
     existing = find_user_by_cui(cui)
     if existing:
         raise ValueError("El CUI ya está registrado.")
+    if not correo or not correo.strip():
+        raise ValueError("El correo electrónico es obligatorio para registrarse.")
 
     usuario_data = {
         "cui": cui,
         "nombre_completo": nombre_completo,
         "contrasena_hash": _hash_password(contrasena),
         "activo": True,
-        "correo": correo or "",
+        "verificado": False,
+        "correo": correo.strip(),
     }
     nuevo = create_usuario(usuario_data)
 
+    token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
+    supabase.table("verificacion_tokens").insert({
+        "cui": cui,
+        "token_hash": token_hash,
+        "expires_at": expires_at,
+        "used": False
+    }).execute()
+
+    from services.notificacion_service import enviar_correo_verificacion
+    enviar_correo_verificacion(cui, nombre_completo, correo.strip(), token)
+
     return nuevo
+
+
+def verificar_correo(token: str) -> str:
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    res = supabase.table("verificacion_tokens") \
+        .select("*, usuarios!inner(cui, nombre_completo, correo, verificado)") \
+        .eq("token_hash", token_hash) \
+        .eq("used", False) \
+        .execute()
+    if not res.data:
+        raise ValueError("El enlace de verificación es inválido o ya fue usado.")
+    record = res.data[0]
+    expires = datetime.fromisoformat(record["expires_at"])
+    if datetime.now(timezone.utc) > expires:
+        raise ValueError("El enlace de verificación ha expirado. Solicita uno nuevo.")
+    update_usuario(record["cui"], {"verificado": True})
+    supabase.table("verificacion_tokens").update({"used": True}).eq("id", record["id"]).execute()
+    return record["usuarios"]["nombre_completo"]
 
 
 def generar_token_recuperacion(cui: str) -> Optional[str]:

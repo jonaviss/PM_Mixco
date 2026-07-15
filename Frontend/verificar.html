@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificar Correo | PM Mixco ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 via-white to-yellow-100 p-4">
+    <div class="w-full max-w-md text-center">
+        <div class="bg-white rounded-2xl shadow-lg border border-yellow-100 p-8">
+            <div id="estado-cargando" class="py-8">
+                <span class="material-symbols-outlined text-[48px] text-primary animate-pulse">pending</span>
+                <p class="text-base font-bold text-on-surface mt-4">Verificando tu correo...</p>
+            </div>
+            <div id="estado-exito" class="py-8 hidden">
+                <span class="material-symbols-outlined text-[56px] text-green-500" style="font-variation-settings:'FILL' 1">check_circle</span>
+                <h2 class="text-xl font-bold text-on-surface mt-4">Correo Verificado</h2>
+                <p id="msg-exito" class="text-sm text-secondary mt-2">Tu cuenta ha sido verificada exitosamente.</p>
+                <a href="index.html" class="mt-6 inline-block px-6 py-3 bg-primary-container text-white font-bold rounded-lg hover:opacity-90 transition text-sm">Iniciar Sesión</a>
+            </div>
+            <div id="estado-error" class="py-8 hidden">
+                <span class="material-symbols-outlined text-[56px] text-error">error</span>
+                <h2 class="text-xl font-bold text-on-surface mt-4">Error de Verificación</h2>
+                <p id="msg-error" class="text-sm text-secondary mt-2">El enlace es inválido o ha expirado.</p>
+                <a href="index.html" class="mt-6 inline-block px-6 py-3 bg-primary-container text-white font-bold rounded-lg hover:opacity-90 transition text-sm">Ir al Inicio</a>
+            </div>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script>
+        async function verificar() {
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('token');
+            if (!token) {
+                document.getElementById('estado-cargando').classList.add('hidden');
+                document.getElementById('estado-error').classList.remove('hidden');
+                document.getElementById('msg-error').textContent = 'No se encontró un token de verificación.';
+                return;
+            }
+            try {
+                const res = await API.post('/verificar-correo', { token }, false);
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.detail || 'Error al verificar');
+                }
+                const data = await res.json();
+                document.getElementById('estado-cargando').classList.add('hidden');
+                document.getElementById('estado-exito').classList.remove('hidden');
+                document.getElementById('msg-exito').textContent = data.mensaje || 'Correo verificado exitosamente.';
+            } catch (err) {
+                document.getElementById('estado-cargando').classList.add('hidden');
+                document.getElementById('estado-error').classList.remove('hidden');
+                document.getElementById('msg-error').textContent = err.message || 'Error al verificar el correo.';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', verificar);
+    </script>
+</body>
+</html>

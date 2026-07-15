@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks
 from schemas import LoginRequest, TokenResponse, RegistroCreate, RecuperarRequest, RestablecerRequest
-from services.auth_service import authenticate_user, create_token, registrar_usuario, generar_token_recuperacion, restablecer_contrasena
+from services.auth_service import authenticate_user, create_token, registrar_usuario, generar_token_recuperacion, restablecer_contrasena, verificar_correo
 from services.notificacion_service import enviar_correo_recuperacion
 
 router = APIRouter()
@@ -48,6 +48,16 @@ async def recuperar(payload: RecuperarRequest, background_tasks: BackgroundTasks
         return {"mensaje": "Si el CUI está registrado con un correo, recibirás las instrucciones."}
     except Exception:
         return {"mensaje": "Si el CUI está registrado con un correo, recibirás las instrucciones."}
+
+
+@router.post("/verificar-correo")
+def verificar(payload: dict):
+    token = payload.get("token", "")
+    try:
+        nombre = verificar_correo(token)
+        return {"mensaje": f"Correo verificado exitosamente. Bienvenido, {nombre}."}
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/restablecer")

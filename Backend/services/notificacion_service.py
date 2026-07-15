@@ -191,6 +191,38 @@ async def despachar_correo_libreria(datos: dict):
         logger.warning(f"Telegram opcional falló: {e}")
 
 
+def enviar_correo_verificacion(cui: str, nombre: str, correo: str, token: str):
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
+    link = f"{FRONTEND_URL}/verificar.html?token={token}"
+    html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 24px;
+                border: 1px solid #e8e4d9; border-radius: 12px; background-color: #fafaf8;">
+        <h2 style="color: #755b00; text-align: center; margin-bottom: 4px;">PALABRA MIEL MIXCO</h2>
+        <p style="text-align: center; color: #7a7565; font-size: 13px; margin-top: 0;">Verificación de Correo Electrónico</p>
+        <hr style="border: none; border-top: 2px solid #C9A227; margin: 16px 0;">
+        <p style="font-size: 14px; color: #1c1c1a;">Hola <strong>{nombre}</strong>,</p>
+        <p style="font-size: 14px; color: #4d4635; margin-top: 8px;">
+            Gracias por registrarte en PM Mixco. Hacé clic en el siguiente enlace para verificar tu correo electrónico:
+        </p>
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="{link}" style="display: inline-block; background: #C9A227; color: #fff; text-decoration: none;
+                padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 14px;">
+                Verificar mi correo
+            </a>
+        </div>
+        <p style="font-size: 12px; color: #7a7565;">Este enlace expira en 24 horas. Si no creaste esta cuenta, ignorá este correo.</p>
+        <div style="background: #f0edea; border-radius: 8px; padding: 12px; margin-top: 16px; text-align: center; border: 1px solid #d1c5af;">
+            <p style="font-size: 11px; color: #7a7565; margin: 0;">PM Mixco ERP — Documento generado automáticamente</p>
+        </div>
+    </div>
+    """
+    api_key = os.getenv("SENDGRID_API_KEY")
+    cfg = get_configuracion_correo()
+    if cfg:
+        api_key = cfg.get("sendgrid_api_key") or api_key
+    _enviar_sendgrid(correo, "Verifica tu correo — PM Mixco", html, b"", "", api_key)
+
+
 def enviar_correo_recuperacion(cui: str, token: str):
     from repositories.common_repository import find_usuario_basico
     user = find_usuario_basico(cui)

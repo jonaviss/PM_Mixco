@@ -4,7 +4,7 @@ from database import supabase
 
 def find_active_user_by_cui(cui: str) -> Optional[Dict[str, Any]]:
     res = supabase.table("usuarios") \
-        .select("cui, nombre_completo, contrasena_hash, activo") \
+        .select("cui, nombre_completo, contrasena_hash, activo, verificado") \
         .eq("cui", cui) \
         .eq("activo", True) \
         .execute()
