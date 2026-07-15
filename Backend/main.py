@@ -46,11 +46,12 @@ async def global_exception_handler(request: Request, exc: Exception):
 # CORS configurado desde variable de entorno
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
 
-# Orígenes permitidos: el FRONTEND_URL de entorno más localhost
+# Orígenes permitidos: frontend en Render + localhost para desarrollo
 CORS_ORIGINS = [
     FRONTEND_URL,
     "http://localhost:5500",
     "http://127.0.0.1:5500",
+    "https://pm-mixco-frontend.onrender.com",
 ]
 
 app.add_middleware(
