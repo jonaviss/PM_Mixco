@@ -39,6 +39,15 @@
         .strength-text { font-size:0.65rem; margin-top:4px; font-weight:600; }
         .cui-status { font-size:0.7rem; margin-top:4px; min-height:1.2em; }
         .hint { font-size:0.7rem; color:#94A3B8; margin-top:4px; }
+        @media (max-width:480px) {
+            body { padding:1rem; }
+            .card { padding:1.25rem; border-radius:16px; }
+            .brand h1 { font-size:1.2rem; }
+            .brand p { font-size:0.6rem; }
+            .field-input { padding:0.65rem 0.85rem; font-size:0.8rem; }
+            .field-input { padding-right:2.5rem; }
+            .btn { padding:0.7rem; font-size:0.8rem; }
+        }
     </style>
     <link rel='stylesheet' href='css/global.css'>
 </head>
@@ -63,12 +72,14 @@
                 <label class="field-label">Correo electrónico</label>
                 <input type="email" id="correo" class="field-input" placeholder="correo@ejemplo.com" required>
             </div>
-            <div class="field-group" style="position:relative;">
+            <div class="field-group">
                 <label class="field-label">Contraseña</label>
-                <input type="password" id="contrasena" class="field-input" placeholder="Mínimo 8 caracteres" minlength="8" required style="padding-right:2.8rem;">
-                <button type="button" onclick="togglePass()" style="position:absolute;right:1rem;bottom:2.5rem;background:none;border:none;cursor:pointer;color:var(--text-secondary);display:inline-flex;align-items:center;">
-                    <span class="material-symbols-outlined" id="pass-icon" style="font-size:1.25rem;">visibility_off</span>
-                </button>
+                <div style="position:relative;">
+                    <input type="password" id="contrasena" class="field-input" placeholder="Mínimo 8 caracteres" minlength="8" required style="padding-right:2.8rem;">
+                    <button type="button" onclick="togglePass()" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-secondary);display:inline-flex;align-items:center;padding:0;line-height:1;">
+                        <span class="material-symbols-outlined" id="pass-icon" style="font-size:1.25rem;">visibility_off</span>
+                    </button>
+                </div>
                 <div class="strength-bar" id="strength-bar" style="background:#E2E8F0;width:0;"></div>
                 <div class="strength-text" id="strength-text"></div>
             </div>
