@@ -1,7 +1,9 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Dict, Any
+from datetime import datetime
 from schemas import UsuarioCreate, UsuarioUpdate, UsuarioAccesosUpdate
 from routers.dependencies import requiere_admin
+from fastapi.responses import StreamingResponse
 from services.usuario_service import (
     get_all_usuarios,
     create_new_usuario,
@@ -11,6 +13,7 @@ from services.usuario_service import (
     update_usuario_accesos,
 )
 from repositories.usuario_repository import list_roles, list_modulos
+from services.backup_service import generar_backup, enviar_backup_correo
 
 router = APIRouter(prefix="/admin", tags=["Administración"])
 
@@ -75,3 +78,16 @@ def actualizar_accesos(cui: str, payload: UsuarioAccesosUpdate, _: Dict[str, Any
         return {"mensaje": "Accesos actualizados correctamente"}
     except ValueError as e:
         raise HTTPException(404, str(e))
+
+
+@router.get("/backup")
+def descargar_backup(_: Dict[str, Any] = Depends(requiere_admin)):
+    zip_bytes, resumen = generar_backup()
+    return StreamingResponse(iter([zip_bytes]), media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename=backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"})
+
+
+@router.post("/backup-enviar")
+def enviar_backup(_: Dict[str, Any] = Depends(requiere_admin)):
+    enviar_backup_correo()
+    return {"mensaje": "Backup generado y enviado al correo."}

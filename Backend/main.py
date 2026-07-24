@@ -6,6 +6,8 @@ Inicializa FastAPI, configura CORS y registra los routers de cada módulo.
 import os
 import asyncio
 import logging
+import threading
+from datetime import datetime, time, timedelta
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -21,10 +23,31 @@ from routers import compras, cliente, admin, usuario, configuracion, gastos, tel
 
 logger = logging.getLogger(__name__)
 
+HORA_BACKUP = 5  # 5 AM
+
+
+def _ejecutar_backup_diario():
+    import time as t
+    while True:
+        ahora = datetime.now()
+        objetivo = datetime(ahora.year, ahora.month, ahora.day, HORA_BACKUP, 0, 0)
+        if ahora > objetivo:
+            objetivo += timedelta(days=1)
+        espera = (objetivo - ahora).total_seconds()
+        t.sleep(espera)
+        try:
+            from services.backup_service import enviar_backup_correo
+            enviar_backup_correo()
+            logger.info("Backup diario completado")
+        except Exception as e:
+            logger.error(f"Backup diario falló: {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     task = asyncio.create_task(telegram.polling_loop())
+    hilo = threading.Thread(target=_ejecutar_backup_diario, daemon=True)
+    hilo.start()
     yield
     task.cancel()
     try:
