@@ -1,13 +1,16 @@
-from fastapi import APIRouter, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, HTTPException, status, Request, BackgroundTasks
 from schemas import LoginRequest, TokenResponse, RegistroCreate, RecuperarRequest, RestablecerRequest
 from services.auth_service import authenticate_user, create_token, registrar_usuario, generar_token_recuperacion, restablecer_contrasena, verificar_correo
+from repositories.usuario_repository import find_user_by_cui
 from services.notificacion_service import enviar_correo_recuperacion
+from middleware_rate_limit import check_rate_limit
 
 router = APIRouter()
 
 
 @router.post("/login-cliente", response_model=TokenResponse, status_code=status.HTTP_200_OK)
-def login(payload: LoginRequest):
+def login(payload: LoginRequest, request: Request):
+    check_rate_limit(request)
     try:
         user_data = authenticate_user(payload.cui, payload.contrasena)
         token = create_token(user_data)
@@ -30,12 +33,24 @@ def login(payload: LoginRequest):
 
 
 @router.post("/registro", status_code=status.HTTP_201_CREATED)
-def registro(payload: RegistroCreate):
+def registro(payload: RegistroCreate, request: Request):
+    check_rate_limit(request)
     try:
-        registrar_usuario(payload.cui, payload.nombre_completo, payload.contrasena, payload.correo)
-        return {"mensaje": "Cuenta creada. Revisá tu correo para verificar tu cuenta."}
+        token = registrar_usuario(payload.cui, payload.nombre_completo, payload.contrasena, payload.correo)
+        return {
+            "mensaje": "Cuenta creada. Revisá tu correo para verificar tu cuenta.",
+            "verification_token": token,
+        }
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/verificar-cui/{cui}")
+def verificar_cui(cui: str):
+    user = find_user_by_cui(cui)
+    if user:
+        raise HTTPException(status_code=409, detail="El CUI ya está registrado.")
+    return {"disponible": True}
 
 
 @router.post("/recuperar")

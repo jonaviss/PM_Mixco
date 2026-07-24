@@ -25,6 +25,8 @@
         .field-input { width:100%; background:#fff; border:1.5px solid var(--border); border-radius:10px; padding:0.75rem 1rem; font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--text-primary); outline:none; transition:border-color 0.2s,box-shadow 0.2s; }
         .field-input:focus { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-glow); }
         .field-input::placeholder { color:#94A3B8; font-family:'Sora',sans-serif; font-size:0.8rem; }
+        .field-input.error { border-color:var(--error); }
+        .field-input.error:focus { box-shadow:0 0 0 3px rgba(239,68,68,0.15); }
         .msg-box { display:none; border-radius:10px; padding:0.7rem 1rem; margin-bottom:1rem; font-size:0.8rem; }
         .msg-box.error { display:block; background:var(--error-bg); border:1px solid #FEE2E2; color:var(--error); }
         .msg-box.success { display:block; background:var(--success-bg); border:1px solid #BBF7D0; color:var(--success); }
@@ -33,6 +35,10 @@
         .btn:disabled { opacity:0.6; cursor:not-allowed; }
         .footer { text-align:center; margin-top:1.25rem; font-size:0.7rem; color:#94A3B8; }
         .footer a { color:var(--gold); text-decoration:none; }
+        .strength-bar { height:4px; border-radius:4px; margin-top:6px; transition:all 0.3s; }
+        .strength-text { font-size:0.65rem; margin-top:4px; font-weight:600; }
+        .cui-status { font-size:0.7rem; margin-top:4px; min-height:1.2em; }
+        .hint { font-size:0.7rem; color:#94A3B8; margin-top:4px; }
     </style>
     <link rel='stylesheet' href='css/global.css'>
 </head>
@@ -43,10 +49,11 @@
             <p>Crear cuenta de cliente</p>
         </div>
         <div id="msg" class="msg-box"></div>
-        <form id="formRegistro" autocomplete="off">
+        <form id="formRegistro" autocomplete="off" novalidate>
             <div class="field-group">
                 <label class="field-label">CUI</label>
-                <input type="text" id="cui" class="field-input" placeholder="0000000000000" maxlength="13" required>
+                <input type="text" id="cui" class="field-input" placeholder="0000000000000" maxlength="13" required autocomplete="off">
+                <div id="cui-status" class="cui-status"></div>
             </div>
             <div class="field-group">
                 <label class="field-label">Nombre completo</label>
@@ -58,10 +65,17 @@
             </div>
             <div class="field-group" style="position:relative;">
                 <label class="field-label">Contraseña</label>
-                <input type="password" id="contrasena" class="field-input" placeholder="Mínimo 6 caracteres" minlength="6" required style="padding-right:2.8rem;">
-                <button type="button" onclick="togglePass()" style="position:absolute;right:1rem;bottom:0.75rem;background:none;border:none;cursor:pointer;color:var(--text-secondary);display:inline-flex;align-items:center;">
+                <input type="password" id="contrasena" class="field-input" placeholder="Mínimo 8 caracteres" minlength="8" required style="padding-right:2.8rem;">
+                <button type="button" onclick="togglePass()" style="position:absolute;right:1rem;bottom:2.5rem;background:none;border:none;cursor:pointer;color:var(--text-secondary);display:inline-flex;align-items:center;">
                     <span class="material-symbols-outlined" id="pass-icon" style="font-size:1.25rem;">visibility_off</span>
                 </button>
+                <div class="strength-bar" id="strength-bar" style="background:#E2E8F0;width:0;"></div>
+                <div class="strength-text" id="strength-text"></div>
+            </div>
+            <div class="field-group">
+                <label class="field-label">Confirmar contraseña</label>
+                <input type="password" id="contrasena2" class="field-input" placeholder="Repetí la contraseña" required>
+                <div id="match-status" class="hint"></div>
             </div>
             <button type="submit" id="btn-registro" class="btn">Crear cuenta</button>
         </form>
@@ -75,31 +89,125 @@
                 Enviamos un enlace de verificación a <strong id="correo-enviado" style="color:var(--gold);"></strong>.
                 Hacé clic en el enlace para activar tu cuenta.
             </p>
-            <p style="font-size:0.75rem;color:#94A3B8;margin-top:1rem;">El enlace expira en 24 horas.</p>
+            <p id="email-warning" style="font-size:0.75rem;color:#94A3B8;margin-top:1rem;display:none;">
+                Si no encontrás el correo, revisá la carpeta Spam o intentá de nuevo más tarde.
+            </p>
+            <p style="font-size:0.75rem;color:#94A3B8;margin-top:0.5rem;">El enlace expira en 24 horas.</p>
             <a href="index.html" class="btn" style="display:inline-block;text-decoration:none;margin-top:1.25rem;padding:0.7rem 2rem;width:auto;">Ir al inicio de sesión</a>
         </div>
     </div>
     <script src="js/api.js"></script>
     <script>
         function togglePass(){const p=document.getElementById('contrasena'),i=document.getElementById('pass-icon');p.type=p.type==='password'?'text':'password';i.textContent=p.type==='password'?'visibility_off':'visibility';}
+
         const form = document.getElementById('formRegistro');
         const btn = document.getElementById('btn-registro');
         const msg = document.getElementById('msg');
         const formPanel = document.getElementById('form-panel');
         const exitoPanel = document.getElementById('exito-panel');
 
+        const cuiInput = document.getElementById('cui');
+        const cuiStatus = document.getElementById('cui-status');
+        const passInput = document.getElementById('contrasena');
+        const pass2Input = document.getElementById('contrasena2');
+        const strengthBar = document.getElementById('strength-bar');
+        const strengthText = document.getElementById('strength-text');
+        const matchStatus = document.getElementById('match-status');
+
+        let cuiTimeout = null;
+
+        // --- Medidor de fortaleza ---
+        function calcStrength(p) {
+            let score = 0;
+            if (p.length >= 8) score += 25;
+            if (p.length >= 12) score += 15;
+            if (/[A-Z]/.test(p)) score += 15;
+            if (/[a-z]/.test(p)) score += 10;
+            if (/[0-9]/.test(p)) score += 15;
+            if (/[^A-Za-z0-9]/.test(p)) score += 20;
+            return Math.min(100, score);
+        }
+
+        function updateStrength() {
+            const p = passInput.value;
+            const s = calcStrength(p);
+            strengthBar.style.width = s + '%';
+            let color, text;
+            if (p.length === 0) { color = '#E2E8F0'; text = ''; }
+            else if (s < 30) { color = '#EF4444'; text = 'Débil'; }
+            else if (s < 60) { color = '#F59E0B'; text = 'Media'; }
+            else if (s < 80) { color = '#10B981'; text = 'Fuerte'; }
+            else { color = '#059669'; text = 'Muy fuerte'; }
+            strengthBar.style.background = color;
+            strengthText.textContent = text;
+            strengthText.style.color = color;
+            checkMatch();
+        }
+
+        // --- Confirmar contraseña ---
+        function checkMatch() {
+            const p1 = passInput.value;
+            const p2 = pass2Input.value;
+            if (!p2) { matchStatus.textContent = ''; return; }
+            if (p1 === p2) {
+                matchStatus.textContent = 'Las contraseñas coinciden';
+                matchStatus.style.color = 'var(--success)';
+            } else {
+                matchStatus.textContent = 'Las contraseñas no coinciden';
+                matchStatus.style.color = 'var(--error)';
+            }
+        }
+
+        passInput.addEventListener('input', updateStrength);
+        pass2Input.addEventListener('input', checkMatch);
+
+        // --- Validación en tiempo real del CUI ---
+        cuiInput.addEventListener('input', function() {
+            clearTimeout(cuiTimeout);
+            const val = this.value.trim();
+            if (!/^\d{13}$/.test(val)) {
+                if (val.length === 0) cuiStatus.textContent = '';
+                else cuiStatus.textContent = 'Debe tener 13 dígitos numéricos';
+                cuiStatus.style.color = 'var(--error)';
+                return;
+            }
+            cuiStatus.textContent = 'Verificando...';
+            cuiStatus.style.color = '#94A3B8';
+            cuiTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch(CONFIG.API_URL + '/verificar-cui/' + val);
+                    if (res.status === 409) {
+                        cuiStatus.textContent = 'Este CUI ya está registrado';
+                        cuiStatus.style.color = 'var(--error)';
+                        cuiInput.classList.add('error');
+                    } else {
+                        cuiStatus.textContent = 'CUI disponible';
+                        cuiStatus.style.color = 'var(--success)';
+                        cuiInput.classList.remove('error');
+                    }
+                } catch {
+                    cuiStatus.textContent = 'No se pudo verificar el CUI';
+                    cuiStatus.style.color = '#94A3B8';
+                }
+            }, 500);
+        });
+
+        // --- Submit ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             msg.className = 'msg-box';
-            const cui = document.getElementById('cui').value.trim();
+
+            const cui = cuiInput.value.trim();
             const nombre = document.getElementById('nombre').value.trim();
             const correo = document.getElementById('correo').value.trim();
-            const contrasena = document.getElementById('contrasena').value;
+            const contrasena = passInput.value;
+            const contrasena2 = pass2Input.value;
 
             if (!/^\d{13}$/.test(cui)) { msg.textContent = 'El CUI debe tener 13 dígitos numéricos.'; msg.className = 'msg-box error'; return; }
             if (!nombre) { msg.textContent = 'Ingresa tu nombre completo.'; msg.className = 'msg-box error'; return; }
             if (!correo) { msg.textContent = 'El correo electrónico es obligatorio.'; msg.className = 'msg-box error'; return; }
-            if (contrasena.length < 6) { msg.textContent = 'La contraseña debe tener al menos 6 caracteres.'; msg.className = 'msg-box error'; return; }
+            if (contrasena.length < 8) { msg.textContent = 'La contraseña debe tener al menos 8 caracteres.'; msg.className = 'msg-box error'; return; }
+            if (contrasena !== contrasena2) { msg.textContent = 'Las contraseñas no coinciden.'; msg.className = 'msg-box error'; return; }
 
             btn.disabled = true;
             btn.textContent = 'Creando cuenta...';
@@ -107,8 +215,15 @@
                 const res = await API.post('/registro', { cui, nombre_completo: nombre, contrasena, correo });
                 if (res.ok) {
                     document.getElementById('correo-enviado').textContent = correo;
+                    document.getElementById('email-warning').style.display = 'block';
                     formPanel.style.display = 'none';
                     exitoPanel.style.display = 'block';
+                } else if (res.status === 429) {
+                    const data = await res.json().catch(() => ({}));
+                    msg.textContent = data.detail || 'Demasiados intentos. Esperá un minuto.';
+                    msg.className = 'msg-box error';
+                    btn.disabled = false;
+                    btn.textContent = 'Crear cuenta';
                 } else {
                     const data = await res.json().catch(() => ({}));
                     msg.textContent = data.detail || 'Error al crear la cuenta.';
@@ -117,8 +232,8 @@
                     btn.textContent = 'Crear cuenta';
                 }
             } catch (err) {
-                // La petición pudo llegar al servidor aunque falle la respuesta
                 document.getElementById('correo-enviado').textContent = correo;
+                document.getElementById('email-warning').style.display = 'block';
                 formPanel.style.display = 'none';
                 exitoPanel.style.display = 'block';
             }
