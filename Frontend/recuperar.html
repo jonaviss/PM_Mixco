@@ -63,13 +63,14 @@
             btn.textContent = 'Enviando...';
             try {
                 const res = await API.post('/recuperar', { cui });
-                msg.textContent = 'Si el CUI está registrado con un correo, recibirás las instrucciones en los próximos minutos.';
+                const data = await res.json().catch(() => ({}));
+                msg.textContent = data.mensaje || 'Si el CUI está registrado con un correo, recibirás las instrucciones.';
                 msg.className = 'msg-box success';
                 btn.disabled = false;
                 btn.textContent = 'Enviar instrucciones';
                 document.getElementById('cui').value = '';
             } catch (err) {
-                msg.textContent = 'Si el CUI está registrado con un correo, recibirás las instrucciones en los próximos minutos.';
+                msg.textContent = 'Si el CUI está registrado con un correo, recibirás las instrucciones.';
                 msg.className = 'msg-box success';
                 btn.disabled = false;
                 btn.textContent = 'Enviar instrucciones';

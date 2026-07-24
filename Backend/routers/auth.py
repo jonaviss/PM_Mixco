@@ -56,11 +56,14 @@ def verificar_cui(cui: str):
 @router.post("/recuperar")
 async def recuperar(payload: RecuperarRequest, background_tasks: BackgroundTasks):
     try:
+        user = find_user_by_cui(payload.cui)
+        correo = (user or {}).get("correo", "")
         token = generar_token_recuperacion(payload.cui)
-        if not token:
+        if not token or not correo:
             return {"mensaje": "Si el CUI está registrado con un correo, recibirás las instrucciones."}
         background_tasks.add_task(enviar_correo_recuperacion, payload.cui, token)
-        return {"mensaje": "Si el CUI está registrado con un correo, recibirás las instrucciones."}
+        mascara = correo[0] + "*****" + correo[correo.index("@"):] if "@" in correo else correo
+        return {"mensaje": f"Enviamos las instrucciones a {mascara}"}
     except Exception:
         return {"mensaje": "Si el CUI está registrado con un correo, recibirás las instrucciones."}
 
