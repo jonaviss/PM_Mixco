@@ -47,28 +47,52 @@ async function cargarLayout() {
     document.body.insertAdjacentHTML('afterbegin', sidebarHTML);
 
     const paginas = [
+        // ── DASHBOARD ──
+        { tipo: "label", texto: "Dashboard" },
         { href: "libreria_dashboard.html", icono: "dashboard", texto: "Dashboard", roles: ["super_admin", "administrador", "encargado"] },
+
+        // ── INVENTARIO ──
+        { tipo: "label", texto: "Inventario" },
         { href: "libreria_inventario.html", icono: "inventory_2", texto: "Inventario", roles: ["super_admin", "encargado"] },
+        { href: "compras.html", icono: "receipt", texto: "Registrar Compra", roles: ["super_admin", "encargado"] },
+        { href: "pagos_proveedores.html", icono: "payments", texto: "Pagos a Proveedores", roles: ["super_admin", "encargado"] },
+        { href: "reporte_lotes.html", icono: "inventory", texto: "Lotes Pendientes", roles: ["super_admin", "encargado"] },
+
+        // ── VENTAS ──
+        { tipo: "label", texto: "Ventas" },
         { href: "libreria_ventas.html", icono: "point_of_sale", texto: "Ventas", roles: ["super_admin", "encargado"] },
         { href: "libreria_cobros.html", icono: "payments", texto: "Cobros", roles: ["super_admin", "encargado"] },
         { href: "libreria_deudas.html", icono: "receipt_long", texto: "Deudas", roles: ["super_admin", "administrador"] },
         { href: "libreria_pagados.html", icono: "check_circle", texto: "Pagados", roles: ["super_admin", "administrador"] },
+        { href: "cancelar_venta.html", icono: "block", texto: "Cancelar Venta", roles: ["super_admin", "encargado"] },
+
+        // ── CLIENTES ──
+        { tipo: "label", texto: "Clientes" },
         { href: "libreria_clientes.html", icono: "group", texto: "Clientes", roles: ["super_admin", "administrador"] },
         { href: "cliente_mis_compras.html", icono: "receipt_long", texto: "Mis Compras", roles: ["super_admin", "administrador", "cliente"] },
         { href: "proveedores.html", icono: "local_shipping", texto: "Proveedores", roles: ["super_admin", "encargado"] },
-        { href: "compras.html", icono: "receipt", texto: "Registrar Compra", roles: ["super_admin", "encargado"] },
-        { href: "pagos_proveedores.html", icono: "payments", texto: "Pagos a Proveedores", roles: ["super_admin", "encargado"] },
-        { href: "reporte_lotes.html", icono: "inventory", texto: "Lotes Pendientes", roles: ["super_admin", "encargado"] },
+
+        // ── REPORTES ──
+        { tipo: "label", texto: "Reportes" },
         { href: "libreria_reportes_ventas.html", icono: "assessment", texto: "Reportes de Ventas", roles: ["super_admin", "administrador"] },
-        { href: "cancelar_venta.html", icono: "block", texto: "Cancelar Venta", roles: ["super_admin", "encargado"] },
         { href: "gastos.html", icono: "money_off", texto: "Gastos", roles: ["super_admin", "encargado"] },
+
+        // ── SISTEMA ──
+        { tipo: "label", texto: "Sistema" },
         { href: "admin_configuracion.html", icono: "settings", texto: "Configuración", roles: ["super_admin", "administrador"] }
     ];
     const paginaActual = window.location.pathname.split('/').pop();
     const rango = localStorage.getItem('rango');
     const nav = document.getElementById('nav-links');
     paginas.forEach(p => {
-        if (!p.roles.includes(rango)) return;
+        if (p.tipo === "label") {
+            const label = document.createElement('div');
+            label.className = 'sidebar-label';
+            label.textContent = p.texto;
+            nav.appendChild(label);
+            return;
+        }
+        if (!p.roles || !p.roles.includes(rango)) return;
         const a = document.createElement('a');
         a.href = p.href;
         a.className = `nav-item ${paginaActual === p.href ? 'active' : ''}`;

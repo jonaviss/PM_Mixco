@@ -80,6 +80,20 @@ body {
     background-color: #FEF2F2;
 }
 
+.sidebar-label {
+    padding: 0.6rem 1.25rem 0.2rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+#sidebar-dinamico.collapsed .sidebar-label {
+    display: none;
+}
+
 /* ============================================
    COMPONENTES DE INTERFAZ
    ============================================ */
