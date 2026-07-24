@@ -6,7 +6,6 @@
     <title>Verificar Correo | PM Mixco ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/global.css">
-    <link rel="stylesheet" href="css/login.css">
 </head>
 <body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 via-white to-yellow-100 p-4">
     <div class="w-full max-w-md text-center">
@@ -50,6 +49,7 @@
                 document.getElementById('estado-cargando').classList.add('hidden');
                 document.getElementById('estado-exito').classList.remove('hidden');
                 document.getElementById('msg-exito').textContent = data.mensaje || 'Correo verificado exitosamente.';
+                setTimeout(() => window.location.href = 'index.html', 3000);
             } catch (err) {
                 document.getElementById('estado-cargando').classList.add('hidden');
                 document.getElementById('estado-error').classList.remove('hidden');
