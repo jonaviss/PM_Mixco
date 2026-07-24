@@ -160,7 +160,7 @@ class ConfiguracionCorreoUpdate(BaseModel):
 class RegistroCreate(BaseModel):
     cui: str = Field(..., min_length=13, max_length=13)
     nombre_completo: str = Field(..., min_length=1)
-    contrasena: str = Field(..., min_length=6)
+    contrasena: str = Field(..., min_length=8)
     correo: str = Field(...)
 
 
@@ -170,7 +170,7 @@ class RecuperarRequest(BaseModel):
 
 class RestablecerRequest(BaseModel):
     token: str
-    contrasena_nueva: str = Field(..., min_length=6)
+    contrasena_nueva: str = Field(..., min_length=8)
 
 
 # ======================== GASTOS ========================

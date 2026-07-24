@@ -134,6 +134,8 @@ def generar_token_recuperacion(cui: str) -> Optional[str]:
 
 
 def restablecer_contrasena(token: str, contrasena_nueva: str) -> None:
+    if len(contrasena_nueva) < 8:
+        raise ValueError("La contraseña debe tener al menos 8 caracteres.")
     token_hash = hashlib.sha256(token.encode()).hexdigest()
     res = supabase.table("reset_tokens") \
         .select("*") \
